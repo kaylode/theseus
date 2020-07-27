@@ -4,3 +4,4 @@ datasets/__pycache__/image_folder.cpython-37.pyc
 .vscode/settings.json
 *.pyc
 datasets/train.csv
+*.csv
