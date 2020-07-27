@@ -30,7 +30,7 @@ class CSVTextClassificationDataset(data.Dataset):
         self.fns = self.load_txt()
         self.classes = list(set([i[1] for i in self.fns]))
         
-    def load_txt(self):  
+    def load_txt(self): 
         data_list = []
         with open(self.dir, 'r', encoding = 'utf8') as fv:
             src_data = csv.reader(fv)
