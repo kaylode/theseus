@@ -65,16 +65,16 @@ class ImageClassificationDataset(data.Dataset):
         return cnt_dict
     
     def plot(self, figsize = (8,8), types = ["freqs"]):
-        cnt_dict = self.count_dict()
+        
         ax = plt.figure(figsize = figsize)
         
         if "freqs" in types:
+            cnt_dict = self.count_dict()
             plt.title("Classes Distribution")
             bar1 = plt.bar(list(cnt_dict.keys()), list(cnt_dict.values()), color=[np.random.rand(3,) for i in range(len(self.classes))])
             for rect in bar1:
                 height = rect.get_height()
                 plt.text(rect.get_x() + rect.get_width()/2.0, height, '%d' % int(height), ha='center', va='bottom')
-        
         
         plt.show()
         
