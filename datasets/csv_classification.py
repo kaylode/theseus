@@ -15,13 +15,16 @@ class CSVTextClassificationDataset(data.Dataset):
     
     Requires first column to be text data, second column to be labels 
     """
+    
     def __init__(self,
                  txt_dir,
                  tokenizer = str.split,
                  skip_header = True,
+                 train = True,
                  max_samples = None,
                  shuffle = False):
-        
+        super().__init__()
+        self.train = train
         self.dir = txt_dir
         self.shuffle = shuffle
         self.tokenizer = tokenizer
@@ -29,7 +32,18 @@ class CSVTextClassificationDataset(data.Dataset):
         self.max_samples = max_samples
         self.fns = self.load_txt()
         self.classes = list(set([i[1] for i in self.fns]))
-        
+        self.classes_idx = self.labels_to_idx()
+        self.idx_classes = {v:k for k,v in self.classes_idx.items()}
+
+    def labels_to_idx(self):
+        indexes = {}
+        idx = 0
+        for cl in self.classes:
+            indexes[cl] = idx
+            idx += 1
+        return indexes
+
+
     def load_txt(self):  
         data_list = []
         with open(self.dir, 'r', encoding = 'utf8') as fv:
@@ -45,7 +59,7 @@ class CSVTextClassificationDataset(data.Dataset):
     
     def __getitem__(self, index):
         txt, label = self.fns[index]
-        tokens = self.tokenizer(txt)
+        tokens = self.tokenizer.tokenize(txt)
         
         return {"txt" : tokens,
                "label" : label} 
@@ -85,3 +99,32 @@ class CSVTextClassificationDataset(data.Dataset):
         s1 = "Number of samples: " + str(len(self.fns)) + '\n'
         s2 = "Number of classes: " + str(len(self.classes)) + '\n'
         return s + line + s1 + s2
+
+
+class RobertaClassification(CSVTextClassificationDataset):
+
+    def __init__(self,
+                 txt_dir,
+                 skip_header = True,
+                 max_samples = None,
+                 shuffle = False):
+        #tokenizer = 
+        super().__init__()
+
+    def __getitem__(self, item):
+        review = str(self.reviews[item])
+        rating = self.ratings[item]
+        encoding = self.tokenizer.encode_plus(review,
+                                            add_special_tokens=True,
+                                            max_length=self.max_len,
+                                            return_token_type_ids=False,
+                                            pad_to_max_length=True,
+                                            return_attention_mask=True,
+                                            truncation=True,
+                                            return_tensors='pt')
+        return {
+        'review_text': review,
+        'input_ids': encoding['input_ids'].flatten(),
+        'attention_mask': encoding['attention_mask'].flatten(),
+        'targets': torch.LongTensor([rating])
+        }

@@ -1,0 +1,4 @@
+emoji
+nltk
+transformers
+pytorch_lightning 

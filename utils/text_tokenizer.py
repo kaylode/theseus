@@ -25,7 +25,9 @@ class TextTokenizer():
             
 
     """
-    def __init__(self, preprocess_steps = None):
+    def __init__(self, preprocess_steps = None, max_length = None):
+
+        self.max_length = max_length
         if preprocess_steps is not None:
             assert isinstance(preprocess_steps, list) , "preprocess_steps must be a list contains name of methods"
         self.preprocess_steps = preprocess_steps
@@ -43,6 +45,9 @@ class TextTokenizer():
         tokens = sentence.split()
         if self.preprocess_steps is not None:
             tokens = self.clean(tokens, self.preprocess_steps)
+        if self.max_length is not None:
+            tokens = tokens[:self.max_length]
+
         return tokens
 
     def remove_stopwords(self, tokens):
@@ -52,13 +57,16 @@ class TextTokenizer():
             return tokens
     
     def add_n_grams(self, tokens):
-        bigrams = ngrams(tokens, 2)
-        trigrams = ngrams(tokens, 3)
         l = []
-        for i in bigrams:
-            l.append(" ".join(i))
-        for i in trigrams:
-            l.append(" ".join(i))
+        if "2grams" in self.preprocess_steps or "ngrams" in self.preprocess_steps:
+            bigrams = ngrams(tokens, 2)
+            for i in bigrams:
+                l.append(" ".join(i))
+        if "3grams" in self.preprocess_steps or "ngrams" in self.preprocess_steps:
+            trigrams = ngrams(tokens, 3)
+            for j in trigrams:
+                l.append(" ".join(j))
+    
         return l
 
     def replace_consecutive(self, sentence):
@@ -123,6 +131,8 @@ class TextTokenizer():
         grams = self.add_n_grams(results) if "ngrams" in types else []
         results = results + grams
         
+        if len(results) == 0:
+            results.append('NaN')
         return results
     
        

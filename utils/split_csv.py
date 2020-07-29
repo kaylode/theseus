@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Build class to image_fns dictionary
     d = dict()
-    for i, fn, cl in data:
+    for fn, cl in data:
         d.setdefault(cl, [])
         d[cl].append(fn)
 
