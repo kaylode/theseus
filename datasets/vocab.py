@@ -237,4 +237,4 @@ class CustomVocabulary(data.Dataset):
         s = "Custom Vocabulary  \n"
         line = "-------------------------------\n"
         s1 = "Number of unique words in dataset: " + str(self.vocab_size) + '\n'
-        return s + line + s1
+        return s + line + s1 
