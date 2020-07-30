@@ -205,26 +205,26 @@ class CustomVocabulary(data.Dataset):
                                     color="blue",
                                     label = "Unigrams")
 
-                if "ngrams" in self.tokenizer.preprocess_steps:
-                    if "2grams" in types:
-                        plt.title("Top " + str(topk) + " highest frequency bigrams tokens")
-                        plt.xlabel("Unique tokens")
-                        plt.ylabel("Frequencies")
-                        cnt_dict = self.most_common(topk, "2grams")
-                        bar1 = plt.barh(list(cnt_dict.keys()),
-                                        list(cnt_dict.values()),
-                                        color="gray",
-                                        label = "Bigrams")
+                if "2grams" in types:
+      
+                    plt.title("Top " + str(topk) + " highest frequency bigrams tokens")
+                    plt.xlabel("Unique tokens")
+                    plt.ylabel("Frequencies")
+                    cnt_dict = self.most_common(topk, "2grams")
+                    bar1 = plt.barh(list(cnt_dict.keys()),
+                                    list(cnt_dict.values()),
+                                    color="gray",
+                                    label = "Bigrams")
 
-                    if "3grams" in types:
-                        plt.title("Top " + str(topk) + " highest frequency trigrams tokens")
-                        plt.xlabel("Unique tokens")
-                        plt.ylabel("Frequencies")
-                        cnt_dict = self.most_common(topk, "3grams")
-                        bar1 = plt.barh(list(cnt_dict.keys()),
-                                        list(cnt_dict.values()),
-                                        color="green",
-                                        label = "Trigrams") 
+                if "3grams" in types:
+                    plt.title("Top " + str(topk) + " highest frequency trigrams tokens")
+                    plt.xlabel("Unique tokens")
+                    plt.ylabel("Frequencies")
+                    cnt_dict = self.most_common(topk, "3grams")
+                    bar1 = plt.barh(list(cnt_dict.keys()),
+                                    list(cnt_dict.values()),
+                                    color="green",
+                                    label = "Trigrams") 
             
         plt.legend()
         plt.show()
