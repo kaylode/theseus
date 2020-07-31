@@ -229,7 +229,17 @@ class CustomVocabulary(data.Dataset):
         plt.legend()
         plt.show()
     
-    
+    def save(self, path):
+        import dill
+        output = open(path, "wb")
+        dill.dump(self, output)
+        output.close()
+
+    def load(self, path)
+        import dill
+        output = dill.load(open(path,'rb'))
+        self = output
+        
     def __len__(self):
         return self.vocab_size
         
