@@ -17,7 +17,6 @@ class AccuracyMetric():
         value = self.calculate(output, target)
         self.correct += value[0]
         self.sample_size += value[1]
-
     def reset(self):
         self.correct = 0.0
         self.sample_size = 0.0
