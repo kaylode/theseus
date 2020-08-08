@@ -1,1 +1,1 @@
-from .text_tokenizer import TextTokenizer
+from .getter import *

@@ -1,1 +1,2 @@
-#from .classification.focalloss import focalloss
+from .focalloss import FocalLoss
+from .smoothceloss import smoothCELoss
