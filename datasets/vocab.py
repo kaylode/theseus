@@ -235,7 +235,7 @@ class CustomVocabulary(data.Dataset):
         dill.dump(self, output)
         output.close()
 
-    def load(self, path)
+    def load(self, path):
         import dill
         output = dill.load(open(path,'rb'))
         self = output
