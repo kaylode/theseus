@@ -6,7 +6,7 @@ class AccuracyMetric():
         self.reset()
         self.decimals = decimals
 
-    def calculate(self, output, target):
+    def compute(self, output, target):
         pred = torch.argmax(output, dim=1)
         correct = (pred == target).sum()
         sample_size = output.size(0)
@@ -14,16 +14,20 @@ class AccuracyMetric():
 
     def update(self,  output, target):
         assert isinstance(output, torch.Tensor), "Please input tensors"
-        value = self.calculate(output, target)
+        value = self.compute(output, target)
         self.correct += value[0]
         self.sample_size += value[1]
+
     def reset(self):
         self.correct = 0.0
         self.sample_size = 0.0
 
     def value(self):
         values = self.correct / self.sample_size
-        return np.around(values.numpy(), decimals = self.decimals)
+
+        if values.is_cuda:
+            values = values.cpu()
+        return {"acc" : np.around(values.numpy(), decimals = self.decimals)}
 
     def __str__(self):
         return f'Accuracy: {self.value()}'
@@ -38,7 +42,8 @@ if __name__ == '__main__':
     outputs = torch.LongTensor(out)
     targets = torch.LongTensor(label)
     accuracy.update(outputs, targets)
-    accuracy.update(outputs, targets)
-    print(accuracy)
+    di = {}
+    di.update(accuracy.value())
+    print(di)
     
   
