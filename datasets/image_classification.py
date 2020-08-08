@@ -21,9 +21,10 @@ class ImageClassificationDataset(data.Dataset):
         self.classes = os.listdir(img_dir)
         self.transforms = transforms
         self.shuffle = shuffle
+        self.max_samples = max_samples
         self.classes_idx = self.labels_to_idx()
         self.fns = self.load_images()
-        self.max_samples = max_samples
+        
 
     def labels_to_idx(self):
         indexes = {}
@@ -41,7 +42,7 @@ class ImageClassificationDataset(data.Dataset):
                 data_list.append([cl+'/'+name, cl])
         if self.shuffle:
             random.shuffle(data_list)
-        data_list = data_list[:max_samples] if max_samples is not None else data_list
+        data_list = data_list[:self.max_samples] if self.max_samples is not None else data_list
         return data_list
         
     def __getitem__(self, index):
