@@ -5,3 +5,5 @@ datasets/__pycache__/image_folder.cpython-37.pyc
 *.pyc
 datasets/train.csv
 *.csv
+*.jpg
+models/resnet.py
