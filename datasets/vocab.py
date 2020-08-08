@@ -74,7 +74,11 @@ class CustomVocabulary(data.Dataset):
         } 
 
     def build_vocab(self, datasets):
-        #self.dataset = dataset
+        """
+        - Build vocabulary from list of datasets
+        - Argument: 
+                    + datasets:     list of datasets
+        """
         if not isinstance(datasets, list):
             datasets = [datasets]
         print("Building vocabulary...")

@@ -11,20 +11,24 @@ import csv
 
 class CSVTextClassificationDataset(data.Dataset):
     """
-    Reads a CSV file.
-    
-    Requires first column to be text data, second column to be labels 
+    - Reads a CSV file. Requires first column to be text data, second column to be labels.
+    - Arguments:
+                + txt_dir:              path to csv file
+                + tokenizer:            custom tokenizer for preprocessing (default: split by space)
+                + skip_header:          skip csv header
+                + max_samples:          maximum number of samples
+                + shuffle:              shuffle dataset               
+
     """
     
     def __init__(self,
                  txt_dir,
                  tokenizer = str.split,
                  skip_header = True,
-                 train = True,
                  max_samples = None,
                  shuffle = False):
         super().__init__()
-        self.train = train
+
         self.dir = txt_dir
         self.shuffle = shuffle
         self.tokenizer = tokenizer
@@ -36,6 +40,9 @@ class CSVTextClassificationDataset(data.Dataset):
         self.idx_classes = {v:k for k,v in self.classes_idx.items()}
 
     def labels_to_idx(self):
+        """
+        Get label index
+        """
         indexes = {}
         idx = 0
         for cl in self.classes:
@@ -45,6 +52,9 @@ class CSVTextClassificationDataset(data.Dataset):
 
 
     def load_txt(self):  
+        """
+        Load text data
+        """
         data_list = []
         with open(self.dir, 'r', encoding = 'utf8') as fv:
             src_data = csv.reader(fv)
@@ -65,6 +75,9 @@ class CSVTextClassificationDataset(data.Dataset):
                "label" : label} 
 
     def count_dict(self):
+        """
+        Count for each label
+        """
         cnt_dict = {}
         for text, label in self.fns:
             if label in cnt_dict.keys():
@@ -74,6 +87,9 @@ class CSVTextClassificationDataset(data.Dataset):
         return cnt_dict
 
     def plot(self, figsize = (8,8), types = ["freqs"]):
+        """
+        Dataset Visualization
+        """
         cnt_dict = self.count_dict()
         ax = plt.figure(figsize = figsize)
         

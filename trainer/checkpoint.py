@@ -6,11 +6,14 @@ class Checkpoint():
     def __init__(self, save_per_epoch = 1, path = 'weights'):
         self.path = path
         self.save_per_epoch = save_per_epoch
-
+        # Create folder
         if not os.path.exists(path):
             os.mkdir(path)
 
     def save(self, model, **kwargs):
+        """
+        Save model and optimizer weights
+        """
         epoch = kwargs['epoch'] if 'epoch' in kwargs else '0'
         model_path = "-".join([model.model_name,str(epoch)])
 

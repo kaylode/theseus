@@ -2,6 +2,9 @@ import torch
 import numpy as np
 
 class AccuracyMetric():
+    """
+    Accuracy metric for classification
+    """
     def __init__(self, decimals = 10):
         self.reset()
         self.decimals = decimals

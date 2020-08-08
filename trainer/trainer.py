@@ -19,6 +19,7 @@ class Trainer(nn.Module):
         self.valloader = valloader
         self.metrics = model.metrics #list of metrics
         self.set_attribute(kwargs)
+        
     def fit(self, num_epochs = 10 ,print_per_iter = None):
         self.num_epochs = num_epochs
         self.num_iters = num_epochs * len(self.trainloader)

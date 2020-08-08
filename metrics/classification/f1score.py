@@ -3,6 +3,9 @@ import torch.nn as nn
 import numpy as np
 
 class F1ScoreMetric():
+    """
+    F1 Score Metric (including macro, micro)
+    """
     def __init__(self, n_classes, average = 'macro'):
         self.n_classes = n_classes
         self.average = average
