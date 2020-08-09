@@ -7,3 +7,4 @@ datasets/train.csv
 *.csv
 *.jpg
 models/resnet.py
+*.pth
