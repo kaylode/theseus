@@ -61,9 +61,10 @@ class Trainer(nn.Module):
             self.optimizer.step()
             epoch_loss += loss.item()
             running_loss += loss.item()
-        
-            if (i % self.print_per_iter == 0 or i == len(self.trainloader) - 1) and i != 0:
-                print("\tIterations: [{}|{}] | Training loss: {:10.4f}".format(len(self.trainloader)*self.epoch+i+1, self.num_iters, running_loss/ self.print_per_iter))
+            
+            iters = len(self.trainloader)*self.epoch+i+1
+            if iters % self.print_per_iter == 0:
+                print("\tIterations: [{}|{}] | Training loss: {:10.4f}".format(iters, self.num_iters, running_loss/ self.print_per_iter))
                 running_loss = 0
         return epoch_loss / len(self.trainloader)
 

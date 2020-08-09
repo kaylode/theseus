@@ -17,33 +17,33 @@ transforms = transforms.Compose([
 ])
 
 if __name__ == "__main__":
-    trainset = ImageClassificationDataset("datasets/garbage_train", transforms= transforms,max_samples=100)
-    valset = ImageClassificationDataset("datasets/garbage_val", transforms= transforms,max_samples=10, shuffle=True)
+    trainset = ImageClassificationDataset("datasets/garbage_train", transforms= transforms,shuffle=True)
+    valset = ImageClassificationDataset("datasets/garbage_val", transforms= transforms,shuffle=True)
     print(trainset)
     print(valset)
     
     NUM_CLASSES = len(trainset.classes)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
+    print("Using ", device)
     # Dataloader
-    BATCH_SIZE = 2
+    BATCH_SIZE = 32
     trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
     valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, shuffle=True)
     
-    EPOCHS = 10
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam
     metrics = [F1ScoreMetric(NUM_CLASSES, average="macro"), AccuracyMetric(decimals=3)]
 
     model = ResNet34(NUM_CLASSES,
-                     lr = 1e-3,
+                     lr = 1e-4,
                      criterion= criterion, 
                      optimizer= optimizer,
                      metrics=  metrics,
                      device = device)
+    load_checkpoint(model, "weights/ResNet34-12.pth")
 
-    cp = Checkpoint(save_per_epoch=2)
+    cp = Checkpoint(save_per_epoch=6)
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
@@ -51,5 +51,5 @@ if __name__ == "__main__":
                      evaluate_per_epoch = 2)
     
     
-    trainer.fit(print_per_iter=10)
+    trainer.fit(num_epochs=30)
   
