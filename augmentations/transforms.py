@@ -1,5 +1,7 @@
 import torchvision.transforms.functional as TF
 import random
+import numpy as np
+import torch
 
 class Normalize(object):
         """

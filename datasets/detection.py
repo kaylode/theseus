@@ -1,14 +1,14 @@
 import os
 import torch
 import torch.nn as nn
-import torch.nn.utils as data
+import torch.utils.data as data
 import random
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import json
 import numpy as np
 from PIL import Image
-
+from augmentations.transforms import Compose
 
 class ObjectDetectionDataset(data.Dataset):
     """
@@ -30,7 +30,7 @@ class ObjectDetectionDataset(data.Dataset):
         self.ann_path = ann_path
         _, self.ext = os.path.splitext(ann_path)
         self.shuffle = shuffle
-        self.transforms = transforms if transforms is not None else Transforms()     
+        self.transforms = transforms if transforms is not None else Compose()     
         self.max_samples = max_samples
         self.annos = self.load_annos()
         self.labels_to_idx()
@@ -96,7 +96,7 @@ class ObjectDetectionDataset(data.Dataset):
         
         if "freqs" in types:
             cnt_dict = self.count_dict(types = 1)
-            plt.title("Total objects can be seen")
+            plt.title("Total objects can be seen: "+ str(sum(list(cnt_dict.values()))))
             bar1 = plt.bar(list(cnt_dict.keys()), list(cnt_dict.values()), color=[np.random.rand(3,) for i in range(len(self.classes))])
             for rect in bar1:
                 height = rect.get_height()
@@ -191,3 +191,10 @@ class ObjectDetectionDataset(data.Dataset):
             'imgs': images,
             'bboxes': boxes,
             'labels': labels} # tensor (N, 3, 300, 300), 3 lists of N tensors each
+
+    def __str__(self):
+        s = "Custom Dataset for Object Detection\n"
+        line = "-------------------------------\n"
+        s1 = "Number of samples: " + str(len(self.fns)) + '\n'
+        s2 = "Number of classes: " + str(len(self.classes)) + '\n'
+        return s + line + s1 + s2
