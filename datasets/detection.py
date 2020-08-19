@@ -113,15 +113,17 @@ class ObjectDetectionDataset(data.Dataset):
             index = random.randint(0,len(self.fns))
         item = self.__getitem__(index)
         img = item['img']
-        bboxes = item['bboxes']
-        classes = item['classes']
+        box = item['box']
+        label = item['label']
 
         # Denormalize and reverse-tensorize
-        img, bboxes, classes = self.transforms.denormalize(img = img, bboxes = bboxes, classes = classes)
-        self.visualize(img, bboxes, classes, figsize)
+        results = self.transforms.denormalize(img = img, box = box, label = label)
+        img, label, box = results['img'], results['label'], results['box']
+
+        self.visualize(img, box, label, figsize = figsize)
 
     
-    def visualize(self, img, bboxes, classes, figsize=(15,15)):
+    def visualize(self, img, boxes, labels, figsize=(15,15)):
         """
         Visualize an image with its bouding boxes
         """
@@ -131,7 +133,7 @@ class ObjectDetectionDataset(data.Dataset):
         ax.imshow(img)
 
         # Create a Rectangle patch
-        for box, label in zip(bboxes, classes):
+        for box, label in zip(boxes, labels):
             color = np.random.rand(3,)
             x,y,w,h = box
             rect = patches.Rectangle((x,y),w,h,linewidth=2,edgecolor = color,facecolor='none')
@@ -153,18 +155,19 @@ class ObjectDetectionDataset(data.Dataset):
         img_anno = [i for i in list(self.annos['annotations']) if i['image_id'] == img_id]
         
         img_path = os.path.join(self.dir,img_name)
-        bboxes = np.floor(np.array([i['bbox'] for i in img_anno]))
-        classes = np.array([i['category_id'] for i in img_anno]) # Label starts from 0
+        box = np.floor(np.array([i['bbox'] for i in img_anno]))
+        label = np.array([i['category_id'] for i in img_anno]) # Label starts from 0
 
         img = Image.open(img_path)
 
         # Data augmentation
-        img, bboxes, classes = self.transforms(img, bboxes, classes)
+        results = self.transforms(img = img, box = box, label = label)
+        
 
         return {
-            'img': img,
-            'bboxes': bboxes,
-            'classes': classes,
+            'img': results['img'],
+            'box': results['box'],
+            'label': results['label'],
         }
 
     def collate_fn(self, batch):
@@ -182,14 +185,14 @@ class ObjectDetectionDataset(data.Dataset):
     
         for b in batch:
             images.append(b['img'])
-            boxes.append(b['bboxes'])
-            labels.append(b['classes'])
+            boxes.append(b['box'])
+            labels.append(b['label'])
             
         images = torch.stack(images, dim=0)
 
         return {
             'imgs': images,
-            'bboxes': boxes,
+            'boxes': boxes,
             'labels': labels} # tensor (N, 3, 300, 300), 3 lists of N tensors each
 
     def __str__(self):

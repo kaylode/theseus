@@ -8,3 +8,4 @@ datasets/train.csv
 *.jpg
 models/resnet.py
 *.pth
+*.json

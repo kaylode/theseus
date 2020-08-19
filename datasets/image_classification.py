@@ -47,16 +47,18 @@ class ImageClassificationDataset(data.Dataset):
         
     def __getitem__(self, index):
         img_name, class_name = self.fns[index]
-        class_idx = self.classes_idx[class_name]
+        label = self.classes_idx[class_name]
         
         img_path = os.path.join(self.dir, img_name)
-        im = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert('RGB')
 
         if self.transforms:
-            im = self.transforms(im)
+            results = self.transforms(img= img, label=label)
+            img = results['img']
+            label = results['label']
 
-        return {"img" : im,
-                 "label" : class_idx}
+        return {"img" : img,
+                 "label" : label}
     
     def count_dict(self):
         cnt_dict = {}
@@ -65,6 +67,36 @@ class ImageClassificationDataset(data.Dataset):
             cnt_dict[cl] = num_imgs
         return cnt_dict
     
+
+    def visualize_item(self, index = None, figsize=(15,15)):
+        """
+        Visualize an image with its bouding boxes by index
+        """
+
+        if index is None:
+            index = np.random.randint(0,len(self.fns))
+        item = self.__getitem__(index)
+        img = item['img']
+        label = item['label']
+
+        # Denormalize and reverse-tensorize
+        results = self.transforms.denormalize(img = img, box = None, label = label)
+        img, label = results['img'], results['label']
+        self.visualize(img, label, figsize = figsize)
+
+    
+    def visualize(self, img, label, figsize=(15,15)):
+        """
+        Visualize an image with its bouding boxes
+        """
+        fig,ax = plt.subplots(figsize=figsize)
+
+        # Display the image
+        ax.imshow(img)
+        plt.title(self.classes[label])
+        
+        plt.show()
+
     def plot(self, figsize = (8,8), types = ["freqs"]):
         
         ax = plt.figure(figsize = figsize)
