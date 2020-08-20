@@ -12,6 +12,9 @@ transforms = Compose([
 ])
 
 if __name__ == "__main__":
+    logger = Logger()
+    logger.log('lo')
+    """
     data_path = "datasets/datasets/Garbage Classification"
     voc_path = "datasets/datasets/VOC/images"
     voc_anno = "datasets/datasets/VOC/annotations/pascal_train2012.json"
@@ -23,7 +26,7 @@ if __name__ == "__main__":
 
     NUM_CLASSES = len(trainset.classes)
     print(NUM_CLASSES)
-    """device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
     # Dataloader
     BATCH_SIZE = 32
