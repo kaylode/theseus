@@ -69,7 +69,7 @@ class ObjectDetectionDataset(data.Dataset):
         """
         Read in list of paths to images
         """
-        data_list = [os.path.join(self.dir,i) for i in sorted(os.listdir(self.dir))]
+        data_list = [os.path.join(self.dir,i['file_name']) for i in self.annos['images']]
         if self.shuffle:
             random.shuffle(data_list)
         data_list = data_list[:self.max_samples] if self.max_samples is not None else data_list
@@ -118,7 +118,7 @@ class ObjectDetectionDataset(data.Dataset):
 
         # Denormalize and reverse-tensorize
         results = self.transforms.denormalize(img = img, box = box, label = label)
-        img, label, box = results['img'], results['label'], results['box']
+        img, label, box = results['img'], results['label'].numpy(), results['box'].numpy()
 
         self.visualize(img, box, label, figsize = figsize)
 
