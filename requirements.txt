@@ -1,4 +1,5 @@
 emoji
 nltk
 transformers
-pytorch_lightning 
+pytorch_lightning
+tensorboard
