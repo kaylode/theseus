@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 from tqdm import tqdm
 from .checkpoint import Checkpoint
+import numpy as np
 
 class Trainer(nn.Module):
     def __init__(self, 
@@ -68,6 +69,15 @@ class Trainer(nn.Module):
                 running_loss = 0
         return epoch_loss / len(self.trainloader)
 
+    def inference_batch(self, testloader):
+        self.model.eval()
+        results = []
+        with torch.no_grad():
+            for batch in testloader:
+                outputs = self.model.inference_step(batch)
+                for i in outputs:
+                    results.append(i)
+        return results
 
     def evaluate_epoch(self):
         self.model.eval()
