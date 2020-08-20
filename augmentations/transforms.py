@@ -2,6 +2,7 @@ import torchvision.transforms.functional as TF
 import random
 import numpy as np
 import torch
+from PIL import Image
 
 class Normalize(object):
         """
@@ -100,7 +101,6 @@ class Resize(object):
             return results
             
 
-
 class RandomHorizontalFlip(object):
         """
         Horizontally flip image and its bounding box, mask
@@ -111,17 +111,16 @@ class RandomHorizontalFlip(object):
         def __call__(self, img, box = None, **kwargs):
             if random.randint(1,10) <= self.ratio*10:
                 # Flip image
-                img = TF.hflip(img)
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
 
                 # Flip bounding box
                 if box is not None:
-                    img_center = np.array(np.array(img).shape[:2])/2
-                    img_center = np.hstack((img_center, img_center))
-                    box[:, [0, 2]] += 2*(img_center[[0, 2]] - box[:, [0, 2]])
-                    box_w = abs(box[:, 0] - box[:, 2])
-                    box[:, 0] -= box_w
-                    box[:, 2] += box_w
-     
+                    w = img.width
+                    xmin = w - box[:,2]
+                    xmax = w - box[:,0]
+                    boxes[:,0] = xmin
+                    boxes[:,2] = xmax
+                
             results = {
                 'img': img,
                 'box': box,
@@ -129,6 +128,11 @@ class RandomHorizontalFlip(object):
                 'mask': None}
     
             return results
+
+
+
+        
+            
             
 
 class Compose(object):
