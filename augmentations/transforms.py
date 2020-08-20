@@ -53,19 +53,20 @@ class ToTensor(object):
             pass
         def __call__(self, img, **kwargs):
             img = TF.to_tensor(img)
-
-            if kwargs['label'] is not None:
-                label = torch.LongTensor(kwargs['label'])
-            if kwargs['box'] is not None:
-                label = torch.FloatTensor(kwargs['box'])
-
-
+            
             results = {
                 'img': img,
                 'box': kwargs['box'],
                 'label': kwargs['label'],
                 'mask': None}
-    
+
+            if kwargs['label'] is not None:
+                label = torch.LongTensor(kwargs['label'])
+                results['label'] = label
+            if kwargs['box'] is not None:
+                box = torch.FloatTensor(kwargs['box'])
+                results['box'] = box
+
             return results
            
 
