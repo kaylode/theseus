@@ -23,3 +23,10 @@ class FocalLoss(nn.Module):
             return torch.mean(F_loss)
         else:
             return F_loss
+
+
+if __name__ == '__main__':
+    criterion = FocalLoss()
+    preds = torch.rand()
+    loss = criterion(loc_preds, loc_targets, cls_preds, cls_targets)
+

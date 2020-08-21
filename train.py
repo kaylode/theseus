@@ -4,6 +4,7 @@ import torch
 import torchvision.models as models
 from tqdm import tqdm
 import torch.nn as nn
+import torch.optim.lr_scheduler.StepLR
 
 transforms = Compose([
     Resize((300,300)),
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     #load_checkpoint(model, "weights/ResNet34-12.pth")
 
     cp = Checkpoint(save_per_epoch=6)
+    scheduler = StepLR(model.optimizer, step_size=30, gamma=0.1)
     trainer = Trainer(model,
                      trainloader, 
                      valloader,

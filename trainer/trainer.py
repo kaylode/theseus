@@ -5,6 +5,8 @@ from tqdm import tqdm
 from .checkpoint import Checkpoint
 import numpy as np
 
+
+
 class Trainer(nn.Module):
     def __init__(self, 
                 model, 
@@ -46,6 +48,8 @@ class Trainer(nn.Module):
                     print(metric +': ' + str(score), end = ' | ')
                 print()
 
+            if self.scheduler is not None:
+                scheduler.step()
             if (epoch % self.checkpoint.save_per_epoch == 0 or epoch == num_epochs - 1):
                 self.checkpoint.save(self.model, epoch = epoch)
         print("Training Completed!")
@@ -109,8 +113,9 @@ class Trainer(nn.Module):
         s6 = "Validating iterations per epoch: " + str(len(self.valloader))
         return "\n".join([s0,s1,s2,s3,s4,s5,s6])
 
-    def set_attribute(self, kwargs):
+    def set_attribute(self, **kwargs):
         self.checkpoint = None
+        self.scheduler = None
         self.evaluate_per_epoch = 1
         for i,j in kwargs.items():
             setattr(self, i, j)
