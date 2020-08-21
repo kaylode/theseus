@@ -6,10 +6,6 @@ import pytorch_lightning as pl
 class TPU_Base(pl.LightningModule):
     def __init__(self):
         super(TPU_Base, self).__init__()
-    
-    def metrics_score(self):
-        
-        
 
     def training_step(self, batch, batch_idx):
         inputs, targets = batch
@@ -23,9 +19,6 @@ class TPU_Base(pl.LightningModule):
 
         inputs, targets = batch
         outputs = self(inputs)
-
-        
-        
 
         loss = F.cross_entropy(outputs, labels)
         return {'val_loss': loss, "val_acc": acc}

@@ -19,3 +19,10 @@ models/retinanet/fpn.py
 models/retinanet/encoder.py
 loggers/runs/events.out.tfevents.1597858850.KAY-PC.6804.0
 .ipynb_checkpoints/Testing Notebook-checkpoint.ipynb
+loggers/runs/events.out.tfevents.1598020676.KAY-PC.12156.0
+loggers/runs/events.out.tfevents.1598022447.KAY-PC.10504.0
+loggers/runs/events.out.tfevents.1598022489.KAY-PC.20264.0
+loggers/runs/events.out.tfevents.1598022583.KAY-PC.17404.0
+loggers/runs/events.out.tfevents.1598022605.KAY-PC.17504.0
+loggers/runs/events.out.tfevents.1598022926.KAY-PC.17548.0
+loggers/runs/events.out.tfevents.1598025383.KAY-PC.960.0
