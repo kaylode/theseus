@@ -4,7 +4,8 @@ import torch
 import torchvision.models as models
 from tqdm import tqdm
 import torch.nn as nn
-import torch.optim.lr_scheduler.StepLR
+from models.resnet import ResNet34
+from torch.optim.lr_scheduler import StepLR
 
 transforms = Compose([
     Resize((300,300)),
@@ -13,9 +14,8 @@ transforms = Compose([
 ])
 
 if __name__ == "__main__":
-    logger = Logger()
-    logger.log('lo')
-    """
+    #logger = Logger()
+    
     data_path = "datasets/datasets/Garbage Classification"
     voc_path = "datasets/datasets/VOC/images"
     voc_anno = "datasets/datasets/VOC/annotations/pascal_train2012.json"
@@ -26,13 +26,13 @@ if __name__ == "__main__":
     print(valset)
 
     NUM_CLASSES = len(trainset.classes)
-    print(NUM_CLASSES)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using ", device)
+
     # Dataloader
-    BATCH_SIZE = 32
-    trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True)
-    valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, shuffle=True)
+    BATCH_SIZE = 4
+    trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=trainset.collate_fn, shuffle=True)
+    valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=valset.collate_fn, shuffle=False)
     
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam
@@ -44,16 +44,22 @@ if __name__ == "__main__":
                      optimizer= optimizer,
                      metrics=  metrics,
                      device = device)
-    #load_checkpoint(model, "weights/ResNet34-12.pth")
+    #load_checkpoint(model, "weights/ResNet34-9.pth")
 
-    cp = Checkpoint(save_per_epoch=6)
-    scheduler = StepLR(model.optimizer, step_size=30, gamma=0.1)
+    cp = Checkpoint(save_per_epoch=1)
+    scheduler = StepLR(model.optimizer, step_size=2, gamma=0.1)
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
-                     checkpoint = cp, 
-                     evaluate_per_epoch = 2)
+                     checkpoint = cp,
+                     scheduler = scheduler,
+                     evaluate_per_epoch = 1)
     
+    #results = trainer.inference_batch(valloader)
+    #print(valset.classes[results[0]])
+    #valset.visualize_item(0)
     
-    trainer.fit(num_epochs=30)"""
+    trainer.fit(num_epochs=10, print_per_iter=50)
+    
+
   

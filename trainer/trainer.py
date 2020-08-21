@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 from .checkpoint import Checkpoint
 import numpy as np
-
+from loggers.loggers import Logger
 
 
 class Trainer(nn.Module):
@@ -36,20 +36,19 @@ class Trainer(nn.Module):
         
 
         print("Start training for {} epochs...".format(num_epochs))
-        for epoch in range(self.num_epochs):
-            print("Epoch: [{}/{}]:".format(epoch+1, num_epochs))
+        for epoch in range(self.num_epochs+1):
+            print("Epoch: [{}/{}]:".format(epoch, num_epochs))
             self.epoch = epoch
             train_loss = self.training_epoch()
 
             if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                 val_loss, val_metrics = self.evaluate_epoch()
-                print("Evaluating | Val Loss: {:10.5f} |".format(val_loss), end=' ')
-                for metric, score in val_metrics.items():
-                    print(metric +': ' + str(score), end = ' | ')
-                print()
-
+                log_dict = {"Validation Loss/Epoch" : val_loss}
+                log_dict.update(val_metrics)
+                self.logging(log_dict)
+                
             if self.scheduler is not None:
-                scheduler.step()
+                self.scheduler.step()
             if (epoch % self.checkpoint.save_per_epoch == 0 or epoch == num_epochs - 1):
                 self.checkpoint.save(self.model, epoch = epoch)
         print("Training Completed!")
@@ -70,6 +69,7 @@ class Trainer(nn.Module):
             iters = len(self.trainloader)*self.epoch+i+1
             if iters % self.print_per_iter == 0:
                 print("\tIterations: [{}|{}] | Training loss: {:10.4f}".format(iters, self.num_iters, running_loss/ self.print_per_iter))
+                self.logging({"Training Loss/Batch" : running_loss,})
                 running_loss = 0
         return epoch_loss / len(self.trainloader)
 
@@ -91,11 +91,25 @@ class Trainer(nn.Module):
         with torch.no_grad():
             for batch in self.valloader:
                 loss, metrics = self.model.evaluate_step(batch)
-                epoch_loss += loss
+                epoch_loss += loss.item()
                 metric_dict.update(metrics)
         self.model.reset_metrics()
+        
 
+        print("Evaluating | Val Loss: {:10.5f} |".format(epoch_loss / len(self.valloader)), end=' ')
+        for metric, score in metric_dict.items():
+            print(metric +': ' + str(score), end = ' | ')
+        print()
         return epoch_loss / len(self.valloader), metric_dict
+    
+
+
+    def logging(self, logs):
+        tags = [l for l in logs.keys()]
+        values = [l for l in logs.values()]
+        self.logger.write(tags= tags, values= values)
+
+
 
     def forward_test(self):
         self.model.eval()
@@ -113,9 +127,10 @@ class Trainer(nn.Module):
         s6 = "Validating iterations per epoch: " + str(len(self.valloader))
         return "\n".join([s0,s1,s2,s3,s4,s5,s6])
 
-    def set_attribute(self, **kwargs):
+    def set_attribute(self, kwargs):
         self.checkpoint = None
         self.scheduler = None
+        self.logger = Logger()
         self.evaluate_per_epoch = 1
         for i,j in kwargs.items():
             setattr(self, i, j)
