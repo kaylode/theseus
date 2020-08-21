@@ -48,7 +48,6 @@ class ImageClassificationDataset(data.Dataset):
     def __getitem__(self, index):
         img_name, class_name = self.fns[index]
         label = self.classes_idx[class_name]
-        
         img_path = os.path.join(self.dir, img_name)
         img = Image.open(img_path).convert('RGB')
 
@@ -121,3 +120,17 @@ class ImageClassificationDataset(data.Dataset):
         s1 = "Number of samples: " + str(len(self.fns)) + '\n'
         s2 = "Number of classes: " + str(len(self.classes)) + '\n'
         return s + line + s1 + s2
+
+    def collate_fn(self, batch):
+        """
+         - Note: this need not be defined in this Class, can be standalone.
+            + param batch: an iterable of N sets from __getitem__()
+            + return: a tensor of images, lists of  labels
+        """
+
+        images = torch.stack([b['img'] for b in batch], dim=0)
+        labels = torch.LongTensor([b['label'] for b in batch])
+
+        return {
+            'imgs': images,
+            'labels': labels} # tensor (N, 3, 300, 300), 3 lists of N tensors each
