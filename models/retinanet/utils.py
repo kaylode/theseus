@@ -168,9 +168,10 @@ def box_nms(bboxes, scores, threshold=0.5, mode='union'):
 
     areas = (x2-x1+1) * (y2-y1+1)
     _, order = scores.sort(0, descending=True)
-
     keep = []
     while order.numel() > 0:
+        if order.shape == torch.Size([]):
+            break
         i = order[0]
         keep.append(i)
 

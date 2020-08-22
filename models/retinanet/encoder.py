@@ -54,7 +54,7 @@ class DataEncoder:
             box = torch.cat([xy,wh], 3)  # [x,y,w,h]
             boxes.append(box.view(-1,4))
         return torch.cat(boxes, 0)
-
+    
     def encode(self, boxes, labels, input_size):
         '''Encode target bounding boxes and class labels.
 
