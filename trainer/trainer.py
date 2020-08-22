@@ -84,6 +84,7 @@ class Trainer(nn.Module):
                 outputs = self.model.inference_step(batch)
                 for i in outputs:
                     results.append(i)
+                break
         return results
 
     def evaluate_epoch(self):
