@@ -10,10 +10,10 @@ from .ssd.model import SSD300
 class Detector(BaseModel):
     def __init__(self, n_classes, **kwargs):
         super(Detector, self).__init__(**kwargs)
-        self.model = SSD300(n_classes = n_classes)
-        self.model_name = "SSD300"
+        """self.model = None
+        self.model_name = "None"
         self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
-        self.criterion = self.criterion(self.model.priors_cxcy)
+        
         self.n_classes = n_classes
 
         if self.freeze:
@@ -22,7 +22,7 @@ class Detector(BaseModel):
 
         if self.device:
             self.model.to(self.device)
-            #self.criterion.to(device)
+            self.criterion.to(self.device)"""
         
     def forward(self, x):
         return self.model(x)
@@ -73,26 +73,14 @@ class Detector(BaseModel):
         loss = self.criterion(loc_preds, cls_preds, boxes, labels)
         
 
-        det_boxes, det_labels, det_scores = self.model.detect_objects(
-            loc_preds,
-            cls_preds,
-            min_score=0.01,
-            max_overlap=0.45,
-            top_k=200)
-
         metric_dict = self.update_metrics(
-            outputs = {
-                'det_boxes': det_boxes,
-                'det_labels': det_labels,
-                'det_scores': det_scores},
-            targets={
-                'gt_boxes': boxes,
-                'gt_labels': labels})
+            outputs = {},
+            targets={})
         
         return loss , metric_dict
 
-    def forward_test(self):
-        inputs = torch.rand(1,3,224,224)
+    def forward_test(self, size = 224):
+        inputs = torch.rand(1,3,size,size)
         if self.device:
             inputs = inputs.to(self.device)
         with torch.no_grad():

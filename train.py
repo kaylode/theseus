@@ -5,7 +5,10 @@ import torchvision.models as models
 from tqdm import tqdm
 import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
-from models.ssd.model import MultiBoxLoss
+
+from models.retinanet.loss import FocalLoss
+from models.retinanet.detector import RetinaDetector
+from models.retinanet.retina_collator import RetinaNetCollator
 
 transforms = Compose([
     Resize((300,300)),
@@ -29,26 +32,28 @@ if __name__ == "__main__":
 
     NUM_CLASSES = len(trainset.classes)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using ", device)
+    print("Using", device)
 
     # Dataloader
     BATCH_SIZE = 4
-    trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=trainset.collate_fn, shuffle=True)
-    valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=valset.collate_fn, shuffle=False)
+    my_collate = RetinaNetCollator() #trainset.collate_fn, valset.collate_fn
+    trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=True)
+    valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=False)
     
-    criterion = MultiBoxLoss
+    criterion = FocalLoss
     optimizer = torch.optim.Adam
-    metrics = [AccuracyMetric(decimals=3)]
+    #metrics = [AccuracyMetric(decimals=3)]
     
-    model = Detector(NUM_CLASSES,
-                     lr = 1e-3,
-                     criterion= criterion, 
-                     optimizer= optimizer,
-                     metrics=  metrics,
-                     device = device)
+    model = RetinaDetector(
+                    n_classes = NUM_CLASSES,
+                    lr = 1e-3,
+                    criterion= criterion, 
+                    optimizer= optimizer,
+ #                   metrics=  metrics,
+                    device = device)
     
-    #load_checkpoint(model, "weights/ResNet34-9.pth")
-    model.unfreeze()
+    load_checkpoint(model, "weights/RetinaNet-10.pth")
+    #model.unfreeze()
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
@@ -58,12 +63,17 @@ if __name__ == "__main__":
                      evaluate_per_epoch = 15)
     
     print(trainer)
-  
+    
+    loc_preds, cls_preds = trainer.inference_batch(valloader)
+    print(loc_preds[0].shape)
+    print(cls_preds[0].shape)
+    results = my_collate.encoder.decode(loc_preds[0],cls_preds[0],300)
+    print(results)
     #results = trainer.inference_batch(valloader)
     #print(valset.classes[results[0]])
     #valset.visualize_item(0)
     
-    trainer.fit(num_epochs=15, print_per_iter=10)
+    #trainer.fit(num_epochs=15, print_per_iter=10)
     
 
   
