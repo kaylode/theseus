@@ -5,7 +5,7 @@ from tqdm import tqdm
 from .checkpoint import Checkpoint
 import numpy as np
 from loggers.loggers import Logger
-
+from utils.utils import clip_gradient
 
 class Trainer(nn.Module):
     def __init__(self, 
@@ -35,9 +35,9 @@ class Trainer(nn.Module):
             self.print_per_iter = int(len(self.trainloader)/10)
         
 
-        print("Start training for {} epochs...".format(num_epochs))
+        print("----------Start training for {} epochs----------".format(num_epochs))
         for epoch in range(self.num_epochs+1):
-            print("Epoch: [{}/{}]:".format(epoch, num_epochs))
+            
             self.epoch = epoch
             train_loss = self.training_epoch()
 
@@ -61,14 +61,17 @@ class Trainer(nn.Module):
         for i, batch in enumerate(self.trainloader):
             self.optimizer.zero_grad()
             loss = self.model.training_step(batch)
-            loss.backward() 
+            loss.backward()
+            if self.clip_grad is not None:
+                clip_gradient(self.optimizer, self.clip_grad)
+
             self.optimizer.step()
             epoch_loss += loss.item()
             running_loss += loss.item()
-            
+         
             iters = len(self.trainloader)*self.epoch+i+1
             if iters % self.print_per_iter == 0:
-                print("\tIterations: [{}|{}] | Training loss: {:10.4f}".format(iters, self.num_iters, running_loss/ self.print_per_iter))
+                print("[{}|{}] [{}|{}] || Training loss: {:10.4f}".format(self.epoch, self.num_epochs, iters, self.num_iters, running_loss/ self.print_per_iter))
                 self.logging({"Training Loss/Batch" : running_loss,})
                 running_loss = 0
         return epoch_loss / len(self.trainloader)
@@ -96,7 +99,7 @@ class Trainer(nn.Module):
         self.model.reset_metrics()
         
 
-        print("Evaluating | Val Loss: {:10.5f} |".format(epoch_loss / len(self.valloader)), end=' ')
+        print("[{}|{}] || Evaluating | Val Loss: {:10.5f} |".format(self.epoch, self.num_epochs,epoch_loss / len(self.valloader)), end=' ')
         for metric, score in metric_dict.items():
             print(metric +': ' + str(score), end = ' | ')
         print()
@@ -130,6 +133,7 @@ class Trainer(nn.Module):
     def set_attribute(self, kwargs):
         self.checkpoint = None
         self.scheduler = None
+        self.clip_grad = None
         self.logger = Logger()
         self.evaluate_per_epoch = 1
         for i,j in kwargs.items():
