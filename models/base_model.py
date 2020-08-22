@@ -25,9 +25,6 @@ class BaseModel(nn.Module):
         self.metrics = metrics
         if not isinstance(metrics, list):
             self.metrics = [metrics,]
-        
-        if device:
-            self.criterion.to(device)
 
     def unfreeze(self):
         for params in self.parameters():
@@ -46,3 +43,5 @@ class BaseModel(nn.Module):
     def reset_metrics(self):
         for metric in self.metrics:
             metric.reset()
+
+  
