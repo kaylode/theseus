@@ -61,10 +61,10 @@ class ToTensor(object):
                 'mask': None}
 
             if kwargs['label'] is not None:
-                label = torch.LongTensor([kwargs['label']])
+                label = torch.LongTensor(kwargs['label'])
                 results['label'] = label
             if kwargs['box'] is not None:
-                box = torch.FloatTensor([kwargs['box']])
+                box = torch.FloatTensor(kwargs['box'])
                 results['box'] = box
 
             return results

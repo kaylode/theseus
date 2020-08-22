@@ -52,7 +52,7 @@ class ImageClassificationDataset(data.Dataset):
         img = Image.open(img_path).convert('RGB')
 
         if self.transforms:
-            results = self.transforms(img= img, label=label)
+            results = self.transforms(img= img, label=[label])
             img = results['img']
             label = results['label']
 
