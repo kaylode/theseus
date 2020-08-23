@@ -1,14 +1,17 @@
 import torch
 import torch.nn as nn
 import os
+from datetime import datetime
 
 class Checkpoint():
-    def __init__(self, save_per_epoch = 1, path = 'weights'):
+    def __init__(self, save_per_epoch = 1, path = None):
         self.path = path
         self.save_per_epoch = save_per_epoch
         # Create folder
-        if not os.path.exists(path):
-            os.mkdir(path)
+        if self.path is None:
+            self.path = os.path.join('weights',datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        if not os.path.exists(self.path):
+            os.mkdir(self.path)
 
     def save(self, model, **kwargs):
         """

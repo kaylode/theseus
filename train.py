@@ -11,22 +11,21 @@ from models.retinanet.detector import RetinaDetector
 from models.retinanet.retina_collator import RetinaNetCollator
 
 transforms = Compose([
-    Resize((300,300)),
+    Resize((512,512)),
     ToTensor(),
     Normalize(),
 ])
 
 if __name__ == "__main__":
     
-    data_path = "datasets/datasets/Garbage Classification"
-    voc_path = "datasets/datasets/VOC/images"
-    voc_anno = {
-        "train": "datasets/datasets/VOC/annotations/pascal_train2012.json",
-        "val": "datasets/datasets/VOC/annotations/pascal_val2012.json"}
-    #trainset = ImageClassificationDataset(data_path+ "/train", transforms= transforms, shuffle=True)
-    #valset = ImageClassificationDataset(data_path+ "/val", transforms= transforms, shuffle=True)
-    trainset = ObjectDetectionDataset(img_dir=voc_path, ann_path = voc_anno['train'],transforms= transforms)
-    valset = ObjectDetectionDataset(img_dir=voc_path, ann_path = voc_anno['val'],transforms= transforms)
+ 
+    img_path = "datasets/datasets/Highway/images"
+    anno_path = {
+        "train": "datasets/datasets/Highway/annotations/highway_train.json",
+        "val": "datasets/datasets/Highway/annotations/highway_val.json"}
+   
+    trainset = ObjectDetectionDataset(img_dir=img_path, ann_path = anno_path['train'],transforms= transforms)
+    valset = ObjectDetectionDataset(img_dir=img_path, ann_path = anno_path['val'],transforms= transforms)
     print(trainset)
     print(valset)
 
@@ -52,7 +51,7 @@ if __name__ == "__main__":
  #                   metrics=  metrics,
                     device = device)
     
-    load_checkpoint(model, "weights/RetinaNet-10.pth")
+    #load_checkpoint(model, "weights/RetinaNet-10.pth")
     #model.unfreeze()
     trainer = Trainer(model,
                      trainloader, 
@@ -64,16 +63,11 @@ if __name__ == "__main__":
     
     print(trainer)
     
-    loc_preds, cls_preds = trainer.inference_batch(valloader)
-    print(loc_preds[0].shape)
-    print(cls_preds[0].shape)
-    results = my_collate.encoder.decode(loc_preds[0],cls_preds[0],300)
-    print(results)
     #results = trainer.inference_batch(valloader)
     #print(valset.classes[results[0]])
     #valset.visualize_item(0)
     
-    #trainer.fit(num_epochs=15, print_per_iter=10)
+    trainer.fit(num_epochs=15, print_per_iter=10)
     
 
   
