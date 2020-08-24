@@ -10,8 +10,11 @@ from models.retinanet.loss import FocalLoss
 from models.retinanet.detector import RetinaDetector
 from models.retinanet.retina_collator import RetinaNetCollator
 
+from models.ssd.detector import SSDDetector
+from models.ssd.model import MultiBoxLoss
+
 transforms = Compose([
-    Resize((512,512)),
+    Resize((300,300)),
     ToTensor(),
     Normalize(),
 ])
@@ -19,31 +22,33 @@ transforms = Compose([
 if __name__ == "__main__":
     
  
-    img_path = "datasets/datasets/Highway/images"
-    anno_path = {
-        "train": "datasets/datasets/Highway/annotations/highway_train.json",
-        "val": "datasets/datasets/Highway/annotations/highway_val.json"}
+    dataset_path = "datasets/datasets/VOC/"
+    img_path = dataset_path + "images"
+    ann_path = {
+        "train": dataset_path + "annotations/pascal_train2012.json",
+        "val": dataset_path + "annotations/pascal_val2012.json"}
    
-    trainset = ObjectDetectionDataset(img_dir=img_path, ann_path = anno_path['train'],transforms= transforms)
-    valset = ObjectDetectionDataset(img_dir=img_path, ann_path = anno_path['val'],transforms= transforms)
+    trainset = ObjectDetectionDataset(img_dir=img_path, ann_path = ann_path['train'],transforms= transforms)
+    valset = ObjectDetectionDataset(img_dir=img_path, ann_path = ann_path['val'],transforms= transforms)
     print(trainset)
     print(valset)
 
+    
     NUM_CLASSES = len(trainset.classes)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using", device)
 
     # Dataloader
     BATCH_SIZE = 4
-    my_collate = RetinaNetCollator() #trainset.collate_fn, valset.collate_fn
+    my_collate = trainset.collate_fn#RetinaNetCollator() #trainset.collate_fn, valset.collate_fn
     trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=True)
     valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=False)
     
-    criterion = FocalLoss
-    optimizer = torch.optim.Adam
+    criterion = MultiBoxLoss
+    optimizer = torch.optim.SGD
     #metrics = [AccuracyMetric(decimals=3)]
     
-    model = RetinaDetector(
+    model = SSDDetector(
                     n_classes = NUM_CLASSES,
                     lr = 1e-3,
                     criterion= criterion, 
@@ -57,9 +62,9 @@ if __name__ == "__main__":
                      trainloader, 
                      valloader,
                      clip_grad = 1.0,
-                     checkpoint = Checkpoint(save_per_epoch=1),
-                     scheduler = StepLR(model.optimizer, step_size=5, gamma=0.5),
-                     evaluate_per_epoch = 15)
+                     checkpoint = Checkpoint(save_per_epoch=5),
+                     scheduler = StepLR(model.optimizer, step_size=20, gamma=0.1),
+                     evaluate_per_epoch = 50)
     
     print(trainer)
     
@@ -67,7 +72,7 @@ if __name__ == "__main__":
     #print(valset.classes[results[0]])
     #valset.visualize_item(0)
     
-    trainer.fit(num_epochs=15, print_per_iter=10)
+    trainer.fit(num_epochs=50, print_per_iter=10)
     
 
   
