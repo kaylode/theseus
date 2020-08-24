@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from math import sqrt
 from itertools import product as product
 import torchvision
-
+from torch.autograd import Variable
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -609,6 +609,9 @@ class MultiBoxLoss(nn.Module):
         # Identify priors that are positive (object/non-background)
         positive_priors = true_classes != 0  # (N, 8732)
 
+        #Number of positive prior per image
+        n_positives = positive_priors.sum(dim=1)  # (N)
+
         # LOCALIZATION LOSS
 
         # Localization loss is computed only over positive (non-background) priors
@@ -624,8 +627,8 @@ class MultiBoxLoss(nn.Module):
         # we will take the hardest (neg_pos_ratio * n_positives) negative priors, i.e where there is maximum loss
         # This is called Hard Negative Mining - it concentrates on hardest negatives in each image, and also minimizes pos/neg imbalance
 
-        # Number of positive and hard-negative priors per image
-        n_positives = positive_priors.sum(dim=1)  # (N)
+        # Number of  hard-negative priors per image
+        
         n_hard_negatives = self.neg_pos_ratio * n_positives  # (N)
 
         # First, find the loss for all priors
@@ -646,7 +649,12 @@ class MultiBoxLoss(nn.Module):
 
         # As in the paper, averaged over positive priors only, although computed over both positive and hard-negative priors
         conf_loss = (conf_loss_hard_neg.sum() + conf_loss_pos.sum()) / n_positives.sum().float()  # (), scalar
+        
 
+        # Loss = 0 when there is no positive match in the image
+        # which cause inf loss
+        if conf_loss == float('inf') or loc_loss == float('inf'):
+            return Variable(torch.Tensor([0]).type_as(conf_loss.data),requires_grad=True)
+        
         # TOTAL LOSS
-
         return conf_loss + self.alpha * loc_loss
