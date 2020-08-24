@@ -156,6 +156,7 @@ class ObjectDetectionDataset(data.Dataset):
         
         img_path = os.path.join(self.dir,img_name)
         box = np.floor(np.array([i['bbox'] for i in img_anno]))
+        
         label = np.array([i['category_id'] for i in img_anno]) # Label starts from 0
 
         img = Image.open(img_path)
