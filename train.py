@@ -56,7 +56,7 @@ if __name__ == "__main__":
  #                   metrics=  metrics,
                     device = device)
     
-    #load_checkpoint(model, "weights/RetinaNet-10.pth")
+    load_checkpoint(model, "weights/2020-08-24_01-18-20/SSD300-20.pth")
     #model.unfreeze()
     trainer = Trainer(model,
                      trainloader, 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     #print(valset.classes[results[0]])
     #valset.visualize_item(0)
     
-    trainer.fit(num_epochs=50, print_per_iter=10)
+    trainer.fit(num_epochs=30, print_per_iter=10)
     
 
   
