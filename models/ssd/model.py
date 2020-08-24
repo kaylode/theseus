@@ -1,5 +1,6 @@
 from torch import nn
 from .utils import *
+from utils.utils import change_box_order, find_jaccard_overlap
 import torch.nn.functional as F
 from math import sqrt
 from itertools import product as product
@@ -423,7 +424,7 @@ class SSD300(nn.Module):
 
         return prior_boxes
 
-    def detect_objects(self, predicted_locs, predicted_scores, min_score, max_overlap, top_k):
+    def detect(self, predicted_locs, predicted_scores, min_score, max_overlap, top_k):
         """
         Decipher the 8732 locations and class scores (output of ths SSD300) to detect objects.
 
@@ -449,8 +450,8 @@ class SSD300(nn.Module):
 
         for i in range(batch_size):
             # Decode object coordinates from the form we regressed predicted boxes to
-            decoded_locs = cxcy_to_xy(
-                gcxgcy_to_cxcy(predicted_locs[i], self.priors_cxcy))  # (8732, 4), these are fractional pt. coordinates
+            decoded_locs = change_box_order(
+                gcxgcy_to_cxcy(predicted_locs[i], self.priors_cxcy),order = 'cxcy2xyxy')  # (8732, 4), these are fractional pt. coordinates
 
             # Lists to store boxes and scores for this image
             image_boxes = list()
@@ -544,7 +545,7 @@ class MultiBoxLoss(nn.Module):
     def __init__(self, priors_cxcy, threshold=0.5, neg_pos_ratio=3, alpha=1.):
         super(MultiBoxLoss, self).__init__()
         self.priors_cxcy = priors_cxcy
-        self.priors_xy = cxcy_to_xy(priors_cxcy)
+        self.priors_xy = change_box_order(priors_cxcy,order='cxcy2xyxy')
         self.threshold = threshold
         self.neg_pos_ratio = neg_pos_ratio
         self.alpha = alpha
@@ -604,7 +605,7 @@ class MultiBoxLoss(nn.Module):
             true_classes[i] = label_for_each_prior
 
             # Encode center-size object coordinates into the form we regressed predicted boxes to
-            true_locs[i] = cxcy_to_gcxgcy(xy_to_cxcy(boxes[i][object_for_each_prior]), self.priors_cxcy)  # (8732, 4)
+            true_locs[i] = cxcy_to_gcxgcy(change_box_order(boxes[i][object_for_each_prior],order ='xyxy2cxcy'), self.priors_cxcy)  # (8732, 4)
 
         # Identify priors that are positive (object/non-background)
         positive_priors = true_classes != 0  # (N, 8732)
