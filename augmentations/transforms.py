@@ -11,12 +11,19 @@ class Normalize(object):
         def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
             self.mean = mean
             self.std = std
-        def __call__(self, img, **kwargs):
+        def __call__(self, img, box=None, **kwargs):
             new_img = TF.normalize(img, mean = self.mean, std = self.std)
-            
+            if box is not None:
+                _, i_h, i_w = img.size()
+                for bb in box:
+                    bb[0] = bb[0]*1.0 / i_w
+                    bb[1] = bb[1]*1.0 / i_h
+                    bb[2] = bb[2]*1.0 / i_w
+                    bb[3] = bb[3]*1.0 / i_h
+
             results = {
                 'img': new_img,
-                'box': kwargs['box'],
+                'box': box,
                 'label': kwargs['label'],
                 'mask': None}
     
@@ -29,16 +36,25 @@ class Denormalize(object):
         def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
             self.mean = mean
             self.std = std
-        def __call__(self, img, **kwargs):
+        def __call__(self, img, box = None, **kwargs):
             mean = np.array(self.mean)
             std = np.array(self.std)
             img_show = img.numpy().squeeze().transpose((1,2,0))
             img_show = (img_show * std+mean)
             img_show = np.clip(img_show,0,1)
 
+
+            if box is not None:
+                _, i_h, i_w = img.size()
+                for bb in box:
+                    bb[0] = bb[0]* i_w
+                    bb[1] = bb[1]* i_h
+                    bb[2] = bb[2]* i_w
+                    bb[3] = bb[3]* i_h
+
             results = {
                 'img': img_show,
-                'box': kwargs['box'],
+                'box': box,
                 'label': kwargs['label'],
                 'mask': None}
     
@@ -64,7 +80,7 @@ class ToTensor(object):
                 label = torch.LongTensor(kwargs['label'])
                 results['label'] = label
             if kwargs['box'] is not None:
-                box = torch.FloatTensor(kwargs['box'])
+                box = torch.as_tensor(kwargs['box'], dtype=torch.float32)
                 results['box'] = box
 
             return results
