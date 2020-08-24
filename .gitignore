@@ -60,3 +60,4 @@ datasets/datasets/Highway/converter.ipynb
 datasets/datasets/Velastin/.ipynb_checkpoints/converter-checkpoint.ipynb
 datasets/datasets/Velastin/converter.ipynb
 models/tpu_model.py
+*.rar
