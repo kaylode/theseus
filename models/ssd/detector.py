@@ -9,7 +9,7 @@ from .model import SSD300
 
 class SSDDetector(Detector):
     def __init__(self, n_classes, **kwargs):
-        super(SSDDetector, self).__init__(**kwargs)
+        super(SSDDetector, self).__init__(n_classes = n_classes, **kwargs)
         self.model = SSD300(n_classes = n_classes)
         self.model_name = "SSD300"
         self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
