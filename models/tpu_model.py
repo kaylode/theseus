@@ -16,7 +16,6 @@ class TPU_Base(pl.LightningModule):
         return {'loss': loss, 'log': tensorboard_logs}
 
     def validation_step(self, batch, batch_idx):
-
         inputs, targets = batch
         outputs = self(inputs)
 
@@ -29,4 +28,4 @@ class TPU_Base(pl.LightningModule):
         return {'val_loss': avg_loss, 'val_acc': avg_acc}
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.0001)
+        return torch.optim.Adam(self.parameters(), lr=1e-4)

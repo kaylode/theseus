@@ -54,4 +54,10 @@ loggers/runs/2020-08-22_20-52-50/events.out.tfevents.1598104370.DESKTOP-5DD3323.
 loggers/runs/2020-08-22_20-56-33/events.out.tfevents.1598104593.DESKTOP-5DD3323.7844.0
 loggers/runs/2020-08-22_21-08-17/events.out.tfevents.1598105297.DESKTOP-5DD3323.7832.0
 *.0
+.ipynb_checkpoints/Data Visualizer-checkpoint.ipynb
+datasets/datasets/DETRAC/converter.ipynb
+datasets/datasets/Highway/converter.ipynb
+datasets/datasets/Velastin/.ipynb_checkpoints/converter-checkpoint.ipynb
+datasets/datasets/Velastin/converter.ipynb
+models/tpu_model.py
 *.rar
