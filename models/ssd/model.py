@@ -539,7 +539,7 @@ class SSD300(nn.Module):
         return {
             'boxes': all_images_boxes,
             'labels': all_images_labels,
-            'scores' all_images_scores}  # lists of length batch_size
+            'scores': all_images_scores}  # lists of length batch_size
 
 
 

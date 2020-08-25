@@ -109,7 +109,7 @@ class RetinaNet(nn.Module):
         return torch.cat(boxes, 0).to(self.device)
     
 
-    def detect(self, loc_preds, cls_preds, min_score=0.05, nms_thresh = 0.5):
+    def detect(self, loc_preds, cls_preds, min_score=0.01, nms_thresh = 0.5):
         """
         Decode outputs back to bounding box locations and class labels.
         :param loc_preds: (tensor) predicted locations, sized [#anchors, 4]
@@ -120,33 +120,39 @@ class RetinaNet(nn.Module):
             labels: (tensor) class labels for each box, sized [#obj,].
         """
 
-        input_size = torch.Tensor(self.input_size) 
+        
+        batch_size = loc_preds.shape[0] # N
+        input_size = torch.Tensor(self.input_size)
+
         anchor_boxes = self._get_anchor_boxes(input_size)
-        loc_preds = loc_preds * torch.Tensor([[0.1, 0.1, 0.2, 0.2]]).to(self.device)
-        loc_xy = loc_preds[:, :2]
-        loc_wh = loc_preds[:, 2:]
+        anchor_boxes = anchor_boxes.unsqueeze(0)
+        anchor_boxes = torch.cat([anchor_boxes for i in range(batch_size)], dim = 0) # [N, #anchors, 4]
+        
+        #loc_preds = loc_preds * torch.Tensor([[0.1, 0.1, 0.2, 0.2]]).to(self.device)
+        loc_xy = loc_preds[:, :, :2]
+        loc_wh = loc_preds[:, :, 2:]
         #print(loc_xy.shape, 'loc_xy')
         #print(anchor_boxes[:, 2:].shape, 'anchor boxes')
         #print(anchor_boxes[:, :2].shape, 'anchor boxes')
-        xy = loc_xy * anchor_boxes[:, 2:] + anchor_boxes[:, :2]
-        wh = loc_wh.exp() * anchor_boxes[:, 2:]
-        boxes = torch.cat([xy-wh/2, xy+wh/2], 1)
+        xy = loc_xy * anchor_boxes[:, :, 2:] + anchor_boxes[:, :, :2]
+        wh = loc_wh.exp() * anchor_boxes[:, :, 2:]
+        boxes = torch.cat([xy-wh/2, xy+wh/2], dim = 2) # [N, #anchors, 4]
         # boxes = torch.cat([xy, wh], 1)
         # boxes = change_box_order(boxes, 'xywh2xyxy')
         # boxes[:, 0:3:2] = boxes[:, 0:3:2].clamp(0, input_size[0])
         # boxes[:, 1:4:2] = boxes[:, 1:4:2].clamp(0, input_size[1])
-
+        
         # import pdb; pdb.set_trace()
-        scores, labels = cls_preds.sigmoid().max(1)
+        scores, labels = cls_preds.sigmoid().max(2)
         ids = scores > min_score
         ids = ids.nonzero().squeeze()
-        # print(ids, 'ids')
-        
+        print(ids, 'ids')
+        print(scores)
         new_boxes = boxes.clone()
         new_scores = scores.clone()
      
         keep = box_nms(new_boxes, new_scores, nms_thresh)
-        # print(keep, 'keep')
+        print(keep, 'keep')
         # keep = keep.cuda()
         return {
             'boxes':boxes[ids][keep],

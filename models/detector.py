@@ -53,14 +53,15 @@ class Detector(BaseModel):
 
         loc_preds, cls_preds = self(inputs)
         
-        outputs = self.model.detect(
-            loc_preds,
-            cls_preds)
+        #   TODO:
+        # - add batch post-process
+
+        outputs = self.model.detect(loc_preds, cls_preds)#[self.model.detect(i,j) for i,j in zip(loc_preds,cls_preds)]
             
-        if self.device:
+        """if self.device:
             outputs['boxes'] = outputs['boxes'].cpu()
             outputs['labels'] = outputs['labels'].cpu()
-            outputs['scores'] = outputs['scores'].cpu()
+            outputs['scores'] = outputs['scores'].cpu()"""
         
         return outputs
 

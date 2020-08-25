@@ -15,7 +15,9 @@ class RetinaDetector(Detector):
         self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
         self.set_optimizer_params()
 
-        self.criterion = self.criterion(self.model.priors_cxcy, device = self.device)
+        self.criterion = self.criterion(self.model.priors_cxcy,
+                                        use_focal_loss =True,
+                                        device = self.device)
         self.n_classes = n_classes
     
         if self.freeze:
