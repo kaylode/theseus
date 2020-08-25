@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # Dataloader
     BATCH_SIZE = 4
-    my_collate = trainset.collate_fn#RetinaNetCollator() #trainset.collate_fn, valset.collate_fn
+    my_collate = trainset.collate_fn
     trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=True)
     valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=False)
     
@@ -43,22 +43,23 @@ if __name__ == "__main__":
                     #metrics=  metrics,
                     device = device)
     
-    #load_checkpoint(model, "weights/2020-08-24_01-18-20/SSD300-20.pth")
-    #model.unfreeze()
+    #load_checkpoint(model, "weights/2020-08-25_04-41-25/RetinaNet-29.pth")
+    model.unfreeze()
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
-                     clip_grad = 1.0,
+#                     clip_grad = 1.0,
                      checkpoint = Checkpoint(save_per_epoch=5),
-                     logger = Logger(log_dir='loggers/runs/retina'),
+                     logger = Logger(log_dir='loggers/runs/retina2'),
                      scheduler = StepLR(model.optimizer, step_size=20, gamma=0.1),
-                     evaluate_per_epoch = 30)
+                     evaluate_per_epoch = 0)
     
     print(trainer)
     
-    #results = trainer.inference_batch(valloader)
-    #print(valset.classes[results[0]])
-    #valset.visualize_item(0)
+    """results = trainer.inference_batch(valloader)
+    print(results)
+    print(valset.classes[results['labels'][3].cpu().numpy()[1]])
+    valset.visualize_item(3,figsize=(5,5))"""
     
     trainer.fit(num_epochs=30, print_per_iter=10)
     

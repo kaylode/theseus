@@ -27,7 +27,7 @@ class Trainer(nn.Module):
         
     def fit(self, num_epochs = 10 ,print_per_iter = None):
         self.num_epochs = num_epochs
-        self.num_iters = num_epochs * len(self.trainloader)
+        self.num_iters = (num_epochs+1) * len(self.trainloader)
         if self.checkpoint is None:
             self.checkpoint = Checkpoint(save_per_epoch = int(num_epochs/10)+1)
 
@@ -43,11 +43,12 @@ class Trainer(nn.Module):
             self.epoch = epoch
             train_loss = self.training_epoch()
 
-            if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch and self.evaluate_per_epoch != 0:
-                val_loss, val_metrics = self.evaluate_epoch()
-                log_dict = {"Validation Loss/Epoch" : val_loss}
-                log_dict.update(val_metrics)
-                self.logging(log_dict)
+            if self.evaluate_per_epoch != 0:
+                if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
+                    val_loss, val_metrics = self.evaluate_epoch()
+                    log_dict = {"Validation Loss/Epoch" : val_loss}
+                    log_dict.update(val_metrics)
+                    self.logging(log_dict)
                 
             if self.scheduler is not None:
                 self.scheduler.step()
@@ -91,9 +92,13 @@ class Trainer(nn.Module):
         with torch.no_grad():
             for batch in testloader:
                 outputs = self.model.inference_step(batch)
-                for i in outputs:
-                    results.append(i)
+                if isinstance(outputs, (list, tuple)):
+                    for i in outputs:
+                        results.append(i)
+                else:
+                    results = outputs
                 break
+                
         return results
 
     def evaluate_epoch(self):
