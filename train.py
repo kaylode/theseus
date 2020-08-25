@@ -1,17 +1,6 @@
 from utils.getter import *
-import torch.utils.data as data
-import torch
-import torchvision.models as models
-from tqdm import tqdm
-import torch.nn as nn
-from torch.optim.lr_scheduler import StepLR
-
-from models.retinanet.loss import FocalLoss
-from models.retinanet.detector import RetinaDetector
-from models.retinanet.retina_collator import RetinaNetCollator
-
-from models.ssd.detector import SSDDetector
-from models.ssd.model import MultiBoxLoss
+from models.retinanet import *
+from models.ssd import *
 
 transforms = Compose([
     Resize((300,300)),
@@ -20,8 +9,6 @@ transforms = Compose([
 ])
 
 if __name__ == "__main__":
-    
- 
     dataset_path = "datasets/datasets/VOC/"
     img_path = dataset_path + "images"
     ann_path = {
@@ -48,23 +35,24 @@ if __name__ == "__main__":
     optimizer = torch.optim.SGD
     #metrics = [AccuracyMetric(decimals=3)]
     
-    model = SSDDetector(
+    model = RetinaDetector(
                     n_classes = NUM_CLASSES,
-                    lr = 1e-3,
+                    optim_params = {'lr': 1e-3, 'momentum': 0.9},
                     criterion= criterion, 
                     optimizer= optimizer,
- #                   metrics=  metrics,
+                    #metrics=  metrics,
                     device = device)
     
-    load_checkpoint(model, "weights/2020-08-24_01-18-20/SSD300-20.pth")
+    #load_checkpoint(model, "weights/2020-08-24_01-18-20/SSD300-20.pth")
     #model.unfreeze()
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
                      clip_grad = 1.0,
                      checkpoint = Checkpoint(save_per_epoch=5),
+                     logger = Logger(log_dir='loggers/runs/retina'),
                      scheduler = StepLR(model.optimizer, step_size=20, gamma=0.1),
-                     evaluate_per_epoch = 50)
+                     evaluate_per_epoch = 30)
     
     print(trainer)
     
