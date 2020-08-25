@@ -3,14 +3,12 @@ import torch.nn as nn
 import torchvision
 
 def one_hot_embedding(labels, num_classes):
-    '''Embedding labels to one-hot form.
+    '''
+    Embedding labels to one-hot form.
 
-    Args:
-      labels: (LongTensor) class labels, sized [N,].
-      num_classes: (int) number of classes.
-
-    Returns:
-      (tensor) encoded labels, sized [N,#classes].
+    :param labels: (LongTensor) class labels, sized [N,].
+    :param num_classes: (int) number of classes.
+    :return: (tensor) encoded labels, sized [N,#classes].
     '''
     y = torch.eye(num_classes)  # [D,D]
     return y[labels]            # [N,D]
@@ -20,12 +18,10 @@ def box_nms(boxes, scores, threshold=0.5):
     """
     Non Maximum Suppression
     Use custom (very slow) or torchvision non-maximum supression on bounding boxes
-    Args:
-      bboxes: (tensor) bounding boxes, size [N, 4]
-      scores: (tensor) bbox scores, sized [N]
-
-    Returns:
-      keep: (tensor) selected box's indices
+    
+    :param bboxes: (tensor) bounding boxes, size [N, 4]
+    :param scores: (tensor) bbox scores, sized [N]
+    :return: keep: (tensor) selected box's indices
     """
 
     # Torchvision NMS:
@@ -78,6 +74,7 @@ def box_nms(boxes, scores, threshold=0.5):
 def clip_gradient(optimizer, grad_clip):
     """
     Clips gradients computed during backpropagation to avoid explosion of gradients.
+
     :param optimizer: optimizer with the gradients to be clipped
     :param grad_clip: clip value
     """
@@ -90,29 +87,43 @@ def clip_gradient(optimizer, grad_clip):
 def change_box_order(boxes, order):
     """
     Change box order between (xmin, ymin, xmax, ymax) and (xcenter, ycenter, width, height).
+
     :param boxes: (tensor) bounding boxes, sized [N, 4]
     :param order: (str) ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
     :return: (tensor) converted bounding boxes, size [N, 4]
     """
 
     assert order in ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
-    
-    a = boxes[:, :2]
-    b = boxes[:, 2:]
+
+    # Convert 1-d to a 2-d tensor of boxes, which first dim is 1
+    if len(boxes.shape) == 1:
+        boxes = boxes.unsqueeze(0)
 
     if order == 'xyxy2xywh':
-        return torch.cat([(a + b) / 2., b - a], 1)
+        return torch.cat([boxes[:, :2], boxes[:, 2:] - boxes[:, :2]], 1)
     elif order ==  'xywh2xyxy':
-        return torch.cat([a - b / 2., a + b / 2.], 1)
+        return torch.cat([boxes[:, :2], boxes[:, :2] + boxes[:, 2:]], 1)
     elif order == 'xyxy2cxcy':
-        return torch.cat([(xy[:, 2:] + xy[:, :2]) / 2,  # c_x, c_y
-                        xy[:, 2:] - xy[:, :2]], 1)  # w, h
+        return torch.cat([(boxes[:, 2:] + boxes[:, :2]) / 2,  # c_x, c_y
+                        boxes[:, 2:] - boxes[:, :2]], 1)  # w, h
     elif order == 'cxcy2xyxy':
-        return torch.cat([cxcy[:, :2] - (cxcy[:, 2:] *1.0 / 2),  # x_min, y_min
-                        cxcy[:, :2] + (cxcy[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
+        return torch.cat([boxes[:, :2] - (boxes[:, 2:] *1.0 / 2),  # x_min, y_min
+                        boxes[:, :2] + (boxes[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
 
+def find_intersection(set_1, set_2):
+    """
+    Find the intersection of every box combination between two sets of boxes that are in boundary coordinates.
 
+    :param set_1: set 1, a tensor of dimensions (n1, 4)
+    :param set_2: set 2, a tensor of dimensions (n2, 4)
+    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
+    """
 
+    # PyTorch auto-broadcasts singleton dimensions
+    lower_bounds = torch.max(set_1[:, :2].unsqueeze(1), set_2[:, :2].unsqueeze(0))  # (n1, n2, 2)
+    upper_bounds = torch.min(set_1[:, 2:].unsqueeze(1), set_2[:, 2:].unsqueeze(0))  # (n1, n2, 2)
+    intersection_dims = torch.clamp(upper_bounds - lower_bounds, min=0)  # (n1, n2, 2)
+    return intersection_dims[:, :, 0] * intersection_dims[:, :, 1]  # (n1, n2)
 
 def find_jaccard_overlap(set_1, set_2, order='xyxy'):
     """
@@ -127,23 +138,6 @@ def find_jaccard_overlap(set_1, set_2, order='xyxy'):
     if order == 'xywh':
         set_1 = change_box_order(set_1, 'xywh2xyxy')
         set_2 = change_box_order(set_2, 'xywh2xyxy')
-
-    def find_intersection(set_1, set_2):
-        """
-        Find the intersection of every box combination between two sets of boxes that are in boundary coordinates.
-
-        :param set_1: set 1, a tensor of dimensions (n1, 4)
-        :param set_2: set 2, a tensor of dimensions (n2, 4)
-        :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
-        """
-
-        # PyTorch auto-broadcasts singleton dimensions
-        lower_bounds = torch.max(set_1[:, :2].unsqueeze(1), set_2[:, :2].unsqueeze(0))  # (n1, n2, 2)
-        upper_bounds = torch.min(set_1[:, 2:].unsqueeze(1), set_2[:, 2:].unsqueeze(0))  # (n1, n2, 2)
-        intersection_dims = torch.clamp(upper_bounds - lower_bounds, min=0)  # (n1, n2, 2)
-        return intersection_dims[:, :, 0] * intersection_dims[:, :, 1]  # (n1, n2)
-
-    
 
     # Find intersections
     intersection = find_intersection(set_1, set_2)  # (n1, n2)
