@@ -1,32 +1,53 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 
-
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
+class FocalLoss(nn.modules.loss._WeightedLoss):
+    def __init__(self, weight=None, gamma=2,reduction='mean'):
+        super(FocalLoss, self).__init__(weight,reduction=reduction)
         self.gamma = gamma
-        self.logits = logits
-        self.reduce = reduce
+        self.weight = weight #weight parameter will act as the alpha parameter to balance class weights
 
-    def forward(self, inputs, targets):
-        if self.logits:
-            BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduce=False)
-        else:
-            BCE_loss = F.binary_cross_entropy(inputs, targets, reduce=False)
-        pt = torch.exp(-BCE_loss)
-        F_loss = self.alpha * (1-pt)**self.gamma * BCE_loss
+    def forward(self, input, target):
 
-        if self.reduce:
-            return torch.mean(F_loss)
-        else:
-            return F_loss
+        ce_loss = F.cross_entropy(input, target,reduction=self.reduction,weight=self.weight) 
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma * ce_loss).mean()
+        return focal_loss
+
+"""class FocalLoss(nn.Module):
+    
+    def __init__(self,alpha=None, weight=None, 
+                 gamma=2., reduction='none'):
+        nn.Module.__init__(self)
+        self.weight = weight
+        self.gamma = gamma
+        self.reduction = reduction
+        
+    def forward(self, input_tensor, target_tensor):
+        log_prob = F.log_softmax(input_tensor, dim=-1)
+        prob = torch.exp(log_prob) 
+        target = target_tensor.long()
+        return F.nll_loss(
+            ((1 - prob) ** self.gamma) * log_prob, 
+            target_tensor.long(), 
+            weight=self.weight,
+            reduction = self.reduction
+        ).mean()"""
+
 
 
 if __name__ == '__main__':
-    criterion = FocalLoss()
-    preds = torch.rand()
-    loss = criterion(loc_preds, loc_targets, cls_preds, cls_targets)
+    device = torch.device('cuda')
+    criterion = FocalLoss().to(device)
+    criterion2 = FocalLoss2().to(device)
+    preds = torch.rand(5,20).to(device)
+    targets = torch.randint(0,20,(5,)).to(device)
+    loss = criterion(preds, targets)
+    loss2 = criterion2(preds, targets)
+    #loss.backward()
+    print(loss.item())
+    print(loss2.item())
+
 
