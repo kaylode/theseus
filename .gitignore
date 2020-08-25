@@ -61,3 +61,5 @@ datasets/datasets/Velastin/.ipynb_checkpoints/converter-checkpoint.ipynb
 datasets/datasets/Velastin/converter.ipynb
 models/tpu_model.py
 *.rar
+.ipynb_checkpoints/Faster RCNN-checkpoint.ipynb
+*.1
