@@ -6,6 +6,8 @@ from .checkpoint import Checkpoint
 import numpy as np
 from loggers.loggers import Logger
 from utils.utils import clip_gradient
+import time
+
 
 class Trainer(nn.Module):
     def __init__(self, 
@@ -41,7 +43,7 @@ class Trainer(nn.Module):
             self.epoch = epoch
             train_loss = self.training_epoch()
 
-            if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
+            if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch and self.evaluate_per_epoch != 0:
                 val_loss, val_metrics = self.evaluate_epoch()
                 log_dict = {"Validation Loss/Epoch" : val_loss}
                 log_dict.update(val_metrics)
@@ -57,23 +59,30 @@ class Trainer(nn.Module):
         self.model.train()
         epoch_loss = 0
         running_loss = 0
-    
+        running_time = 0
+
         for i, batch in enumerate(self.trainloader):
             self.optimizer.zero_grad()
+            start_time = time.time()
             loss = self.model.training_step(batch)
             loss.backward()
+            
+        
             if self.clip_grad is not None:
                 clip_gradient(self.optimizer, self.clip_grad)
 
             self.optimizer.step()
+            end_time = time.time()
+
             epoch_loss += loss.item()
             running_loss += loss.item()
-         
+            running_time += end_time-start_time
             iters = len(self.trainloader)*self.epoch+i+1
             if iters % self.print_per_iter == 0:
-                print("[{}|{}] [{}|{}] || Training loss: {:10.4f}".format(self.epoch, self.num_epochs, iters, self.num_iters, running_loss/ self.print_per_iter))
+                print("[{}|{}] [{}|{}] || Training loss: {:10.4f} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, iters, self.num_iters, running_loss/ self.print_per_iter, running_time))
                 self.logging({"Training Loss/Batch" : running_loss,})
                 running_loss = 0
+                running_time = 0
         return epoch_loss / len(self.trainloader)
 
     def inference_batch(self, testloader):
@@ -93,7 +102,7 @@ class Trainer(nn.Module):
         epoch_acc = 0
         metric_dict = {}
         with torch.no_grad():
-            for batch in self.valloader:
+            for batch in tqdm(self.valloader):
                 loss, metrics = self.model.evaluate_step(batch)
                 epoch_loss += loss.item()
                 metric_dict.update(metrics)
