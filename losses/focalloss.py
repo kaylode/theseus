@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+"""
 class FocalLoss(nn.modules.loss._WeightedLoss):
     def __init__(self, weight=None, gamma=2,reduction='mean'):
         super(FocalLoss, self).__init__(weight,reduction=reduction)
@@ -15,8 +16,8 @@ class FocalLoss(nn.modules.loss._WeightedLoss):
         pt = torch.exp(-ce_loss)
         focal_loss = ((1 - pt) ** self.gamma * ce_loss).mean()
         return focal_loss
-
-"""class FocalLoss(nn.Module):
+"""
+class FocalLoss(nn.Module):
     
     def __init__(self,alpha=None, weight=None, 
                  gamma=2., reduction='none'):
@@ -34,7 +35,7 @@ class FocalLoss(nn.modules.loss._WeightedLoss):
             target_tensor.long(), 
             weight=self.weight,
             reduction = self.reduction
-        ).mean()"""
+        ).mean()
 
 
 
