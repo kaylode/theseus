@@ -7,24 +7,36 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 from .fpn import getFPN
-from .utils import one_hot_embedding
+from .utils import *
 
 
 class RetinaNet(nn.Module):
     num_anchors = 9
 
-    def __init__(self, num_classes=80, backbone = 'FPN50', pretrained = False):
+    def __init__(self, num_classes=80, backbone = 'FPN50', pretrained = False, input_size = (300,300), device = None):
         super(RetinaNet, self).__init__()
+        
+        self.device = device if device is not None else torch.device("cpu")
+        self.anchor_areas = [32 * 32, 64 * 64, 128 * 128, 256 * 256, 512 * 512]  # p3->p7
+        self.aspect_ratios = [1 / 2., 1 / 1., 2 / 1.]
+        self.scale_ratios = [1., pow(2, 1 / 3.), pow(2, 2 / 3.)]
+        self.anchor_wh = self._get_anchor_wh()
+        self.input_size = input_size
+
         self.fpn = getFPN(backbone)
         self.pretrained = pretrained
         self.num_classes = num_classes
         self.loc_head = self._make_head(self.num_anchors * 4)
         self.cls_head = self._make_head(self.num_anchors * self.num_classes)
         
+        self.priors_xywh = self._get_anchor_boxes(torch.Tensor(input_size))
+        self.priors_xy = change_box_order(self.priors_xywh,'xywh2xyxy')
+        self.priors_cxcy = change_box_order(self.priors_xy,'xyxy2cxcy')
+        
         if self.pretrained:
             self.load_state_dict(backbone)
         self.freeze_bn()
-
+        
     def forward(self, inputs):
         x = inputs
         fms = self.fpn(x)
@@ -44,6 +56,103 @@ class RetinaNet(nn.Module):
         cls_preds = torch.cat(cls_preds, 1)
         
         return loc_preds, cls_preds
+    
+    def _get_anchor_wh(self):
+        """
+        Compute anchor width and height for each feature map.
+        :return: anchor_wh: (tensor) anchor wh, (size) [#fm, #anchors_per_cell, 2]
+        """
+        anchor_wh = []
+        for s in self.anchor_areas:
+            for ar in self.aspect_ratios:  # w/h=ar
+                w = math.sqrt(s * ar)
+                h = w / ar
+                for sr in self.scale_ratios:
+                    anchor_w = w * sr
+                    anchor_h = h * sr
+                    anchor_wh.append([anchor_w, anchor_h])
+        num_fms = len(self.anchor_areas)
+        return torch.Tensor(anchor_wh).view(num_fms, -1, 2)
+    
+    
+    def _get_anchor_boxes(self, input_size):
+        """
+        Compute anchor boxes for each feature map.
+        :param input_size: the size of input image
+        :return: boxes: (list) anchor boxes for each feature map. Each of size [#anchors, 4],
+                        where #anchors = fmw * fmh * #anchors_per_cell
+        """
+        
+        num_fms = len(self.anchor_areas)
+        fm_sizes = [(input_size / pow(2., i + 3)).ceil() for i in range(num_fms)]
+        # num_anchors_per_level = [int(fs[0]) * int(fs[1]) * 9 for fs in fm_sizes]
+
+        boxes = []
+        for i in range(num_fms):
+            fm_size = fm_sizes[i]
+            grid_size = input_size / fm_size
+            fm_w, fm_h = int(fm_size[0]), int(fm_size[1])
+            xy = meshgrid(fm_w, fm_h) + 0.5  # plus 0.5 to each cell's center, [fm_w*fm_h, 2]
+            xy = (xy * grid_size).view(fm_h, fm_w, 1, 2).expand(
+                fm_h, fm_w, 9, 2)  # convert the center to original image, and expand to all anchors
+            wh = self.anchor_wh[i].view(1, 1, 9, 2).expand(fm_h, fm_w, 9, 2)
+            box = torch.cat([xy, wh], 3)  # [x, y, w, h]
+
+            # Normalize coordinate
+            i_h, i_w = input_size
+            box[:,:,:,0] = box[:,:,:,0]*1.0 / i_w
+            box[:,:,:,1] = box[:,:,:,1]*1.0 / i_h
+            box[:,:,:,2] = box[:,:,:,2]*1.0 / i_w
+            box[:,:,:,3] = box[:,:,:,3]*1.0 / i_h
+
+            boxes.append(box.view(-1, 4))
+        return torch.cat(boxes, 0).to(self.device)
+    
+
+    def detect(self, loc_preds, cls_preds, min_score=0.05, nms_thresh = 0.5):
+        """
+        Decode outputs back to bounding box locations and class labels.
+        :param loc_preds: (tensor) predicted locations, sized [#anchors, 4]
+        :param cls_preds: (tensor) predicted class labels, sized [#anchors, #classes]
+        :param input_size: (int/tuple) the input size of original image
+        :return:
+            boxes: (tensor) decode box locations, sized [#obj, 4]
+            labels: (tensor) class labels for each box, sized [#obj,].
+        """
+
+        input_size = torch.Tensor(self.input_size) 
+        anchor_boxes = self._get_anchor_boxes(input_size)
+        loc_preds = loc_preds * torch.Tensor([[0.1, 0.1, 0.2, 0.2]]).to(self.device)
+        loc_xy = loc_preds[:, :2]
+        loc_wh = loc_preds[:, 2:]
+        #print(loc_xy.shape, 'loc_xy')
+        #print(anchor_boxes[:, 2:].shape, 'anchor boxes')
+        #print(anchor_boxes[:, :2].shape, 'anchor boxes')
+        xy = loc_xy * anchor_boxes[:, 2:] + anchor_boxes[:, :2]
+        wh = loc_wh.exp() * anchor_boxes[:, 2:]
+        boxes = torch.cat([xy-wh/2, xy+wh/2], 1)
+        # boxes = torch.cat([xy, wh], 1)
+        # boxes = change_box_order(boxes, 'xywh2xyxy')
+        # boxes[:, 0:3:2] = boxes[:, 0:3:2].clamp(0, input_size[0])
+        # boxes[:, 1:4:2] = boxes[:, 1:4:2].clamp(0, input_size[1])
+
+        # import pdb; pdb.set_trace()
+        scores, labels = cls_preds.sigmoid().max(1)
+        ids = scores > min_score
+        ids = ids.nonzero().squeeze()
+        # print(ids, 'ids')
+        
+        new_boxes = boxes.clone()
+        new_scores = scores.clone()
+     
+        keep = box_nms(new_boxes, new_scores, nms_thresh)
+        # print(keep, 'keep')
+        # keep = keep.cuda()
+        return {
+            'boxes':boxes[ids][keep],
+            'labels': labels[ids][keep] + 1,
+            'scores': scores[ids][keep]}
+
 
     def _make_head(self, out_planes):
         layers = []
@@ -66,7 +175,7 @@ class RetinaNet(nn.Module):
         if name=='FPN50':   
             
             try:
-                d = torch.load('weights/resnet50-19c8e357.pth')
+                d = torch.load('weights/pretrained/resnet50-19c8e357.pth')
             except:
                 print('Pretrained weights not found')
                 return None
@@ -104,90 +213,3 @@ class RetinaNet(nn.Module):
             self.fpn.load_state_dict(dd)
             
             print('Loaded pretrained model!')
-
-
-
-class FocalLoss(nn.Module):
-    def __init__(self, num_classes=80):
-        super(FocalLoss, self).__init__()
-        self.num_classes = num_classes
-
-    def focal_loss_alt(self, x, y):
-        """
-        Focal loss alternative.
-
-        Args:
-        :param x: (tensor) sized [N, D]
-        :param y: (tensor) sized [N, ].
-        :return:
-                (tensor) focal loss.
-        """
-        alpha = 0.25
-
-        t = one_hot_embedding(y.data.cpu().long(), 1 + self.num_classes)  # [N, 81]
-        t = t[:, 1:]  # exclude background
-        t = Variable(t).cuda()
-
-        xt = x * (2 * t - 1)  # xt = x if t>0 else -x
-        pt = (2 * xt + 1).sigmoid()
-
-        w = alpha * t + (1 - alpha) * (1 - t)
-        loss = -w * pt.log() / 2
-        return loss.sum()
-
-
-    @staticmethod
-    def where(cond, x_1, x_2):
-        return (cond.float() * x_1) + ((1 - cond.float()) * x_2)
-
-    def forward(self, loc_preds, cls_preds, loc_targets, cls_targets):
-        """
-        Compute loss between (loc_preds, loc_targets) and (cls_preds, cls_targets).
-
-        Args:
-        :param loc_preds: (tensor) predicted locations, sized [batch_size, #anchors, 4].
-        :param loc_targets: (tensor) encoded target locations, sized [batch_size, #anchors, 4].
-        :param cls_preds: (tensor) predicted class confidences, sized [batch_size, #anchors, #classes].
-        :param cls_targets: (tensor) encoded target labels, sized [batch_size, #anchors].
-
-        loss:
-            (tensor) loss = SmoothL1Loss(loc_preds, loc_targets) + FocalLoss(cls_preds, cls_targets).
-        """
-        # print(cls_targets)
-        batch_size, num_boxes = cls_targets.size()
-        pos = cls_targets > 0  # [N, #anchors]
-        num_pos = pos.data.long().sum()
-        # print(num_pos, 'num_pos')
-
-        ##########################################################
-        # loc_loss = SmoothL1Loss(pos_loc_preds, pos_loc_targets)
-        ##########################################################
-        if num_pos > 0:
-            mask = pos.unsqueeze(2).expand_as(loc_preds)  # [N, #anchors, 4]
-            masked_loc_preds = loc_preds[mask].view(-1, 4)  # [#pos, 4]
-            masked_loc_targets = loc_targets[mask].view(-1, 4)  # [#pos, 4]
-            # loc_loss = F.smooth_l1_loss(masked_loc_preds, masked_loc_targets, size_average=False)
-            regression_diff = torch.abs(masked_loc_targets - masked_loc_preds)
-            loc_loss = self.where(torch.le(regression_diff, 1.0 / 9.0), 0.5 * 9.0 * torch.pow(regression_diff, 2),
-                                  regression_diff - 0.5 / 9.0)
-            # use mean() here, so the loc_loss dont have to divide num_pos
-            # loc_loss = loc_loss.sum()
-            loc_loss = loc_loss.mean()
-        else:
-            num_pos = 1.
-            loc_loss = Variable(torch.Tensor([0]).float().cuda())
-
-        ##########################################################
-        # cls_loss = FocalLoss(cls_preds, cls_targets)
-        ##########################################################
-        pos_neg = cls_targets > -1  # exclude ignored anchors
-        mask = pos_neg.unsqueeze(2).expand_as(cls_preds)
-        masked_cls_preds = cls_preds[mask].view(-1, self.num_classes)
-        cls_loss = self.focal_loss_alt(masked_cls_preds, cls_targets[pos_neg])
-
-        # print('loc_loss: {:.3f} | cls_loss: {:.3f}'.format(loc_loss.data[0] / num_pos, cls_loss.data[0] / num_pos),
-        #       end=' | ')
-        # loss = (loc_loss + cls_loss) / num_pos
-        loc_loss = loc_loss
-        cls_loss = cls_loss / num_pos
-        return loc_loss, cls_loss

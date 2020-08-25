@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import torch
 import torchvision
-from utils.utils import one_hot_embedding, change_box_order, find_jaccard_overlap, box_nms
+from utils.utils import change_box_order, find_jaccard_overlap, box_nms
 
 def meshgrid(x, y, row_major=True):
     """
