@@ -13,7 +13,7 @@ from augmentations.transforms import Compose
 class ObjectDetectionDataset(data.Dataset):
     """
     - Object Detection dataset for COCO Format Only
-    - Bounding boxes in format x1,y1,x2,y2
+    - Bounding boxes in format x1,y1,w,h
     - Init argument:
                 + img_dir: Directory to images
                 + ann_path: Path to annotation file (.json)
@@ -147,7 +147,7 @@ class ObjectDetectionDataset(data.Dataset):
 
     def __getitem__(self, index):
         """
-        Get a item by index
+        Get an item by index
         """
         img_item = self.annos['images'][index]
         img_id = img_item['id']
@@ -174,7 +174,7 @@ class ObjectDetectionDataset(data.Dataset):
     def collate_fn(self, batch):
         """
         - Since each image may have a different number of objects, we need a collate function (to be passed to the DataLoader).
-        -  This describes how to combine these tensors of different sizes. We use lists.
+        - This describes how to combine these tensors of different sizes. We use lists.
         - Note: this need not be defined in this Class, can be standalone.
             + param batch: an iterable of N sets from __getitem__()
             + return: a tensor of images, lists of varying-size tensors of bounding boxes, labels, and difficulties
