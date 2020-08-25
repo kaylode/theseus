@@ -7,11 +7,17 @@ from PIL import Image
 class Normalize(object):
         """
         Mean and standard deviation of ImageNet data
+        :param mean: (list of float)
+        :param std: (list of float)
         """
         def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
             self.mean = mean
             self.std = std
         def __call__(self, img, box=None, **kwargs):
+            """
+            :param img: (tensor) image to be normalized
+            :param box: (list of tensor) bounding boxes to be normalized, by dividing them with image's width and heights. Format: (x,y,width,height)
+            """
             new_img = TF.normalize(img, mean = self.mean, std = self.std)
             if box is not None:
                 _, i_h, i_w = img.size()
@@ -31,12 +37,16 @@ class Normalize(object):
 
 class Denormalize(object):
         """
-        Denormalize image and numpify all for visualization
+        Denormalize image and boxes for visualization
         """
         def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
             self.mean = mean
             self.std = std
         def __call__(self, img, box = None, **kwargs):
+            """
+            :param img: (tensor) image to be denormalized
+            :param box: (list of tensor) bounding boxes to be denormalized, by multiplying them with image's width and heights. Format: (x,y,width,height)
+            """
             mean = np.array(self.mean)
             std = np.array(self.std)
             img_show = img.numpy().squeeze().transpose((1,2,0))
@@ -68,6 +78,12 @@ class ToTensor(object):
         def __init__(self):
             pass
         def __call__(self, img, **kwargs):
+            """
+            :param img: (PIL Image) image to be tensorized
+            :param box: (list of float) bounding boxes to be tensorized. Format: (x,y,width,height)
+            :param label: (int) bounding boxes to be tensorized. Format: (x,y,width,height)
+            """
+
             img = TF.to_tensor(img)
             
             results = {
