@@ -4,7 +4,6 @@ import torchvision.models as models
 import torch.nn as nn
 from tqdm import tqdm
 from torchvision import transforms
-from .ssd.model import SSD300
 
 
 class Detector(BaseModel):
@@ -52,11 +51,17 @@ class Detector(BaseModel):
             boxes = [x.to(self.device) for x in boxes]
             labels = [x.to(self.device) for x in labels]
 
-        outputs = self(inputs)
+        loc_preds, cls_preds = self(inputs)
         
-
+        outputs = self.model.detect(
+            loc_preds,
+            cls_preds)
+            
         if self.device:
-            outputs = [i.cpu().numpy() for i in outputs]
+            outputs['boxes'] = outputs['boxes'].cpu()
+            outputs['labels'] = outputs['labels'].cpu()
+            outputs['scores'] = outputs['scores'].cpu()
+        
         return outputs
 
     def evaluate_step(self, batch):
@@ -72,10 +77,18 @@ class Detector(BaseModel):
         loc_preds, cls_preds = self(inputs)
         loss = self.criterion(loc_preds, cls_preds, boxes, labels)
         
+        outputs = self.model.detect(
+            loc_preds,
+            cls_preds)
 
         metric_dict = self.update_metrics(
-            outputs = {},
-            targets={})
+            outputs = {
+                'det_boxes': outputs['boxes'],
+                'det_labels': outputs['labels'],
+                'det_scores': outputs['scores']},
+            targets={
+                'gt_boxes': boxes,
+                'gt_labels': labels})
         
         return loss , metric_dict
 

@@ -13,7 +13,7 @@ class Classifier(BaseModel):
         self.model = models.resnet34(pretrained = True)
         self.model_name = "ResNet34"
         self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
-
+        self.set_optimizer_params()
         self.n_classes = n_classes
 
         if self.freeze:

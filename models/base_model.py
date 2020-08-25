@@ -13,7 +13,8 @@ class BaseModel(nn.Module):
                 metrics = AccuracyMetric(),
                 lr = 1e-4,
                 device = None,
-                freeze = False):
+                freeze = False,
+                optim_params = None):
 
         super(BaseModel, self).__init__()
         
@@ -25,6 +26,14 @@ class BaseModel(nn.Module):
         self.metrics = metrics
         if not isinstance(metrics, list):
             self.metrics = [metrics,]
+
+        self.optim_params = optim_params if optim_params is not None else {'lr': lr,} 
+
+    def set_optimizer_params(self):
+        for g in self.optimizer.param_groups:
+            for k in g.keys():
+                if k in self.optim_params.keys():
+                    g[k] = self.optim_params[k]
 
     def unfreeze(self):
         for params in self.parameters():
