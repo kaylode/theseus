@@ -43,13 +43,9 @@ class Detector(BaseModel):
     
     def inference_step(self, batch):
         inputs = batch["imgs"]
-        boxes = batch['boxes']
-        labels = batch['labels']
 
         if self.device:
             inputs = inputs.to(self.device)
-            boxes = [x.to(self.device) for x in boxes]
-            labels = [x.to(self.device) for x in labels]
 
         loc_preds, cls_preds = self(inputs)
         
@@ -77,8 +73,8 @@ class Detector(BaseModel):
 
         loc_preds, cls_preds = self(inputs)
         loss = self.criterion(loc_preds, cls_preds, boxes, labels)
-        
-        outputs = self.model.detect(
+        metric_dict = {'map': 0}
+        """outputs = self.model.detect(
             loc_preds,
             cls_preds)
 
@@ -89,7 +85,7 @@ class Detector(BaseModel):
                 'det_scores': outputs['scores']},
             targets={
                 'gt_boxes': boxes,
-                'gt_labels': labels})
+                'gt_labels': labels})"""
         
         return loss , metric_dict
 
