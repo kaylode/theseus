@@ -419,11 +419,12 @@ class SSD300(nn.Module):
                             prior_boxes.append([cx, cy, additional_scale, additional_scale])
 
         prior_boxes = torch.FloatTensor(prior_boxes).to(self.device)  # (8732, 4)
+    
         prior_boxes.clamp_(0, 1)  # (8732, 4)
-
+     
         return prior_boxes
 
-    def detect(self, predicted_locs, predicted_scores, min_score=0.05, max_overlap=0.5, top_k = 200, gpu = True):
+    def detect(self, predicted_locs, predicted_scores, min_score=0.3, max_overlap=0.5, top_k = 200, gpu = True):
         """
         Decipher the 8732 locations and class scores (output of ths SSD300) to detect objects.
 
@@ -436,7 +437,7 @@ class SSD300(nn.Module):
         :param top_k: if there are a lot of resulting detection across all classes, keep only the top 'k'
         :return: detections (boxes, labels, and scores), lists of length batch_size
         """
-
+   
         # Detect object on cpu 
         if not gpu:
             self.device = torch.device("cpu")
@@ -453,12 +454,12 @@ class SSD300(nn.Module):
         all_images_scores = list()
 
         assert n_priors == predicted_locs.size(1) == predicted_scores.size(1)
-
+       
         for i in range(batch_size):
             # Decode object coordinates from the form we regressed predicted boxes to
             decoded_locs = change_box_order(
                 gcxgcy_to_cxcy(predicted_locs[i], self.priors_cxcy),order = 'cxcy2xyxy')  # (8732, 4), these are fractional pt. coordinates
-
+     
             # Lists to store boxes and scores for this image
             image_boxes = list()
             image_labels = list()
@@ -540,6 +541,4 @@ class SSD300(nn.Module):
             'boxes': all_images_boxes,
             'labels': all_images_labels,
             'scores': all_images_scores}  # lists of length batch_size
-
-
 

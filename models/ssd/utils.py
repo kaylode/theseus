@@ -1,7 +1,7 @@
 import os
 import torch
 import random
-from utils.utils import change_box_order, find_jaccard_overlap
+from utils.utils import change_box_order, find_jaccard_overlap, box_nms
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
