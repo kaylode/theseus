@@ -33,7 +33,7 @@ class MultiBoxLoss(nn.Module):
             setattr(self, i, j)
 
     def set_loss_func(self):
-        self.loc_loss_func = nn.L1Loss()
+        self.loc_loss_func = nn.SmoothL1Loss()
         if self.use_focal_loss:
             # Focal loss
             self.conf_loss_func = FocalLoss(gamma=2)
@@ -62,7 +62,7 @@ class MultiBoxLoss(nn.Module):
 
         true_locs = torch.zeros((batch_size, n_priors, 4), dtype=torch.float).to(self.device)  # (N, 8732, 4)
         true_classes = torch.zeros((batch_size, n_priors), dtype=torch.long).to(self.device)  # (N, 8732)
-        
+        ignored_classes = torch.zeros((batch_size, n_priors), dtype=torch.long).to(self.device) # (N, 8732)
 
         # For each image
         for i in range(batch_size):
@@ -96,18 +96,25 @@ class MultiBoxLoss(nn.Module):
             # Set priors whose overlaps with objects are less than the threshold to be background (no object)
             label_for_each_prior[overlap_for_each_prior < self.threshold] = 0  # (8732)
 
+            # Ignore between 0.4 and 0.5 which the model is confused, set to -1
+            ignore = (overlap_for_each_prior > 0.4) & (overlap_for_each_prior < 0.5)  # ignore ious between [0.4,0.5]
+            ignored_classes[i][ignore] = 1
+
             # Store
             true_classes[i] = label_for_each_prior
 
             # Encode center-size object coordinates into the form we regressed predicted boxes to
             true_locs[i] = cxcy_to_gcxgcy(change_box_order(boxes[i][object_for_each_prior],order ='xyxy2cxcy'), self.priors_cxcy)  # (8732, 4)
 
-        # Identify priors that are positive (object/non-background)
-        positive_priors = true_classes != 0  # (N, 8732)
+        # Identify priors that are positive and not ignored (object/non-background)
+        positive_priors = (true_classes > 0) & (ignored_classes != 1)  # (N, 8732)
 
+        # Only ignored priors
+        ignored_priors = ignored_classes == 1 # (N, 8732)
+        
         #Number of positive prior per image
         n_positives = positive_priors.sum(dim=1)  # (N)
-
+        
         # ===================================
         # =         LOCALIZATION LOSS       =
         # ===================================
@@ -117,7 +124,8 @@ class MultiBoxLoss(nn.Module):
         # Note: indexing with a torch.uint8 (byte) tensor flattens the tensor when indexing is across multiple dimensions (N & 8732)
         # So, if predicted_locs has the shape (N, 8732, 4), predicted_locs[positive_priors] will have (total positives, 4)
 
-    
+        
+        
         # ===================================
         # =         CONFIDENCE LOSS         =
         # ===================================
@@ -128,6 +136,9 @@ class MultiBoxLoss(nn.Module):
 
         # Focal Loss
         if self.use_focal_loss:
+            pos_neg_priors = ignored_classes != 1
+            predicted_scores = predicted_scores[pos_neg_priors]
+            true_classes = true_classes[pos_neg_priors]
             conf_loss = self.conf_loss_func(predicted_scores.view(-1, n_classes), true_classes.view(-1))
         else:
             # Hard-negative mining examples
@@ -146,6 +157,7 @@ class MultiBoxLoss(nn.Module):
             # To do this, sort ONLY negative priors in each image in order of decreasing loss and take top n_hard_negatives
             conf_loss_neg = conf_loss_all.clone()  # (N, 8732)
             conf_loss_neg[positive_priors] = 0.  # (N, 8732), positive priors are ignored (never in top n_hard_negatives)
+            conf_loss_neg[ignored_priors] = 0 # ignored priors are ignored
             conf_loss_neg, _ = conf_loss_neg.sort(dim=1, descending=True)  # (N, 8732), sorted by decreasing hardness
             hardness_ranks = torch.LongTensor(range(n_priors)).unsqueeze(0).expand_as(conf_loss_neg).to(self.device)  # (N, 8732)
             hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)  # (N, 8732)
