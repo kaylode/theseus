@@ -7,7 +7,7 @@ class RetinaDetector(Detector):
         super(RetinaDetector, self).__init__(n_classes = n_classes, **kwargs)
         self.model = RetinaNet(
             num_classes = n_classes,
-            pretrained = True,
+            pretrained = False,
             device = self.device,
             input_size=(300,300))
         self.model_name = "RetinaNet"
@@ -16,7 +16,7 @@ class RetinaDetector(Detector):
         self.set_optimizer_params()
 
         self.criterion = self.criterion(self.model.priors_cxcy,
-                                        use_focal_loss =True,
+                                        use_focal_loss =False,
                                         device = self.device)
         self.n_classes = n_classes
     

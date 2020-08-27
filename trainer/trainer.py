@@ -25,6 +25,8 @@ class Trainer(nn.Module):
         self.metrics = model.metrics #list of metrics
         self.set_attribute(kwargs)
         
+        
+
     def fit(self, num_epochs = 10 ,print_per_iter = None):
         self.num_epochs = num_epochs
         self.num_iters = (num_epochs+1) * len(self.trainloader)
@@ -35,20 +37,17 @@ class Trainer(nn.Module):
             self.print_per_iter = print_per_iter
         else:
             self.print_per_iter = int(len(self.trainloader)/10)
-        
-
-        print("----------Start training for {} epochs----------".format(num_epochs))
+     
+        print('===========================START TRAINING=================================')      
         for epoch in range(self.num_epochs+1):
             
             self.epoch = epoch
-            train_loss = self.training_epoch()
+            self.training_epoch()
 
             if self.evaluate_per_epoch != 0:
                 if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
-                    val_loss, val_metrics = self.evaluate_epoch()
-                    log_dict = {"Validation Loss/Epoch" : val_loss}
-                    log_dict.update(val_metrics)
-                    self.logging(log_dict)
+                    self.evaluate_epoch()
+                    
                 
             if self.scheduler is not None:
                 self.scheduler.step()
@@ -68,7 +67,7 @@ class Trainer(nn.Module):
             loss = self.model.training_step(batch)
             loss.backward()
             
-        
+            # 
             if self.clip_grad is not None:
                 clip_gradient(self.optimizer, self.clip_grad)
 
@@ -81,10 +80,10 @@ class Trainer(nn.Module):
             iters = len(self.trainloader)*self.epoch+i+1
             if iters % self.print_per_iter == 0:
                 print("[{}|{}] [{}|{}] || Training loss: {:10.4f} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, iters, self.num_iters, running_loss/ self.print_per_iter, running_time))
-                self.logging({"Training Loss/Batch" : running_loss,})
+                self.logging({"Training Loss/Batch" : running_loss/ self.print_per_iter,})
                 running_loss = 0
                 running_time = 0
-        return epoch_loss / len(self.trainloader)
+        self.logging({"Training Loss/Epoch" : epoch_loss / len(self.trainloader),})
 
     def inference_batch(self, testloader):
         self.model.eval()
@@ -97,28 +96,41 @@ class Trainer(nn.Module):
                         results.append(i)
                 else:
                     results = outputs
-                break
-                
+                break      
         return results
+
+    def inference_item(self, img):
+        self.model.eval()
+
+        with torch.no_grad():
+            outputs = self.model.inference_step({"imgs": img.unsqueeze(0)})      
+        return outputs
+
 
     def evaluate_epoch(self):
         self.model.eval()
         epoch_loss = 0
         epoch_acc = 0
         metric_dict = {}
+        print('=============================EVALUATION===================================')
+   
         with torch.no_grad():
             for batch in tqdm(self.valloader):
                 loss, metrics = self.model.evaluate_step(batch)
                 epoch_loss += loss.item()
                 metric_dict.update(metrics)
         self.model.reset_metrics()
-        
-
-        print("[{}|{}] || Evaluating | Val Loss: {:10.5f} |".format(self.epoch, self.num_epochs,epoch_loss / len(self.valloader)), end=' ')
+        print()
+        print("[{}|{}] || Validation results || Val Loss: {:10.5f} |".format(self.epoch, self.num_epochs,epoch_loss / len(self.valloader)), end=' ')
         for metric, score in metric_dict.items():
             print(metric +': ' + str(score), end = ' | ')
-        print()
-        return epoch_loss / len(self.valloader), metric_dict
+        print('==')
+        print('==========================================================================')
+
+        log_dict = {"Validation Loss/Epoch" : epoch_loss / len(self.valloader),}
+        log_dict.update(metric_dict)
+        self.logging(log_dict)
+        
     
 
 
@@ -149,7 +161,10 @@ class Trainer(nn.Module):
         self.checkpoint = None
         self.scheduler = None
         self.clip_grad = None
-        self.logger = Logger()
+        self.logger = None
         self.evaluate_per_epoch = 1
         for i,j in kwargs.items():
             setattr(self, i, j)
+
+        if self.logger is None:
+            self.logger = Logger()
