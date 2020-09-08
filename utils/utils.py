@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
+import numpy as np
 
 def one_hot_embedding(labels, num_classes):
     '''
@@ -88,7 +89,7 @@ def change_box_order(boxes, order):
     """
     Change box order between (xmin, ymin, xmax, ymax) and (xcenter, ycenter, width, height).
 
-    :param boxes: (tensor) bounding boxes, sized [N, 4]
+    :param boxes: (tensor) or {np.array) bounding boxes, sized [N, 4]
     :param order: (str) ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
     :return: (tensor) converted bounding boxes, size [N, 4]
     """
@@ -96,19 +97,31 @@ def change_box_order(boxes, order):
     assert order in ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
 
     # Convert 1-d to a 2-d tensor of boxes, which first dim is 1
-    if len(boxes.shape) == 1:
-        boxes = boxes.unsqueeze(0)
+    if isinstance(boxes, torch.Tensor):
+        if len(boxes.shape) == 1:
+            boxes = boxes.unsqueeze(0)
 
-    if order == 'xyxy2xywh':
-        return torch.cat([boxes[:, :2], boxes[:, 2:] - boxes[:, :2]], 1)
-    elif order ==  'xywh2xyxy':
-        return torch.cat([boxes[:, :2], boxes[:, :2] + boxes[:, 2:]], 1)
-    elif order == 'xyxy2cxcy':
-        return torch.cat([(boxes[:, 2:] + boxes[:, :2]) / 2,  # c_x, c_y
-                        boxes[:, 2:] - boxes[:, :2]], 1)  # w, h
-    elif order == 'cxcy2xyxy':
-        return torch.cat([boxes[:, :2] - (boxes[:, 2:] *1.0 / 2),  # x_min, y_min
-                        boxes[:, :2] + (boxes[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
+        if order == 'xyxy2xywh':
+            return torch.cat([boxes[:, :2], boxes[:, 2:] - boxes[:, :2]], 1)
+        elif order ==  'xywh2xyxy':
+            return torch.cat([boxes[:, :2], boxes[:, :2] + boxes[:, 2:]], 1)
+        elif order == 'xyxy2cxcy':
+            return torch.cat([(boxes[:, 2:] + boxes[:, :2]) / 2,  # c_x, c_y
+                            boxes[:, 2:] - boxes[:, :2]], 1)  # w, h
+        elif order == 'cxcy2xyxy':
+            return torch.cat([boxes[:, :2] - (boxes[:, 2:] *1.0 / 2),  # x_min, y_min
+                            boxes[:, :2] + (boxes[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
+    else:
+        # Numpy
+        new_boxes = boxes.copy()
+        if order == 'xywh2xyxy':
+            new_boxes[:,2] = boxes[:,0] + boxes[:,2]
+            new_boxes[:,3] = boxes[:,1] + boxes[:,3]
+            return new_boxes
+        elif order == 'xyxy2xywh':
+            new_boxes[:,2] = boxes[:,2] - boxes[:,0]
+            new_boxes[:,3] = boxes[:,3] - boxes[:,1]
+            return new_boxes
 
 def find_intersection(set_1, set_2):
     """

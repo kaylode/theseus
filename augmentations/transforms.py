@@ -4,6 +4,9 @@ import numpy as np
 import torch
 from PIL import Image
 import cv2
+from utils.utils import change_box_order
+
+
 
 class Normalize(object):
         """
@@ -411,9 +414,7 @@ class Rotation(object):
         img = self.rotate_im(img, angle)
         
         if box is not None:
-            new_box = box.copy()
-            new_box[:,2] = new_box[:,0] +new_box[:,2]
-            new_box[:,3] = new_box[:,1] + new_box[:,3]
+            new_box = change_box_order(box, 'xywh2xyxy')
             corners = self.get_corners(new_box)
             corners = np.hstack((corners, new_box[:,4:]))
             corners[:,:8] = self.rotate_box(corners[:,:8], angle, cx, cy, h, w)
@@ -424,8 +425,7 @@ class Rotation(object):
             new_bbox[:,:4] /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y] 
             new_box = new_bbox
             new_box = self.clip_box(new_box, [0,0,w, h], 0.25)
-            new_box[:,2] = new_box[:,2] - new_box[:,0]
-            new_box[:,3] = new_box[:,3] - new_box[:,1]
+            new_box = change_box_order(new_box, 'xyxy2xywh')
         else:
             new_box = box
             
@@ -449,15 +449,21 @@ class RandomHorizontalFlip(object):
 
                 # Flip bounding box
                 if box is not None:
+                    new_box = change_box_order(box, 'xywh2xyxy')
                     w = img.width
-                    xmin = w - box[:,2]
-                    xmax = w - box[:,0]
-                    boxes[:,0] = xmin
-                    boxes[:,2] = xmax
+                    xmin = w - new_box[:,2]
+                    xmax = w - new_box[:,0]
+                    new_box[:,0] = xmin
+                    new_box[:,2] = xmax
+                    new_box = change_box_order(new_box, 'xyxy2xywh')
+                else:
+                    new_box = box
+            else:
+                new_box = box
                 
             results = {
                 'img': img,
-                'box': box,
+                'box': new_box,
                 'label': kwargs['label'],
                 'mask': None}
     
