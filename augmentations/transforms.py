@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from PIL import Image
 import cv2
-from utils.utils import change_box_order
+from utils.utils import change_box_order, find_intersection, find_jaccard_overlap
 
 
 
@@ -428,7 +428,9 @@ class Rotation(object):
             new_box = change_box_order(new_box, 'xyxy2xywh')
         else:
             new_box = box
-            
+        
+        img=Image.fromarray(img)
+
         return {
             'img': img, 
             'box': new_box,
@@ -460,7 +462,7 @@ class RandomHorizontalFlip(object):
                     new_box = box
             else:
                 new_box = box
-                
+
             results = {
                 'img': img,
                 'box': new_box,
@@ -468,6 +470,108 @@ class RandomHorizontalFlip(object):
                 'mask': None}
     
             return results
+
+class RandomCrop(object):
+    """
+    Source: https://github.com/anhtuan85/Data-Augmentation-for-Object-Detection
+    """
+    def __init__(self):
+        self.ratios = [0.3, 0.5, 0.9, None]
+        
+    def __call__(self, img, box = None, **kwargs):
+        '''
+        image: A PIL image
+        boxes: Bounding boxes, a tensor of dimensions (#objects, 4)
+        labels: labels of object, a tensor of dimensions (#objects)
+        difficulties: difficulties of detect object, a tensor of dimensions (#objects)
+        
+        Out: cropped image , new boxes, new labels, new difficulties
+        '''
+      
+        image = TF.to_tensor(img)
+        original_h = image.size(1)
+        original_w = image.size(2)
+
+        while True:
+            mode = random.choice(self.ratios)
+
+            if mode is None:
+                return {
+                    'img': img,
+                    'box': box,
+                    'label': kwargs['label'],
+                    'mask': None}
+
+            boxes = change_box_order(box, 'xywh2xyxy')
+            
+            boxes = torch.FloatTensor(boxes)
+            labels = torch.LongTensor(kwargs['label'])
+                
+            new_image = image
+            new_boxes = boxes
+            new_labels = labels
+
+            for _ in range(50):
+                # Crop dimensions: [0.3, 1] of original dimensions
+                new_h = random.uniform(0.3*original_h, original_h)
+                new_w = random.uniform(0.3*original_w, original_w)
+
+                # Aspect ratio constraint b/t .5 & 2
+                if new_h/new_w < 0.5 or new_h/new_w > 2:
+                    continue
+
+                #Crop coordinate
+                left = random.uniform(0, original_w - new_w)
+                right = left + new_w
+                top = random.uniform(0, original_h - new_h)
+                bottom = top + new_h
+                crop = torch.FloatTensor([int(left), int(top), int(right), int(bottom)])
+
+                # Calculate IoU  between the crop and the bounding boxes
+                overlap = find_jaccard_overlap(crop.unsqueeze(0), boxes) #(1, #objects)
+                overlap = overlap.squeeze(0)
+                # If not a single bounding box has a IoU of greater than the minimum, try again
+                if overlap.max().item() < mode:
+                    continue
+
+                #Crop
+                new_image = image[:, int(top):int(bottom), int(left):int(right)] #(3, new_h, new_w)
+
+                #Center of bounding boxes
+                center_bb = (boxes[:, :2] + boxes[:, 2:])/2.0
+
+                #Find bounding box has been had center in crop
+                center_in_crop = (center_bb[:, 0] >left) * (center_bb[:, 0] < right
+                                 ) *(center_bb[:, 1] > top) * (center_bb[:, 1] < bottom)    #( #objects)
+
+                if not center_in_crop.any():
+                    continue
+
+                #take matching bounding box
+                new_boxes = boxes[center_in_crop, :]
+
+                #take matching labels
+                new_labels = labels[center_in_crop]
+
+                #Use the box left and top corner or the crop's
+                new_boxes[:, :2] = torch.max(new_boxes[:, :2], crop[:2])
+
+                #adjust to crop
+                new_boxes[:, :2] -= crop[:2]
+
+                new_boxes[:, 2:] = torch.min(new_boxes[:, 2:],crop[2:])
+
+                #adjust to crop
+                new_boxes[:, 2:] -= crop[:2]
+                
+                
+                new_boxes = change_box_order(new_boxes, 'xyxy2xywh')
+                return {
+                        'img': TF.to_pil_image(new_image),
+                        'box': new_boxes.numpy(),
+                        'label': new_labels.numpy(),
+                        'mask': None}
+
 
 class Compose(object):
         """
