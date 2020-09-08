@@ -10,17 +10,16 @@ class Normalize(object):
         :param mean: (list of float)
         :param std: (list of float)
         """
-        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], box_transforms = True, **kwargs):
+        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
             self.mean = mean
             self.std = std
-            self.box_transforms = box_transforms
         def __call__(self, img, box=None, **kwargs):
             """
             :param img: (tensor) image to be normalized
             :param box: (list of tensor) bounding boxes to be normalized, by dividing them with image's width and heights. Format: (x,y,width,height)
             """
             new_img = TF.normalize(img, mean = self.mean, std = self.std)
-            if box is not None and self.box_transforms:
+            if box is not None:
                 _, i_h, i_w = img.size()
                 for bb in box:
                     bb[0] = bb[0]*1.0 / i_w

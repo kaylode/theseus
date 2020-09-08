@@ -8,7 +8,7 @@ import matplotlib.patches as patches
 import json
 import numpy as np
 from PIL import Image
-from augmentations.transforms import Compose
+from augmentations.transforms import Compose, Normalize
 
 class ObjectDetectionDataset(data.Dataset):
     """
@@ -104,7 +104,7 @@ class ObjectDetectionDataset(data.Dataset):
         
         plt.show()
 
-    def visualize_item(self, index = None, figsize=(15,15), box_transforms = True):
+    def visualize_item(self, index = None, figsize=(15,15)):
         """
         Visualize an image with its bouding boxes by index
         """
@@ -116,14 +116,17 @@ class ObjectDetectionDataset(data.Dataset):
         box = item['box']
         label = item['label']
 
+        if any(isinstance(x, Normalize) for x in self.transforms.transforms_list):
+            normalize = True
+        else:
+            normalize = False
+
         # Denormalize and reverse-tensorize
-        if box_transforms:
+        if normalize:
             results = self.transforms.denormalize(img = img, box = box, label = label)
             img, label, box = results['img'], results['label'], results['box']
         else:
-            results = self.transforms.denormalize(img = img, box = None, label = label)
-            img, label, _ = results['img'], results['label'], results['box']
-
+            img = img.numpy().squeeze().transpose((1,2,0))
         # Numpify
         label = label.numpy()
         box = box.numpy()
