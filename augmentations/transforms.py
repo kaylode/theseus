@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 from PIL import Image
+import cv2
 
 class Normalize(object):
         """
@@ -34,6 +35,39 @@ class Normalize(object):
                 'mask': None}
     
             return results
+
+
+class ToPILImage(object):
+    """Convert a tensor or an ndarray to PIL Image.
+
+    Converts a torch.*Tensor of shape C x H x W or a numpy ndarray of shape
+    H x W x C to a PIL Image while preserving the value range.
+
+    Args:
+        mode (`PIL.Image mode`_): color space and pixel depth of input data (optional).
+            If ``mode`` is ``None`` (default) there are some assumptions made about the input data:
+             - If the input has 4 channels, the ``mode`` is assumed to be ``RGBA``.
+             - If the input has 3 channels, the ``mode`` is assumed to be ``RGB``.
+             - If the input has 2 channels, the ``mode`` is assumed to be ``LA``.
+             - If the input has 1 channel, the ``mode`` is determined by the data type (i.e ``int``, ``float``,
+               ``short``).
+
+    .. _PIL.Image mode: https://pillow.readthedocs.io/en/latest/handbook/concepts.html#concept-modes
+    """
+    def __init__(self, mode=None):
+        self.mode = mode
+
+    def __call__(self, pic):
+        """
+        Args:
+            pic (Tensor or numpy.ndarray): Image to be converted to PIL Image.
+
+        Returns:
+            PIL Image: Image converted to PIL Image.
+
+        """
+        return TF.to_pil_image(pic, self.mode)
+
 
 class Denormalize(object):
         """
@@ -135,6 +169,7 @@ class Resize(object):
 
 class Rotation(object):
     '''
+        Source: https://github.com/Paperspace/DataAugmentationForObjectDetection
         Rotate image and bounding box
         - Argument:
                     + img: PIL Image
@@ -147,7 +182,7 @@ class Rotation(object):
             self.angle = (-self.angle, self.angle)
 
 
-    def rotate_im(self, image, angle):
+    def rotate_im(self,image, angle):
         """Rotate the image.
         
         Rotate the image such that the rotated image is enclosed inside the tightest
@@ -172,7 +207,7 @@ class Rotation(object):
         """
         # grab the dimensions of the image and then determine the
         # centre
-        (h, w) = image.shape[:2]
+        (h, w) = image.height, image.width
         (cX, cY) = (w // 2, h // 2)
 
         # grab the rotation matrix (applying the negative of the
@@ -191,49 +226,51 @@ class Rotation(object):
         M[1, 2] += (nH / 2) - cY
 
         # perform the actual rotation and return the image
-        image = cv2.warpAffine(image, M, (nW, nH))
+        image = cv2.warpAffine(np.array(image), M, (nW, nH))
 
     #    image = cv2.resize(image, (w,h))
         return image
 
 
-
+    def bbox_area(self,bbox):
+        return (bbox[:,2] - bbox[:,0])*(bbox[:,3] - bbox[:,1])
+    
     def get_corners(self, bboxes):
         """Get corners of bounding boxes
-        
+
         Parameters
         ----------
-        
+
         bboxes: numpy.ndarray
             Numpy array containing bounding boxes of shape `N X 4` where N is the 
             number of bounding boxes and the bounding boxes are represented in the
             format `x1 y1 x2 y2`
-        
+
         returns
         -------
-        
+
         numpy.ndarray
             Numpy array of shape `N x 8` containing N bounding boxes each described by their 
             corner co-ordinates `x1 y1 x2 y2 x3 y3 x4 y4`      
-            
+
         """
         width = (bboxes[:,2] - bboxes[:,0]).reshape(-1,1)
         height = (bboxes[:,3] - bboxes[:,1]).reshape(-1,1)
-        
+
         x1 = bboxes[:,0].reshape(-1,1)
         y1 = bboxes[:,1].reshape(-1,1)
-        
+
         x2 = x1 + width
         y2 = y1 
-        
+
         x3 = x1
         y3 = y1 + height
-        
+
         x4 = bboxes[:,2].reshape(-1,1)
         y4 = bboxes[:,3].reshape(-1,1)
-        
+
         corners = np.hstack((x1,y1,x2,y2,x3,y3,x4,y4))
-        
+
         return corners
 
     def rotate_box(self, corners,angle,  cx, cy, h, w):
@@ -322,26 +359,79 @@ class Rotation(object):
         
         return final
 
+    def clip_box(self, bbox, clip_box, alpha):
+        """Clip the bounding boxes to the borders of an image
+
+        Parameters
+        ----------
+
+        bbox: numpy.ndarray
+            Numpy array containing bounding boxes of shape `N X 4` where N is the 
+            number of bounding boxes and the bounding boxes are represented in the
+            format `x1 y1 x2 y2`
+
+        clip_box: numpy.ndarray
+            An array of shape (4,) specifying the diagonal co-ordinates of the image
+            The coordinates are represented in the format `x1 y1 x2 y2`
+
+        alpha: float
+            If the fraction of a bounding box left in the image after being clipped is 
+            less than `alpha` the bounding box is dropped. 
+
+        Returns
+        -------
+
+        numpy.ndarray
+            Numpy array containing **clipped** bounding boxes of shape `N X 4` where N is the 
+            number of bounding boxes left are being clipped and the bounding boxes are represented in the
+            format `x1 y1 x2 y2` 
+
+        """
+        ar_ = (self.bbox_area(bbox))
+        x_min = np.maximum(bbox[:,0], clip_box[0]).reshape(-1,1)
+        y_min = np.maximum(bbox[:,1], clip_box[1]).reshape(-1,1)
+        x_max = np.minimum(bbox[:,2], clip_box[2]).reshape(-1,1)
+        y_max = np.minimum(bbox[:,3], clip_box[3]).reshape(-1,1)
+
+        bbox = np.hstack((x_min, y_min, x_max, y_max, bbox[:,4:]))
+
+        delta_area = ((ar_ - self.bbox_area(bbox))/ar_)
+
+        mask = (delta_area < (1 - alpha)).astype(int)
+
+        bbox = bbox[mask == 1,:]
+        return bbox
 
     def __call__(self, img, box = None, **kwargs):
-
+        
+        
         angle = random.uniform(*self.angle)
-        w,h = img.shape[1], img.shape[0]
+        w,h = img.width, img.height
         cx, cy = w//2, h//2
         img = self.rotate_im(img, angle)
-        corners = self.get_corners(box)
-        corners = np.hstack((corners, box[:,4:]))
-        corners[:,:8] = self.rotate_box(corners[:,:8], angle, cx, cy, h, w)
-        new_bbox = self.get_enclosing_box(corners)
-        scale_factor_x = img.shape[1] / w
-        scale_factor_y = img.shape[0] / h
-        img = cv2.resize(img, (w,h))
-        new_bbox[:,:4] /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y] 
-        bboxes  = new_bbox
-        bboxes = clip_box(bboxes, [0,0,w, h], 0.25)
+        
+        if box is not None:
+            new_box = box.copy()
+            new_box[:,2] = new_box[:,0] +new_box[:,2]
+            new_box[:,3] = new_box[:,1] + new_box[:,3]
+            corners = self.get_corners(new_box)
+            corners = np.hstack((corners, new_box[:,4:]))
+            corners[:,:8] = self.rotate_box(corners[:,:8], angle, cx, cy, h, w)
+            new_bbox = self.get_enclosing_box(corners)
+            scale_factor_x = img.shape[1] / w
+            scale_factor_y = img.shape[0] / h
+            img = cv2.resize(img, (w,h))
+            new_bbox[:,:4] /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y] 
+            new_box = new_bbox
+            new_box = self.clip_box(new_box, [0,0,w, h], 0.25)
+            new_box[:,2] = new_box[:,2] - new_box[:,0]
+            new_box[:,3] = new_box[:,3] - new_box[:,1]
+        else:
+            new_box = box
+            
         return {
             'img': img, 
-            'box': bboxes,
+            'box': new_box,
             'label': kwargs['label'],
             'mask': None}
 

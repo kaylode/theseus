@@ -125,8 +125,7 @@ class ObjectDetectionDataset(data.Dataset):
         if normalize:
             results = self.transforms.denormalize(img = img, box = box, label = label)
             img, label, box = results['img'], results['label'], results['box']
-        else:
-            img = img.numpy().squeeze().transpose((1,2,0))
+    
         # Numpify
         label = label.numpy()
         box = box.numpy()
@@ -140,6 +139,8 @@ class ObjectDetectionDataset(data.Dataset):
         """
         fig,ax = plt.subplots(figsize=figsize)
 
+        if isinstance(img, torch.Tensor):
+            img = img.numpy().squeeze().transpose((1,2,0))
         # Display the image
         ax.imshow(img)
 
