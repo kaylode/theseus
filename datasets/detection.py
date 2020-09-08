@@ -104,7 +104,7 @@ class ObjectDetectionDataset(data.Dataset):
         
         plt.show()
 
-    def visualize_item(self, index = None, figsize=(15,15)):
+    def visualize_item(self, index = None, figsize=(15,15), box_transforms = True):
         """
         Visualize an image with its bouding boxes by index
         """
@@ -117,8 +117,16 @@ class ObjectDetectionDataset(data.Dataset):
         label = item['label']
 
         # Denormalize and reverse-tensorize
-        results = self.transforms.denormalize(img = img, box = box, label = label)
-        img, label, box = results['img'], results['label'].numpy(), results['box'].numpy()
+        if box_transforms:
+            results = self.transforms.denormalize(img = img, box = box, label = label)
+            img, label, box = results['img'], results['label'], results['box']
+        else:
+            results = self.transforms.denormalize(img = img, box = None, label = label)
+            img, label, _ = results['img'], results['label'], results['box']
+
+        # Numpify
+        label = label.numpy()
+        box = box.numpy()
 
         self.visualize(img, box, label, figsize = figsize)
 
