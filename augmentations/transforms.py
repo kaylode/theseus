@@ -14,16 +14,17 @@ class Normalize(object):
         :param mean: (list of float)
         :param std: (list of float)
         """
-        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
+        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225],box_transform = True, **kwargs):
             self.mean = mean
             self.std = std
+            self.box_transform = box_transform
         def __call__(self, img, box=None, **kwargs):
             """
             :param img: (tensor) image to be normalized
             :param box: (list of tensor) bounding boxes to be normalized, by dividing them with image's width and heights. Format: (x,y,width,height)
             """
             new_img = TF.normalize(img, mean = self.mean, std = self.std)
-            if box is not None:
+            if box is not None and self.box_transform:
                 _, i_h, i_w = img.size()
                 for bb in box:
                     bb[0] = bb[0]*1.0 / i_w
@@ -76,9 +77,10 @@ class Denormalize(object):
         """
         Denormalize image and boxes for visualization
         """
-        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
+        def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225],box_transform=True, **kwargs):
             self.mean = mean
             self.std = std
+            self.box_transform = box_transform
         def __call__(self, img, box = None, **kwargs):
             """
             :param img: (tensor) image to be denormalized
@@ -91,7 +93,7 @@ class Denormalize(object):
             img_show = np.clip(img_show,0,1)
 
 
-            if box is not None:
+            if box is not None and self.box_transform:
                 _, i_h, i_w = img.size()
                 for bb in box:
                     bb[0] = bb[0]* i_w
@@ -587,7 +589,7 @@ class Compose(object):
                     img, box, label, mask = results['img'], results['box'], results['label'], results['mask']
         """
         def __init__(self, transforms_list = None):
-            self.denormalize = Denormalize()
+            
             
             if transforms_list is None:
                 self.transforms_list = [Resize(), ToTensor(), Normalize()]
@@ -595,7 +597,11 @@ class Compose(object):
               self.transforms_list = transforms_list
             if not isinstance(self.transforms_list,list):
                 self.transforms_list = list(self.transforms_list)
-                
+            
+            for x in self.transforms_list:
+                if isinstance(x, Normalize):
+                    self.denormalize = Denormalize(box_transform=x.box_transform)
+
         def __call__(self, img, box = None, label = None, mask = None):
             for tf in self.transforms_list:
                 results = tf(img = img, box = box, label = label, mask = mask)

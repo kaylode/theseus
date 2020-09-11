@@ -79,8 +79,17 @@ class ImageClassificationDataset(data.Dataset):
         label = item['label']
 
         # Denormalize and reverse-tensorize
-        results = self.transforms.denormalize(img = img, box = None, label = label)
-        img, label = results['img'], results['label']
+        if any(isinstance(x, Normalize) for x in self.transforms.transforms_list):
+            normalize = True
+        else:
+            normalize = False
+
+        # Denormalize and reverse-tensorize
+        if normalize:
+            results = self.transforms.denormalize(img = img, box = None, label = label)
+            img, label = results['img'], results['label']
+
+        label = label.numpy()
         self.visualize(img, label, figsize = figsize)
 
     

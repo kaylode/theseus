@@ -9,6 +9,7 @@ import json
 import numpy as np
 from PIL import Image
 from augmentations.transforms import Compose, Normalize
+from utils.utils import change_box_order
 
 class ObjectDetectionDataset(data.Dataset):
     """
@@ -24,7 +25,8 @@ class ObjectDetectionDataset(data.Dataset):
                  ann_path,
                  transforms = None,
                  max_samples = None,
-                 shuffle = False):
+                 shuffle = False, 
+                 mode = 'xywh'):
       
         self.dir = img_dir
         self.ann_path = ann_path
@@ -35,6 +37,7 @@ class ObjectDetectionDataset(data.Dataset):
         self.annos = self.load_annos()
         self.labels_to_idx()
         self.fns = self.load_images()
+        self.mode =mode
 
     def labels_to_idx(self):
         """
@@ -130,6 +133,9 @@ class ObjectDetectionDataset(data.Dataset):
         label = label.numpy()
         box = box.numpy()
 
+        if self.mode == 'xyxy':
+            box=change_box_order(box, 'xyxy2xywh')
+
         self.visualize(img, box, label, figsize = figsize)
 
     
@@ -168,7 +174,10 @@ class ObjectDetectionDataset(data.Dataset):
         
         img_path = os.path.join(self.dir,img_name)
         box = np.floor(np.array([i['bbox'] for i in img_anno]))
-        
+
+        if self.mode == 'xyxy':
+            box=change_box_order(box, 'xywh2xyxy')
+
         label = np.array([i['category_id'] for i in img_anno]) # Label starts from 0
 
         img = Image.open(img_path)
@@ -176,7 +185,7 @@ class ObjectDetectionDataset(data.Dataset):
         # Data augmentation
         results = self.transforms(img = img, box = box, label = label)
         
-
+        
         return {
             'img': results['img'],
             'box': results['box'],
