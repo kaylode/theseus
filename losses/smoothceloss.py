@@ -26,5 +26,5 @@ class smoothCELoss(nn.Module):
         if self.reduction == "mean":
             loss /= batch_size
   
-        return loss
+        return {'T': loss}
         

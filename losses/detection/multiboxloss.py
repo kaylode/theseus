@@ -169,13 +169,11 @@ class MultiBoxLoss(nn.Module):
         
         # Loss = 0 when there is no positive match in the image
         # which cause inf loss
-        """
-        if conf_loss == float('inf') or loc_loss == float('inf'):
-            return Variable(torch.Tensor([0]).type_as(conf_loss.data),requires_grad=True)
-        """
+
         #print(" C: {} || B: {} ".format(conf_loss.item(), loc_loss.item()))
         # TOTAL LOSS
-        return conf_loss + self.alpha * loc_loss
+        total_loss = conf_loss + self.alpha * loc_loss
+        return total_loss, {'T': total_loss.item(), 'C': conf_loss.item(), 'B': loc_loss.item()}
 
 
 # Mapping coordinate to priors to regress
