@@ -57,14 +57,19 @@ class Trainer(nn.Module):
 
     def training_epoch(self):
         self.model.train()
-        epoch_loss = 0
-        running_loss = 0
+
+        running_loss = {}
         running_time = 0
 
         for i, batch in enumerate(self.trainloader):
             self.optimizer.zero_grad()
             start_time = time.time()
-            loss = self.model.training_step(batch)
+            loss, loss_dict = self.model.training_step(batch)
+
+
+            if loss == 0 or not torch.isfinite(loss):
+                continue
+
             loss.backward()
             
             # 
@@ -74,16 +79,24 @@ class Trainer(nn.Module):
             self.optimizer.step()
             end_time = time.time()
 
-            epoch_loss += loss.item()
-            running_loss += loss.item()
+            for (key,value) in loss_dict.items():
+                if key in running_loss.keys():
+                    running_loss[key] += value
+                else:
+                    running_loss[key] = value
+
             running_time += end_time-start_time
             iters = len(self.trainloader)*self.epoch+i+1
             if iters % self.print_per_iter == 0:
-                print("[{}|{}] [{}|{}] || Training loss: {:10.4f} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, iters, self.num_iters, running_loss/ self.print_per_iter, running_time))
-                self.logging({"Training Loss/Batch" : running_loss/ self.print_per_iter,})
-                running_loss = 0
+                
+                for key in running_loss.keys():
+                    running_loss[key] /= self.print_per_iter
+
+                loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
+                print("[{}|{}] [{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, iters, self.num_iters,loss_string, running_time))
+                self.logging({"Training Loss/Batch" : running_loss['T']/ self.print_per_iter,})
+                running_loss = {}
                 running_time = 0
-        self.logging({"Training Loss/Epoch" : epoch_loss / len(self.trainloader),})
 
     def inference_batch(self, testloader):
         self.model.eval()
