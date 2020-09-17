@@ -18,7 +18,7 @@ class Normalize(object):
             self.mean = mean
             self.std = std
             self.box_transform = box_transform
-        def __call__(self, img, box=None, **kwargs):
+        def __call__(self, img, box = None, label = None, mask = None, **kwargs):
             """
             :param img: (tensor) image to be normalized
             :param box: (list of tensor) bounding boxes to be normalized, by dividing them with image's width and heights. Format: (x,y,width,height)
@@ -35,8 +35,8 @@ class Normalize(object):
             results = {
                 'img': new_img,
                 'box': box,
-                'label': kwargs['label'],
-                'mask': None}
+                'label': label,
+                'mask': mask}
     
             return results
 
@@ -81,7 +81,7 @@ class Denormalize(object):
             self.mean = mean
             self.std = std
             self.box_transform = box_transform
-        def __call__(self, img, box = None, **kwargs):
+        def __call__(self, img, box = None, label = None, mask = None, **kwargs):
             """
             :param img: (tensor) image to be denormalized
             :param box: (list of tensor) bounding boxes to be denormalized, by multiplying them with image's width and heights. Format: (x,y,width,height)
@@ -104,8 +104,8 @@ class Denormalize(object):
             results = {
                 'img': img_show,
                 'box': box,
-                'label': kwargs['label'],
-                'mask': None}
+                'label': label,
+                'mask': mask}
     
             return results
            
@@ -116,7 +116,7 @@ class ToTensor(object):
         """
         def __init__(self):
             pass
-        def __call__(self, img, **kwargs):
+        def __call__(self, img, box = None, label=None,  mask = None, **kwargs):
             """
             :param img: (PIL Image) image to be tensorized
             :param box: (list of float) bounding boxes to be tensorized. Format: (x,y,width,height)
@@ -125,20 +125,19 @@ class ToTensor(object):
 
             img = TF.to_tensor(img)
             
-            results = {
+            if label is not None:
+                label = torch.LongTensor(label)
+            if box is not None:
+                box = torch.as_tensor(box, dtype=torch.float32)             
+            if mask is not None:
+                mask = np.array(mask)
+                mask = torch.from_numpy(mask).long()
+
+            return {
                 'img': img,
-                'box': kwargs['box'],
-                'label': kwargs['label'],
-                'mask': None}
-
-            if kwargs['label'] is not None:
-                label = torch.LongTensor(kwargs['label'])
-                results['label'] = label
-            if kwargs['box'] is not None:
-                box = torch.as_tensor(kwargs['box'], dtype=torch.float32)
-                results['box'] = box
-
-            return results
+                'box': box,
+                'label': label,
+                'mask': mask}
            
 
 class Resize(object):
@@ -152,9 +151,10 @@ class Resize(object):
         def __init__(self, size = (224,224), **kwargs):
             self.size = size
 
-        def __call__(self, img, box = None,  **kwargs):
+        def __call__(self, img, label=None, box = None,  mask = None, **kwargs):
             # Resize image
-            new_img = TF.resize(img, size=self.size)
+            new_img = img.resize(self.size, Image.BILINEAR)
+        
 
             if box is not None:
                 np_box = np.array(box)
@@ -163,12 +163,15 @@ class Resize(object):
 
                 # Resize bounding box and round down
                 box = np.floor((np_box / old_dims) * new_dims)
-
+            
+            if mask is not None:
+                mask = mask.resize(self.size, Image.NEAREST)
+            
             results = {
                 'img': new_img,
                 'box': box,
-                'label': kwargs['label'],
-                'mask': None}
+                'label': label,
+                'mask': mask}
     
             return results
 
@@ -446,11 +449,15 @@ class RandomHorizontalFlip(object):
         def __init__(self, ratio = 0.5):
             self.ratio = ratio
           
-        def __call__(self, img, box = None, **kwargs):
+        def __call__(self, img, box = None, label=None,  mask = None, **kwargs):
             if random.randint(1,10) <= self.ratio*10:
                 # Flip image
                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
-
+                
+                # Flip mask
+                if mask is not None:
+                    mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+                    
                 # Flip bounding box
                 if box is not None:
                     new_box = change_box_order(box, 'xywh2xyxy')
@@ -460,16 +467,14 @@ class RandomHorizontalFlip(object):
                     new_box[:,0] = xmin
                     new_box[:,2] = xmax
                     new_box = change_box_order(new_box, 'xyxy2xywh')
-                else:
-                    new_box = box
-            else:
-                new_box = box
+                    box = new_box
+            
 
             results = {
                 'img': img,
-                'box': new_box,
-                'label': kwargs['label'],
-                'mask': None}
+                'box': box,
+                'label': label,
+                'mask': mask}
     
             return results
 
