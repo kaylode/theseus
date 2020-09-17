@@ -180,7 +180,7 @@ class ObjectDetectionDataset(data.Dataset):
 
         label = np.array([i['category_id'] for i in img_anno]) # Label starts from 0
 
-        img = Image.open(img_path)
+        img = Image.open(img_path).convert('RGB')
 
         # Data augmentation
         results = self.transforms(img = img, box = box, label = label)

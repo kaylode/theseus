@@ -40,19 +40,25 @@ class Trainer(nn.Module):
      
         print('===========================START TRAINING=================================')      
         for epoch in range(self.num_epochs+1):
-            
-            self.epoch = epoch
-            self.training_epoch()
+            try:
+                self.epoch = epoch
+                self.training_epoch()
 
-            if self.evaluate_per_epoch != 0:
-                if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
-                    self.evaluate_epoch()
+                if self.evaluate_per_epoch != 0:
+                    if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
+                        self.evaluate_epoch()
+                        
                     
-                
-            if self.scheduler is not None:
-                self.scheduler.step()
-            if (epoch % self.checkpoint.save_per_epoch == 0 or epoch == num_epochs - 1):
-                self.checkpoint.save(self.model, epoch = epoch)
+                if self.scheduler is not None:
+                    self.scheduler.step()
+                if (epoch % self.checkpoint.save_per_epoch == 0 or epoch == num_epochs - 1):
+                    self.checkpoint.save(self.model, epoch = epoch)
+
+            except KeyboardInterrupt:   
+                self.checkpoint.save(self.model, epoch = epoch, interrupted = True)
+                print("Stop training, checkpoint saved...")
+                break
+
         print("Training Completed!")
 
     def training_epoch(self):
@@ -122,25 +128,39 @@ class Trainer(nn.Module):
 
     def evaluate_epoch(self):
         self.model.eval()
-        epoch_loss = 0
-        epoch_acc = 0
+        epoch_loss = {}
+
         metric_dict = {}
         print('=============================EVALUATION===================================')
-   
+        start_time = time.time()
         with torch.no_grad():
             for batch in tqdm(self.valloader):
-                loss, metrics = self.model.evaluate_step(batch)
-                epoch_loss += loss.item()
-                metric_dict.update(metrics)
+                (loss, loss_dict), metrics = self.model.evaluate_step(batch)
+                
+                for (key,value) in loss_dict.items():
+                    if key in epoch_loss.keys():
+                        epoch_loss[key] += value
+                    else:
+                        epoch_loss[key] = value
+
+        end_time = time.time()
+        running_time = end_time - start_time
+        metric_dict.update(metrics)
         self.model.reset_metrics()
+
+        for key in epoch_loss.keys():
+            epoch_loss[key] /= len(self.valloader)
+
+        loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
         print()
-        print("[{}|{}] || Validation results || Val Loss: {:10.5f} |".format(self.epoch, self.num_epochs,epoch_loss / len(self.valloader)), end=' ')
+        print("[{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, loss_string, running_time))
+
         for metric, score in metric_dict.items():
             print(metric +': ' + str(score), end = ' | ')
         print('==')
         print('==========================================================================')
 
-        log_dict = {"Validation Loss/Epoch" : epoch_loss / len(self.valloader),}
+        log_dict = {"Validation Loss/Epoch" : epoch_loss['T'] / len(self.valloader),}
         log_dict.update(metric_dict)
         self.logging(log_dict)
         

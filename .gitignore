@@ -64,3 +64,5 @@ models/tpu_model.py
 .ipynb_checkpoints/Faster RCNN-checkpoint.ipynb
 *.1
 *.ipynb
+*.png
+*.txt

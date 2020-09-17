@@ -3,8 +3,8 @@ from models.detection.efficientdet.detector import EfficientDetector
 from models.detection.efficientdet.model import FocalLoss
 train_transforms = Compose([
     RandomHorizontalFlip(),
-    RandomCrop(),
     Rotation(20),
+    RandomCrop(),
     Resize((512,512)),
     ToTensor(),
     Normalize(box_transform = False),
