@@ -2,10 +2,10 @@ import torchvision.transforms.functional as TF
 import random
 import numpy as np
 import torch
+import torchvision
 from PIL import Image
 import cv2
 from utils.utils import change_box_order, find_intersection, find_jaccard_overlap
-
 
 
 class Normalize(object):
@@ -40,7 +40,6 @@ class Normalize(object):
     
             return results
 
-
 class ToPILImage(object):
     """Convert a tensor or an ndarray to PIL Image.
 
@@ -71,7 +70,6 @@ class ToPILImage(object):
 
         """
         return TF.to_pil_image(pic, self.mode)
-
 
 class Denormalize(object):
         """
@@ -109,7 +107,6 @@ class Denormalize(object):
     
             return results
            
-
 class ToTensor(object):
         """
         Tensorize image
@@ -139,7 +136,6 @@ class ToTensor(object):
                 'label': label,
                 'mask': mask}
            
-
 class Resize(object):
         """
         - Resize an image and bounding box, mask
@@ -441,7 +437,171 @@ class Rotation(object):
             'box': new_box,
             'label': label,
             'mask': mask}
-            
+
+           class RandomShear(object):
+    """Randomly shears an image in horizontal direction   
+    
+    
+    Bounding boxes which have an area of less than 25% in the remaining in the 
+    transformed image is dropped. The resolution is maintained, and the remaining
+    area if any is filled by black color.
+    
+    Parameters
+    ----------
+    shear_factor: float or tuple(float)
+        if **float**, the image is sheared horizontally by a factor drawn 
+        randomly from a range (-`shear_factor`, `shear_factor`). If **tuple**,
+        the `shear_factor` is drawn randomly from values specified by the 
+        tuple
+        
+    Returns
+    -------
+    
+    numpy.ndaaray
+        Sheared image in the numpy format of shape `HxWxC`
+    
+    numpy.ndarray
+        Tranformed bounding box co-ordinates of the format `n x 4` where n is 
+        number of bounding boxes and 4 represents `x1,y1,x2,y2` of the box
+        
+    """
+
+    def __init__(self, shear_factor = 0.2):
+        self.shear_factor = shear_factor
+        
+        if type(self.shear_factor) == tuple:
+            assert len(self.shear_factor) == 2, "Invalid range for scaling factor"   
+        else:
+            self.shear_factor = (-self.shear_factor, self.shear_factor)
+        
+        shear_factor = random.uniform(*self.shear_factor)
+        
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+    
+        shear_factor = random.uniform(*self.shear_factor)
+        img = np.array(img)
+        w,h = img.shape[1], img.shape[0]
+    
+        if shear_factor < 0:
+          img = Image.fromarray(img)
+          item = RandomHorizontalFlip(1)(img = img, box = box)
+          img, box = item['img'], item['box']
+          img = np.array(img)
+    
+        M = np.array([[1, abs(shear_factor), 0],[0,1,0]])
+        nW =  img.shape[1] + abs(shear_factor*img.shape[0])
+
+        if box is not None:
+          box = change_box_order(box, 'xywh2xyxy')
+          box[:,[0,2]] += ((box[:,[1,3]]) * abs(shear_factor) ).astype(int) 
+          box = change_box_order(box, 'xyxy2xywh')
+    
+        img = cv2.warpAffine(img, M, (int(nW), img.shape[0]))
+    
+        if shear_factor < 0:
+          img = Image.fromarray(img)
+          item = RandomHorizontalFlip(1)(img = img, box = box)
+          img, box = item['img'], item['box']
+          img = np.array(img)
+    
+        img = cv2.resize(img, (w,h))
+        scale_factor_x = nW / w
+
+        if box is not None:
+          box = change_box_order(box, 'xywh2xyxy')
+          box[:,:4] /= [scale_factor_x, 1, scale_factor_x, 1] 
+          box = change_box_order(box, 'xyxy2xywh')
+
+        img=Image.fromarray(img)
+
+        return {
+            'img': img, 
+            'box': box,
+            'label': label,
+            'mask': mask}
+
+class RandomShear(object):
+    """Randomly shears an image in horizontal direction   
+    
+    
+    Bounding boxes which have an area of less than 25% in the remaining in the 
+    transformed image is dropped. The resolution is maintained, and the remaining
+    area if any is filled by black color.
+    
+    Parameters
+    ----------
+    shear_factor: float or tuple(float)
+        if **float**, the image is sheared horizontally by a factor drawn 
+        randomly from a range (-`shear_factor`, `shear_factor`). If **tuple**,
+        the `shear_factor` is drawn randomly from values specified by the 
+        tuple
+        
+    Returns
+    -------
+    
+    numpy.ndaaray
+        Sheared image in the numpy format of shape `HxWxC`
+    
+    numpy.ndarray
+        Tranformed bounding box co-ordinates of the format `n x 4` where n is 
+        number of bounding boxes and 4 represents `x1,y1,x2,y2` of the box
+        
+    """
+
+    def __init__(self, shear_factor = 0.2):
+        self.shear_factor = shear_factor
+        
+        if type(self.shear_factor) == tuple:
+            assert len(self.shear_factor) == 2, "Invalid range for scaling factor"   
+        else:
+            self.shear_factor = (-self.shear_factor, self.shear_factor)
+        
+        shear_factor = random.uniform(*self.shear_factor)
+        
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+    
+        shear_factor = random.uniform(*self.shear_factor)
+        img = np.array(img)
+        w,h = img.shape[1], img.shape[0]
+    
+        if shear_factor < 0:
+          img = Image.fromarray(img)
+          item = RandomHorizontalFlip(1)(img = img, box = box)
+          img, box = item['img'], item['box']
+          img = np.array(img)
+    
+        M = np.array([[1, abs(shear_factor), 0],[0,1,0]])
+        nW =  img.shape[1] + abs(shear_factor*img.shape[0])
+
+        if box is not None:
+          box = change_box_order(box, 'xywh2xyxy')
+          box[:,[0,2]] += ((box[:,[1,3]]) * abs(shear_factor) ).astype(int) 
+          box = change_box_order(box, 'xyxy2xywh')
+    
+        img = cv2.warpAffine(img, M, (int(nW), img.shape[0]))
+    
+        if shear_factor < 0:
+          img = Image.fromarray(img)
+          item = RandomHorizontalFlip(1)(img = img, box = box)
+          img, box = item['img'], item['box']
+          img = np.array(img)
+    
+        img = cv2.resize(img, (w,h))
+        scale_factor_x = nW / w
+
+        if box is not None:
+          box = change_box_order(box, 'xywh2xyxy')
+          box[:,:4] /= [scale_factor_x, 1, scale_factor_x, 1] 
+          box = change_box_order(box, 'xyxy2xywh')
+
+        img=Image.fromarray(img)
+
+        return {
+            'img': img, 
+            'box': box,
+            'label': label,
+            'mask': mask}
+
 class RandomVerticalFlip(object):
         """
         Horizontally flip image and its bounding box, mask
@@ -519,7 +679,7 @@ class RandomCrop(object):
     Source: https://github.com/anhtuan85/Data-Augmentation-for-Object-Detection
     """
     def __init__(self):
-        self.ratios = [0.3, 0.5, 0.9, None]
+        self.ratios = [0.3, 0.5, 0.7, 0.9, None]
         
     def __call__(self, img, box = None, label = None, mask = None, **kwargs):
         '''
@@ -615,6 +775,33 @@ class RandomCrop(object):
                         'label': new_labels.numpy(),
                         'mask': mask}
 
+class ColorJitter(object):
+        """
+        Jit the image's color
+        :param brightness (float or tuple of float (min, max)): How much to jitter brightness.  
+            brightness_factor is chosen uniformly from [max(0, 1 - brightness), 1 + brightness]  
+            or the given [min, max]. Should be non negative numbers.  
+        :param contrast (float or tuple of float (min, max)): How much to jitter contrast.  
+            contrast_factor is chosen uniformly from [max(0, 1 - contrast), 1 + contrast]  
+            or the given [min, max]. Should be non negative numbers.  
+        :param saturation (float or tuple of float (min, max)): How much to jitter saturation.  
+            saturation_factor is chosen uniformly from [max(0, 1 - saturation), 1 + saturation]  
+            or the given [min, max]. Should be non negative numbers.  
+        :param hue (float or tuple of float (min, max)): How much to jitter hue.  
+            hue_factor is chosen uniformly from [-hue, hue] or the given [min, max].  
+            Should have 0 = hue  = 0.5 or -0.5  = min  = max  = 0.5. 
+        """
+        def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
+
+            self.jitter = torchvision.transforms.ColorJitter(brightness, contrast, saturation, hue)
+
+        def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+            return {
+                'img': self.jitter(img),
+                'box': box,
+                'label': label,
+                'mask': mask
+            }
 
 class Compose(object):
         """
