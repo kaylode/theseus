@@ -410,7 +410,7 @@ class Rotation(object):
         bbox = bbox[mask == 1,:]
         return bbox
 
-    def __call__(self, img, box = None, **kwargs):
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
         
         
         angle = random.uniform(*self.angle)
@@ -439,8 +439,44 @@ class Rotation(object):
         return {
             'img': img, 
             'box': new_box,
-            'label': kwargs['label'],
-            'mask': None}
+            'label': label,
+            'mask': mask}
+            
+class RandomVerticalFlip(object):
+        """
+        Horizontally flip image and its bounding box, mask
+        """
+        def __init__(self, ratio = 0.5):
+            self.ratio = ratio
+          
+        def __call__(self, img, box = None, label=None,  mask = None, **kwargs):
+            if random.randint(1,10) <= self.ratio*10:
+                # Flip image
+                img = img.transpose(Image.FLIP_TOP_BOTTOM)
+                
+                # Flip mask
+                if mask is not None:
+                    mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
+                    
+                # Flip bounding box
+                if box is not None:
+                    new_box = change_box_order(box, 'xywh2xyxy')
+                    h = img.width
+                    ymin = h - new_box[:,3]
+                    ymax = h - new_box[:,1]
+                    new_box[:,1] = ymin
+                    new_box[:,3] = ymax
+                    new_box = change_box_order(new_box, 'xyxy2xywh')
+                    box = new_box
+            
+
+            results = {
+                'img': img,
+                'box': box,
+                'label': label,
+                'mask': mask}
+    
+            return results
 
 class RandomHorizontalFlip(object):
         """
@@ -485,7 +521,7 @@ class RandomCrop(object):
     def __init__(self):
         self.ratios = [0.3, 0.5, 0.9, None]
         
-    def __call__(self, img, box = None, **kwargs):
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
         '''
         image: A PIL image
         boxes: Bounding boxes, a tensor of dimensions (#objects, 4)
@@ -506,13 +542,13 @@ class RandomCrop(object):
                 return {
                     'img': img,
                     'box': box,
-                    'label': kwargs['label'],
-                    'mask': None}
+                    'label': label,
+                    'mask': mask}
 
             boxes = change_box_order(box, 'xywh2xyxy')
             
             boxes = torch.FloatTensor(boxes)
-            labels = torch.LongTensor(kwargs['label'])
+            labels = torch.LongTensor(label)
                 
             new_image = image
             new_boxes = boxes
@@ -577,7 +613,7 @@ class RandomCrop(object):
                         'img': TF.to_pil_image(new_image),
                         'box': new_boxes.numpy(),
                         'label': new_labels.numpy(),
-                        'mask': None}
+                        'mask': mask}
 
 
 class Compose(object):
