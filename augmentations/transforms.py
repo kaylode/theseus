@@ -414,6 +414,10 @@ class Rotation(object):
         cx, cy = w//2, h//2
         img = self.rotate_im(img, angle)
         
+        if mask is not None:
+            mask = self.rotate_im(mask, angle)
+            
+
         if box is not None:
             new_box = change_box_order(box, 'xywh2xyxy')
             corners = self.get_corners(new_box)
@@ -423,6 +427,8 @@ class Rotation(object):
             scale_factor_x = img.shape[1] / w
             scale_factor_y = img.shape[0] / h
             img = cv2.resize(img, (w,h))
+            if mask is not None:
+                mask = cv2.resize(mask, (w,h))
             new_bbox[:,:4] /= [scale_factor_x, scale_factor_y, scale_factor_x, scale_factor_y] 
             new_box = new_bbox
             new_box = self.clip_box(new_box, [0,0,w, h], 0.25)
@@ -430,7 +436,8 @@ class Rotation(object):
         else:
             new_box = box
         
-        img=Image.fromarray(img)
+        img = Image.fromarray(img)
+        mask = Image.fromarray(mask) if mask is not None else None
 
         return {
             'img': img, 
@@ -481,13 +488,20 @@ class RandomShear(object):
     
         shear_factor = random.uniform(*self.shear_factor)
         img = np.array(img)
+        mask = np.array(mask) if mask is not None else None
         w,h = img.shape[1], img.shape[0]
     
         if shear_factor < 0:
+          if mask is not None:
+            mask = Image.fromarray(mask)
           img = Image.fromarray(img)
-          item = RandomHorizontalFlip(1)(img = img, box = box)
+          item = RandomHorizontalFlip(1)(img = img, box = box, mask = mask)
           img, box = item['img'], item['box']
           img = np.array(img)
+          if mask is not None:
+            mask = item['mask']
+            mask = np.array(mask)
+          
     
         M = np.array([[1, abs(shear_factor), 0],[0,1,0]])
         nW =  img.shape[1] + abs(shear_factor*img.shape[0])
@@ -498,14 +512,23 @@ class RandomShear(object):
           box = change_box_order(box, 'xyxy2xywh')
     
         img = cv2.warpAffine(img, M, (int(nW), img.shape[0]))
-    
+        if mask is not None:
+          mask = cv2.warpAffine(mask, M, (int(nW), mask.shape[0]))
+
         if shear_factor < 0:
+          if mask is not None:
+            mask = Image.fromarray(mask)
           img = Image.fromarray(img)
-          item = RandomHorizontalFlip(1)(img = img, box = box)
+          item = RandomHorizontalFlip(1)(img = img, box = box, mask = mask)
           img, box = item['img'], item['box']
           img = np.array(img)
+          if mask is not None:
+            mask = item['mask']
+            mask = np.array(mask)
     
         img = cv2.resize(img, (w,h))
+        mask = cv2.resize(mask, (w,h)) if mask is not None else None
+
         scale_factor_x = nW / w
 
         if box is not None:
@@ -513,8 +536,8 @@ class RandomShear(object):
           box[:,:4] /= [scale_factor_x, 1, scale_factor_x, 1] 
           box = change_box_order(box, 'xyxy2xywh')
 
-        img=Image.fromarray(img)
-
+        img = Image.fromarray(img)
+        mask = Image.fromarray(mask) if mask is not None else None
         return {
             'img': img, 
             'box': box,
