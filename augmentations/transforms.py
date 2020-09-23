@@ -634,6 +634,7 @@ class RandomCrop(object):
         '''
       
         image = TF.to_tensor(img)
+        masks = TF.to_tensor(mask) if mask is not None else mask
         original_h = image.size(1)
         original_w = image.size(2)
 
@@ -647,14 +648,19 @@ class RandomCrop(object):
                     'label': label,
                     'mask': mask}
 
-            boxes = change_box_order(box, 'xywh2xyxy')
+            if box is not None:
+                boxes = change_box_order(box, 'xywh2xyxy')
+                boxes = torch.FloatTensor(boxes)
+                labels = torch.LongTensor(label)
+            else:
+                boxes = None
+                labels = None
             
-            boxes = torch.FloatTensor(boxes)
-            labels = torch.LongTensor(label)
                 
             new_image = image
             new_boxes = boxes
             new_labels = labels
+            new_mask = masks if mask is not None else mask
 
             for _ in range(50):
                 # Crop dimensions: [0.3, 1] of original dimensions
@@ -673,49 +679,58 @@ class RandomCrop(object):
                 crop = torch.FloatTensor([int(left), int(top), int(right), int(bottom)])
 
                 # Calculate IoU  between the crop and the bounding boxes
-                overlap = find_jaccard_overlap(crop.unsqueeze(0), boxes) #(1, #objects)
-                overlap = overlap.squeeze(0)
-                # If not a single bounding box has a IoU of greater than the minimum, try again
-                if overlap.max().item() < mode:
-                    continue
+                if boxes is not None:
+                    overlap = find_jaccard_overlap(crop.unsqueeze(0), boxes) #(1, #objects)
+                    overlap = overlap.squeeze(0)
+                    # If not a single bounding box has a IoU of greater than the minimum, try again
+                    if overlap.max().item() < mode:
+                        continue
 
                 #Crop
                 new_image = image[:, int(top):int(bottom), int(left):int(right)] #(3, new_h, new_w)
+                new_masks = masks[:, int(top):int(bottom), int(left):int(right)] if masks is not None else masks
 
                 #Center of bounding boxes
-                center_bb = (boxes[:, :2] + boxes[:, 2:])/2.0
+                if boxes is not None:
+                    center_bb = (boxes[:, :2] + boxes[:, 2:])/2.0
 
-                #Find bounding box has been had center in crop
-                center_in_crop = (center_bb[:, 0] >left) * (center_bb[:, 0] < right
-                                 ) *(center_bb[:, 1] > top) * (center_bb[:, 1] < bottom)    #( #objects)
+                    #Find bounding box has been had center in crop
+                    center_in_crop = (center_bb[:, 0] >left) * (center_bb[:, 0] < right
+                                    ) *(center_bb[:, 1] > top) * (center_bb[:, 1] < bottom)    #( #objects)
 
-                if not center_in_crop.any():
-                    continue
+                    if not center_in_crop.any():
+                        continue
 
-                #take matching bounding box
-                new_boxes = boxes[center_in_crop, :]
+                    #take matching bounding box
+                    new_boxes = boxes[center_in_crop, :]
 
-                #take matching labels
-                new_labels = labels[center_in_crop]
+                    #take matching labels
+                    new_labels = labels[center_in_crop]
 
-                #Use the box left and top corner or the crop's
-                new_boxes[:, :2] = torch.max(new_boxes[:, :2], crop[:2])
+                    #Use the box left and top corner or the crop's
+                    new_boxes[:, :2] = torch.max(new_boxes[:, :2], crop[:2])
 
-                #adjust to crop
-                new_boxes[:, :2] -= crop[:2]
+                    #adjust to crop
+                    new_boxes[:, :2] -= crop[:2]
 
-                new_boxes[:, 2:] = torch.min(new_boxes[:, 2:],crop[2:])
+                    new_boxes[:, 2:] = torch.min(new_boxes[:, 2:],crop[2:])
 
-                #adjust to crop
-                new_boxes[:, 2:] -= crop[:2]
+                    #adjust to crop
+                    new_boxes[:, 2:] -= crop[:2]
                 
-                
-                new_boxes = change_box_order(new_boxes, 'xyxy2xywh')
+                    new_boxes = change_box_order(new_boxes, 'xyxy2xywh')
+                    new_boxes = new_boxes.numpy()
+                    new_labels = new_labels.numpy()
+                else:
+                    new_boxes = None
+
+                new_masks = TF.to_pil_image(new_masks) if new_masks is not None else None
+
                 return {
                         'img': TF.to_pil_image(new_image),
-                        'box': new_boxes.numpy(),
-                        'label': new_labels.numpy(),
-                        'mask': mask}
+                        'box': new_boxes,
+                        'label': new_labels,
+                        'mask': new_masks}
 
 class ColorJitter(object):
         """
