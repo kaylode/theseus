@@ -8,10 +8,10 @@ from torchvision import transforms
 
 
 class Classifier(BaseModel):
-    def __init__(self, n_classes, **kwargs):
+    def __init__(self, backbone, n_classes, **kwargs):
         super(Classifier, self).__init__(**kwargs)
-        self.model = models.resnet34(pretrained = True)
-        self.model_name = "ResNet34"
+        self.model = backbone
+        self.model_name = "Classifier"
         self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
         self.set_optimizer_params()
         self.n_classes = n_classes
@@ -19,8 +19,7 @@ class Classifier(BaseModel):
         if self.freeze:
             for params in self.model.parameters():
                 params.requires_grad = False
-        in_features = self.model.fc.in_features
-        self.model.fc = nn.Linear(in_features, n_classes)
+  
 
         if self.device:
             self.model.to(self.device)
