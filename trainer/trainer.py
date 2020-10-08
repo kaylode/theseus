@@ -73,7 +73,7 @@ class Trainer(nn.Module):
             loss, loss_dict = self.model.training_step(batch)
 
 
-            if loss == 0 or not torch.isfinite(loss):
+            if loss.item() == 0 or not torch.isfinite(loss):
                 continue
 
             loss.backward()
@@ -97,9 +97,9 @@ class Trainer(nn.Module):
                 
                 for key in running_loss.keys():
                     running_loss[key] /= self.print_per_iter
-
+                    running_loss[key] = np.round(running_loss[key], 5)
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
-                print("[{}|{}] [{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, iters, self.num_iters,loss_string, running_time))
+                print("[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(self.epoch, self.num_epochs, iters, self.num_iters,loss_string, running_time))
                 self.logging({"Training Loss/Batch" : running_loss['T']/ self.print_per_iter,})
                 running_loss = {}
                 running_time = 0
@@ -150,7 +150,7 @@ class Trainer(nn.Module):
 
         for key in epoch_loss.keys():
             epoch_loss[key] /= len(self.valloader)
-
+            epoch_loss[key] = np.round(epoch_loss[key], 5)
         loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
         print()
         print("[{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, loss_string, running_time))
