@@ -3,10 +3,10 @@ import random
 import numpy as np
 import torch
 import torchvision
+import PIL, PIL.ImageOps, PIL.ImageEnhance, PIL.ImageDraw
 from PIL import Image
 import cv2
 from utils.utils import change_box_order, find_intersection, find_jaccard_overlap
-
 
 class Normalize(object):
         """
@@ -60,7 +60,7 @@ class ToPILImage(object):
     def __init__(self, mode=None):
         self.mode = mode
 
-    def __call__(self, pic):
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
         """
         Args:
             pic (Tensor or numpy.ndarray): Image to be converted to PIL Image.
@@ -69,7 +69,12 @@ class ToPILImage(object):
             PIL Image: Image converted to PIL Image.
 
         """
-        return TF.to_pil_image(pic, self.mode)
+        return {
+                'img': TF.to_pil_image(img, self.mode),
+                'box': box,
+                'label': label,
+                'mask': mask
+            }
 
 class Denormalize(object):
         """
@@ -444,8 +449,7 @@ class Rotation(object):
             'box': new_box,
             'label': label,
             'mask': mask}
-
-           
+          
 class RandomShear(object):
     """Randomly shears an image in horizontal direction   
     
@@ -760,6 +764,269 @@ class ColorJitter(object):
                 'mask': mask
             }
 
+class Cutout(object):
+    #https://github.com/uoguelph-mlrg/Cutout/blob/master/util/cutout.py
+    """Randomly mask out one or more patches from an image.
+    Args:
+        n_holes (int): Number of patches to cut out of each image.
+        length (int): The length (in pixels) of each square patch.
+    """
+    def __init__(self, holes_ratio=0.05, length=8):
+        self.holes_ratio = holes_ratio
+        self.length = length
+
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+        """
+        Args:
+            img (Tensor): Tensor image of size (C, H, W).
+        Returns:
+            Tensor: Image with n_holes of dimension length x length cut out of it.
+        """
+        h = img.size(1)
+        w = img.size(2)
+        
+        n_holes = int( h*w* self.holes_ratio / (self.length *self.length) )
+        
+        mask = np.ones((h, w), np.float32)
+
+        for n in range(n_holes):
+            y = np.random.randint(h)
+            x = np.random.randint(w)
+
+            y1 = np.clip(y - self.length // 2, 0, h)
+            y2 = np.clip(y + self.length // 2, 0, h)
+            x1 = np.clip(x - self.length // 2, 0, w)
+            x2 = np.clip(x + self.length // 2, 0, w)
+
+            mask[y1: y2, x1: x2] = 0.
+
+        mask = torch.from_numpy(mask)
+        mask = mask.expand_as(img)
+        img = img * mask
+
+        return {
+                'img': img,
+                'box': box,
+                'label': label,
+                'mask': mask
+            }
+
+
+class RandAugment(object):
+    #https://github.com/ildoonet/pytorch-randaugment/blob/master/RandAugment/augmentations.py
+    def ShearX(self, img, v):  # [-0.3, 0.3]
+        assert -0.3 <= v <= 0.3
+        if random.random() > 0.5:
+            v = -v
+        return img.transform(img.size, PIL.Image.AFFINE, (1, v, 0, 0, 1, 0))
+
+    def ShearY(self, img, v):  # [-0.3, 0.3]
+        assert -0.3 <= v <= 0.3
+        if random.random() > 0.5:
+            v = -v
+        return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, v, 1, 0))
+
+
+    def TranslateX(self, img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+        assert -0.45 <= v <= 0.45
+        if random.random() > 0.5:
+            v = -v
+        v = v * img.size[0]
+        return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
+
+
+    def TranslateXabs(self, img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+        assert 0 <= v
+        if random.random() > 0.5:
+            v = -v
+        return img.transform(img.size, PIL.Image.AFFINE, (1, 0, v, 0, 1, 0))
+
+
+    def TranslateY(self, img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+        assert -0.45 <= v <= 0.45
+        if random.random() > 0.5:
+            v = -v
+        v = v * img.size[1]
+        return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+
+
+    def TranslateYabs(self, img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
+        assert 0 <= v
+        if random.random() > 0.5:
+            v = -v
+        return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
+
+
+    def Rotate(self, img, v):  # [-30, 30]
+        assert -30 <= v <= 30
+        if random.random() > 0.5:
+            v = -v
+        return img.rotate(v)
+
+
+    def AutoContrast(self, img, _):
+        return PIL.ImageOps.autocontrast(img)
+
+
+    def Invert(self, img, _):
+        return PIL.ImageOps.invert(img)
+
+
+    def Equalize(self, img, _):
+        return PIL.ImageOps.equalize(img)
+
+
+    def Flip(self, img, _):  # not from the paper
+        return PIL.ImageOps.mirror(img)
+
+
+    def Solarize(self, img, v):  # [0, 256]
+        assert 0 <= v <= 256
+        return PIL.ImageOps.solarize(img, v)
+
+
+    def SolarizeAdd(self, img, addition=0, threshold=128):
+        img_np = np.array(img).astype(np.int)
+        img_np = img_np + addition
+        img_np = np.clip(img_np, 0, 255)
+        img_np = img_np.astype(np.uint8)
+        img = Image.fromarray(img_np)
+        return PIL.ImageOps.solarize(img, threshold)
+
+
+    def Posterize(self, img, v):  # [4, 8]
+        v = int(v)
+        v = max(1, v)
+        return PIL.ImageOps.posterize(img, v)
+
+
+    def Contrast(self, img, v):  # [0.1,1.9]
+        assert 0.1 <= v <= 1.9
+        return PIL.ImageEnhance.Contrast(img).enhance(v)
+
+
+    def Color(self, img, v):  # [0.1,1.9]
+        assert 0.1 <= v <= 1.9
+        return PIL.ImageEnhance.Color(img).enhance(v)
+
+
+    def Brightness(self, img, v):  # [0.1,1.9]
+        assert 0.1 <= v <= 1.9
+        return PIL.ImageEnhance.Brightness(img).enhance(v)
+
+
+    def Sharpness(self, img, v):  # [0.1,1.9]
+        assert 0.1 <= v <= 1.9
+        return PIL.ImageEnhance.Sharpness(img).enhance(v)
+
+
+    def Cutout(self, img, v):  # [0, 60] => percentage: [0, 0.2]
+        assert 0.0 <= v <= 0.2
+        if v <= 0.:
+            return img
+
+        v = v * img.size[0]
+        return CutoutAbs(img, v)
+
+
+    def CutoutAbs(self, img, v):  # [0, 60] => percentage: [0, 0.2]
+        # assert 0 <= v <= 20
+        if v < 0:
+            return img
+        w, h = img.size
+        x0 = np.random.uniform(w)
+        y0 = np.random.uniform(h)
+
+        x0 = int(max(0, x0 - v / 2.))
+        y0 = int(max(0, y0 - v / 2.))
+        x1 = min(w, x0 + v)
+        y1 = min(h, y0 + v)
+
+        xy = (x0, y0, x1, y1)
+        color = (125, 123, 114)
+        # color = (0, 0, 0)
+        img = img.copy()
+        PIL.ImageDraw.Draw(img).rectangle(xy, color)
+        return img
+
+
+    def SamplePairing(self, imgs):  # [0, 0.4]
+        def f(img1, v):
+            i = np.random.choice(len(imgs))
+            img2 = PIL.Image.fromarray(imgs[i])
+            return PIL.Image.blend(img1, img2, v)
+
+        return f
+
+
+    def Identity(self, img, v):
+        return img
+
+
+    def augment_list(self):  # 16 oeprations and their ranges
+        #https://github.com/google-research/uda/blob/master/image/randaugment/policies.py#L57
+        l = [
+            (self.Identity, 0., 1.0),
+            (self.ShearX, 0., 0.3),  # 0
+            (self.ShearY, 0., 0.3),  # 1
+            (self.TranslateX, 0., 0.33),  # 2
+            (self.TranslateY, 0., 0.33),  # 3
+            (self.Rotate, 0, 30),  # 4
+            (self.AutoContrast, 0, 1),  # 5
+            (self.Invert, 0, 1),  # 6
+            (self.Equalize, 0, 1),  # 7
+            (self.Solarize, 0, 110),  # 8
+            (self.Posterize, 4, 8),  # 9
+            # (Contrast, 0.1, 1.9),  # 10
+            (self.Color, 0.1, 1.9),  # 11
+            (self.Brightness, 0.1, 1.9),  # 12
+            (self.Sharpness, 0.1, 1.9),  # 13
+            # (Cutout, 0, 0.2),  # 14
+            # (SamplePairing(imgs), 0, 0.4),  # 15
+        ]
+
+        # https://github.com/tensorflow/tpu/blob/8462d083dd89489a79e3200bcc8d4063bf362186/models/official/efficientnet/autoaugment.py#L505
+        # l = [
+        #     (self.AutoContrast, 0, 1),
+        #     (self.Equalize, 0, 1),
+        #     (self.Invert, 0, 1),
+        #     (self.Rotate, 0, 30),
+        #     (self.Posterize, 0, 4),
+        #     (self.Solarize, 0, 256),
+        #     (self.SolarizeAdd, 0, 110),
+        #     (self.Color, 0.1, 1.9),
+        #     (self.Contrast, 0.1, 1.9),
+        #     (self.Brightness, 0.1, 1.9),
+        #     (self.Sharpness, 0.1, 1.9),
+        #     (self.ShearX, 0., 0.3),
+        #     (self.ShearY, 0., 0.3),
+        #     (self.CutoutAbs, 0, 40),
+        #     (self.TranslateXabs, 0., 100),
+        #     (self.TranslateYabs, 0., 100),
+        # ]
+
+        return l
+
+    def __init__(self, n, m):
+        self.n = n
+        self.m = m      # [0, 30]
+        self.augment_list = self.augment_list()
+
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+        ops = random.choices(self.augment_list, k=self.n)
+        for op, minval, maxval in ops:
+            val = (float(self.m) / 30) * float(maxval - minval) + minval
+            img = op(img, val)
+
+        return {
+                'img': img,
+                'box': box,
+                'label': label,
+                'mask': mask
+            }
+
+
+
 class Compose(object):
         """
         - Custom Transform class include image augmentation methods, return dict
@@ -788,8 +1055,8 @@ class Compose(object):
                     self.denormalize = Denormalize(box_transform=x.box_transform)
 
         def __call__(self, img, box = None, label = None, mask = None):
-            for tf in self.transforms_list:
-                results = tf(img = img, box = box, label = label, mask = mask)
+            for tf_ in self.transforms_list:
+                results = tf_(img = img, box = box, label = label, mask = mask)
                 img = results['img']
                 box = results['box']
                 label = results['label']
