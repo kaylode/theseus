@@ -1,6 +1,7 @@
 from utils.getter import *
 from models.detection.efficientdet.detector import EfficientDetector
 from models.detection.efficientdet.model import FocalLoss
+
 train_transforms = Compose([
     RandomHorizontalFlip(),
     Rotation(20),
@@ -15,6 +16,9 @@ val_transforms = Compose([
     ToTensor(),
     Normalize(),
 ])
+
+
+
 
 if __name__ == "__main__":
     dataset_path = "datasets/datasets/VOC/"
