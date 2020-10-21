@@ -1025,7 +1025,28 @@ class RandAugment(object):
                 'mask': mask
             }
 
+def do_nothing(img, box = None, label = None, mask = None, **kwargs):
+    return {
+        'img': img,
+        'mask': mask, 
+        'box': box,
+        'label': label
+    }
 
+def enable_if(condition, obj):
+    return obj if condition else do_nothing
+
+def get_augmentation(config, types = 'train'):
+    return Compose([
+        Resize(size = config.image_size),
+        enable_if(config.augmentations.get('horizontal_flip', 0) > 0 and types == 'train', RandomHorizontalFlip(config.augmentations['horizontal_flip'])),
+        enable_if(config.augmentations.get('shear', 0) > 0 and types == 'train', RandomShear(config.augmentations['shear'])),
+        enable_if(config.augmentations.get('rotation', 0) > 0 and types == 'train', Rotation(config.augmentations['rotation'])),
+        enable_if(config.augmentations.get('colorjitter') is not None and types == 'train', ColorJitter(**config.augmentations['colorjitter'])),
+        ToTensor(),
+        enable_if(config.augmentations.get('cutout', 0) > 0 and types == 'train', Cutout(config.augmentations['cutout'])),
+        Normalize(box_transform=False)
+    ])
 
 class Compose(object):
         """

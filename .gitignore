@@ -66,3 +66,4 @@ models/tpu_model.py
 *.ipynb
 *.png
 *.txt
+Data Visualizer.ipynb
