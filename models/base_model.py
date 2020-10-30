@@ -2,23 +2,17 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 
-from metrics.classification import AccuracyMetric
-
-
-
 class BaseModel(nn.Module):
     def __init__(self,
                 optimizer,
                 criterion,
-                metrics = AccuracyMetric(),
-                lr = 1e-4,
+                metrics = None,
                 device = None,
                 freeze = False,
                 optim_params = None):
 
         super(BaseModel, self).__init__()
         
-        self.lr = lr
         self.optimizer = optimizer
         self.criterion = criterion
         self.device = device
@@ -27,7 +21,7 @@ class BaseModel(nn.Module):
         if not isinstance(metrics, list):
             self.metrics = [metrics,]
 
-        self.optim_params = optim_params if optim_params is not None else {'lr': lr,} 
+        self.optim_params = optim_params if optim_params is not None else {'lr': 1e-3,} 
 
     def set_optimizer_params(self):
         for g in self.optimizer.param_groups:
