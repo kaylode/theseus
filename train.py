@@ -1,86 +1,92 @@
 from utils.getter import *
-from models.detection.efficientdet.detector import EfficientDetector
-from models.detection.efficientdet.model import FocalLoss
+import argparse
+import pandas as pd
 
-train_transforms = Compose([
-    RandomHorizontalFlip(),
-    Rotation(20),
-    RandomCrop(),
-    Resize((512,512)),
-    ToTensor(),
-    Normalize(box_transform = False),
-])
+def main(args, config):
 
-val_transforms = Compose([
-    Resize((512,512)),
-    ToTensor(),
-    Normalize(),
-])
+    device = torch.device('cuda' if args.cuda is not None else 'cpu')
+    
+    
+    train_transforms = get_augmentation(config)
+    val_transforms = get_augmentation(config, types = 'val')
 
 
+    trainset = ImageClassificationDataset(
+        img_dir = config.dataset.img_dir,
+        transforms = train_transforms,
+        max_samples = None)
 
+    valset = ImageClassificationDataset(
+        img_dir = config.dataset.img_dir,
+        transforms = val_transforms,
+        max_samples = None)
 
-if __name__ == "__main__":
-    dataset_path = "datasets/datasets/VOC/"
-    img_path = dataset_path + "images"
-    ann_path = {
-        "train": dataset_path + "annotations/pascal_train2012.json",
-        "val": dataset_path + "annotations/pascal_val2012.json"}
-   
-    trainset = ObjectDetectionDataset(img_dir=img_path, ann_path = ann_path['train'],transforms= train_transforms)
-    valset = ObjectDetectionDataset(img_dir=img_path, ann_path = ann_path['val'], transforms=val_transforms)
     print(trainset)
     print(valset)
+ 
+    trainloader = data.DataLoader(
+        trainset, 
+        batch_size=args.batch_size, 
+        collate_fn=trainset.collate_fn,
+        num_workers=4,
+        pin_memory=True, 
+        shuffle=True)
 
-    trainset.mode='xyxy'
-    valset.mode='xyxy'
+    valloader = data.DataLoader(
+        valset, 
+        batch_size=args.batch_size, 
+        collate_fn=valset.collate_fn,
+        num_workers=4,
+        pin_memory=True, 
+        shuffle=False)
     
-    NUM_CLASSES = len(trainset.classes)
-    device = torch.device("cuda")
-    print("Using", device)
+    NUM_CLASSES = len(config.classes)
 
-    # Dataloader
-    BATCH_SIZE = 1
-    my_collate = trainset.collate_fn
-    trainloader = data.DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=True)
-    valloader = data.DataLoader(valset, batch_size=BATCH_SIZE, collate_fn=my_collate, shuffle=False)
+    backbone = models.resnet101(pretrained=True)
+    model = Classifier(
+        backbone= backbone,
+        criterion = smoothCELoss(),
+        metrics= AccuracyMetric(),
+        optimizer= torch.optim.Adam,
+        optim_params = {'lr': 1e-3},
+        device = device
+    )
     
-    criterion = FocalLoss
-    optimizer = torch.optim.Adam
-    #metrics = [AccuracyMetric(decimals=3)]
-    
-    model = EfficientDetector(
-                    n_classes = NUM_CLASSES,
-                    optim_params = {'lr': 1e-3},
-                    criterion= criterion, 
-                    optimizer= optimizer,
-                    freeze=True,
-                    pretrained='weights/pretrained/efficientdet-d0-fixed.pth',
-                    #metrics=  metrics,
-                    device = device)
-    
-    #load_checkpoint(model, "weights/ssd-voc/SSD300-10.pth")
-    #model.unfreeze()
+    model.model_name = args.config
+
+    if args.resume is not None:
+        load_checkpoint(model, args.resume)
+        epoch, iters = get_epoch_iters(args.resume)
+    else:
+        epoch = 0
+        iters = 0
+
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
-#                     clip_grad = 1.0,
-                     checkpoint = Checkpoint(save_per_epoch=5, path = 'weights/effdet'),
-                     logger = Logger(log_dir='loggers/runs/effdet'),
+                     checkpoint = Checkpoint(save_per_iter=1000, path = args.saved_path),
+                     logger = Logger(log_dir = f'loggers/runs/{args.config}'),
                      scheduler = StepLR(model.optimizer, step_size=30, gamma=0.1),
                      evaluate_per_epoch = 2)
     
     print(trainer)
-    
-    
-    
-    trainer.fit(num_epochs=50, print_per_iter=10)
-    
+    trainer.fit(num_epochs=50, print_per_iter=10,start_epoch=epoch,start_iter=iters)
 
-    # Inference
-    """imgs, results = trainer.inference_batch(valloader)
-    idx = 0
-    img = imgs[idx]
-    boxes = results[idx]['rois']
-    labels = results[idx]['class_ids']
-    trainset.visualize(img,boxes,labels)"""
+if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description='Training on Flickr 30k')
+    parser.add_argument('--cuda', type=bool, default=True,
+                        help='Using GPU')
+    parser.add_argument('--config', default='dualpath',
+                        help='yaml config')
+    parser.add_argument('--batch_size', default=4, type=int,
+                        help='batch size')
+    parser.add_argument('--saved_path', default='weights', type=str,
+                        help='save checkpoint to')
+    parser.add_argument('--resume', default=None, type=str,
+                        help='resume training')                   
+    args = parser.parse_args() 
+    
+    config = Config(os.path.join('configs', args.config + '.yaml'))
+    main(args, config)
+   

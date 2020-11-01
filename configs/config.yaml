@@ -1,0 +1,17 @@
+settings:
+  image_size: [256,256]
+  dataset:
+    img_path: "datasets/datasets/VOC/images"
+    train_path: "datasets/datasets/VOC/annotations/pascal_train2012.json"
+    val_path: "datasets/datasets/VOC/annotations/pascal_val2012.json"
+
+  augmentations:
+    horizontal_flip: 0
+    shear: 0
+    rotation: 0
+    colorjitter:
+      brightness: 0
+      constrast: 0
+      saturation: 0
+      hue: 0
+    cutout: 0
