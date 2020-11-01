@@ -14,3 +14,12 @@ import torch.nn as nn
 import torch.utils.data as data
 import torchvision.models as models
 from torch.optim.lr_scheduler import StepLR
+
+from .random_seed import seed_everything
+
+def get_instance(config, **kwargs):
+    assert 'name' in config
+    config.setdefault('args', {})
+    if config['args'] is None:
+        config['args'] = {}
+    return globals()[config['name']](**config['args'], **kwargs)
