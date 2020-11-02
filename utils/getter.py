@@ -17,7 +17,9 @@ from torch.optim.lr_scheduler import StepLR
 
 from .random_seed import seed_everything
 
+
 def get_instance(config, **kwargs):
+    # Inherited from https://github.com/vltanh/pytorch-template
     assert 'name' in config
     config.setdefault('args', {})
     if config['args'] is None:
