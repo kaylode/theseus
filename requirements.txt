@@ -1,6 +1,4 @@
-emoji
-nltk
-transformers
-pytorch_lightning
+yaml
+webcolors
 tensorboard
 tqdm
