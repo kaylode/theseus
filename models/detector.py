@@ -73,21 +73,10 @@ class Detector(BaseModel):
 
         loc_preds, cls_preds = self(inputs)
         loss = self.criterion(loc_preds, cls_preds, boxes, labels)
-        metric_dict = {'map': 0}
-        """outputs = self.model.detect(
-            loc_preds,
-            cls_preds)
-
-        metric_dict = self.update_metrics(
-            outputs = {
-                'det_boxes': outputs['boxes'],
-                'det_labels': outputs['labels'],
-                'det_scores': outputs['scores']},
-            targets={
-                'gt_boxes': boxes,
-                'gt_labels': labels})"""
         
-        return loss , metric_dict
+        self.update_metrics(model=self)
+        
+        return loss 
 
     def forward_test(self, size = 224):
         inputs = torch.rand(1,3,size,size)

@@ -140,7 +140,7 @@ class Trainer(nn.Module):
         start_time = time.time()
         with torch.no_grad():
             for batch in tqdm(self.valloader):
-                (loss, loss_dict), metrics = self.model.evaluate_step(batch)
+                loss, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():
                     if key in epoch_loss.keys():
@@ -150,7 +150,7 @@ class Trainer(nn.Module):
 
         end_time = time.time()
         running_time = end_time - start_time
-        metric_dict.update(metrics)
+        metric_dict = self.model.get_metric_values()
         self.model.reset_metrics()
 
         for key in epoch_loss.keys():
@@ -162,15 +162,11 @@ class Trainer(nn.Module):
 
         for metric, score in metric_dict.items():
             print(metric +': ' + str(score), end = ' | ')
-        print('==')
         print('==========================================================================')
 
         log_dict = {"Validation Loss/Epoch" : epoch_loss['T'] / len(self.valloader),}
         log_dict.update(metric_dict)
         self.logging(log_dict)
-        
-    
-
 
     def logging(self, logs):
         tags = [l for l in logs.keys()]

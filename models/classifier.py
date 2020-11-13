@@ -61,9 +61,9 @@ class Classifier(BaseModel):
         outputs = self(inputs) #batchsize, label_dim
         loss = self.criterion(outputs, targets)
 
-        metric_dict = self.update_metrics(outputs, targets)
+        self.update_metrics(outputs = outputs, targets = targets)
         
-        return loss , metric_dict
+        return loss
 
     def forward_test(self):
         inputs = torch.rand(1,3,224,224)

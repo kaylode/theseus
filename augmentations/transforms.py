@@ -1038,11 +1038,11 @@ def enable_if(condition, obj):
 
 def get_augmentation(config, types = 'train'):
     return Compose([
-        Resize(size = config['image_size']),
+        enable_if(config.get('image_size', None) is not None, Resize(config['image_size'])),
         enable_if(config.get('horizontal_flip', 0) > 0 and types == 'train', RandomHorizontalFlip(config['horizontal_flip'])),
         enable_if(config.get('shear', 0) > 0 and types == 'train', RandomShear(config['shear'])),
         enable_if(config.get('rotation', 0) > 0 and types == 'train', Rotation(config['rotation'])),
-        enable_if(config.get('colorjitter') is not None and types == 'train', ColorJitter(**config['colorjitter'])),
+        enable_if(config.get('colorjitter', None) is not None and types == 'train', ColorJitter(**config['colorjitter'])),
         ToTensor(),
         enable_if(config.get('cutout', 0) > 0 and types == 'train', Cutout(config['cutout'])),
         Normalize(box_transform=False)
