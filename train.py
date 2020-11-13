@@ -1,6 +1,8 @@
 from utils.getter import get_instance, seed_everything
 import argparse
 
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.fastest = True
 
 def main(args, config):
     seed_everything()
