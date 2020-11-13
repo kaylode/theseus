@@ -4,8 +4,8 @@ import torch.utils.data as data
 
 class BaseModel(nn.Module):
     def __init__(self,
-                optimizer,
-                criterion,
+                optimizer = None,
+                criterion = None,
                 metrics = None,
                 device = None,
                 freeze = False,
@@ -36,10 +36,13 @@ class BaseModel(nn.Module):
     def trainable_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-    def update_metrics(self, outputs, targets):
+    def update_metrics(self, **kwargs):
+        for metric in self.metrics:
+            metric.update(**kwargs)
+             
+    def get_metric_values(self):
         metric_dict = {}
         for metric in self.metrics:
-            metric.update(outputs, targets)
             metric_dict.update(metric.value())
         return metric_dict
     
