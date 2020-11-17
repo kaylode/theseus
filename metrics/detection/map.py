@@ -5,8 +5,9 @@ import numpy as np
 from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from metrics import TemplateMetric
+from .metrics import TemplateMetric
 from utils.utils import postprocessing, box_nms_numpy
+
 
 """
     Example use:
@@ -20,7 +21,6 @@ from utils.utils import postprocessing, box_nms_numpy
                         Resize(size = (626, 626))]))
 """
 
-
 def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
     # load results in COCO evaluation tool
     coco_pred = coco_gt.loadRes(pred_json_path)
@@ -29,7 +29,6 @@ def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
     coco_eval = COCOeval(coco_gt, coco_pred, 'bbox')
     coco_eval.params.imgIds = image_ids
 
-    coco_eval.params.maxDets[2] = kwargs['max_detection']
     # Some params for COCO eval
     #imgIds = []
     #catIds = []
@@ -50,7 +49,7 @@ class mAPScores(TemplateMetric):
     def __init__(
             self,
             dataset, 
-            max_images = 10000,
+            max_images = 2000,
             retransforms=None,
             min_conf = 0.3, 
             min_iou = 0.3, 
@@ -68,8 +67,8 @@ class mAPScores(TemplateMetric):
         self.retransforms = retransforms
         self.min_conf = min_conf
         self.min_iou = min_iou
+        self.decimals = decimals
         self.max_images = max_images
-        self.max_detection = max_detection
         self.filepath = f'results/bbox_results.json'
         self.image_ids = []
         self.reset()
@@ -89,7 +88,7 @@ class mAPScores(TemplateMetric):
         results = []
         empty_imgs = 0
         with torch.no_grad():
-            pbar = tqdm(self.dataloader)
+
             with tqdm(total=min(len(self.dataloader), self.max_images)) as pbar:
                 for idx, batch in enumerate(self.dataloader):
                     if idx > self.max_images:
@@ -98,34 +97,28 @@ class mAPScores(TemplateMetric):
                     self.image_ids.append(image_id)
                     batch['imgs'] = batch['imgs'].to(self.model.device)
                     preds = self.model.inference_step(batch, self.min_conf, self.min_iou)
-                    preds = postprocessing(preds, batch['imgs'].cpu()[0], self.retransforms, out_format='xywh')
+                    preds = postprocessing(preds, batch['imgs'].cpu()[0], self.retransforms, out_format='xywh')[0]
+                    
 
-                    try:
-                        bbox_xywh = np.concatenate([i['bboxes'] for i in preds if len(i['bboxes'])>0]) 
-                        cls_ids = np.concatenate([i['classes'] for i in preds if len(i['bboxes'])>0])    
-                        cls_conf = np.concatenate([i['scores'] for i in preds if len(i['bboxes'])>0])
-                        bbox_xywh, cls_conf, cls_ids = box_nms_numpy(bbox_xywh, cls_conf, cls_ids, threshold=self.min_iou, box_format='xywh')
-                    except:
-                        bbox_xywh = None
-                        cls_ids = None
-                        cls_conf = None
+                    bbox_xywh = preds['bboxes']
+                    cls_ids = preds['classes']
+                    cls_conf = preds['scores']
 
-                    if bbox_xywh is None:
+                    if bbox_xywh is None or len(bbox_xywh) == 0:
                         empty_imgs += 1
-                        continue
+                    else:
+                        for i in range(bbox_xywh.shape[0]):
+                            score = float(cls_conf[i])
+                            label = int(cls_ids[i])
+                            box = bbox_xywh[i, :]
+                            image_result = {
+                                'image_id': image_id,
+                                'category_id': label + 1,
+                                'score': float(score),
+                                'bbox': box.tolist(),
+                            }
 
-                    for i in range(bbox_xywh.shape[0]):
-                        score = float(cls_conf[i])
-                        label = int(cls_ids[i])
-                        box = bbox_xywh[i, :]
-                        image_result = {
-                            'image_id': image_id,
-                            'category_id': label + 1,
-                            'score': float(score),
-                            'bbox': box.tolist(),
-                        }
-
-                        results.append(image_result)
+                            results.append(image_result)
                     pbar.update(1)
                     pbar.set_description(f'Empty images: {empty_imgs}')
 
@@ -139,12 +132,12 @@ class mAPScores(TemplateMetric):
 
     def value(self):
         self.compute()
-        stats = _eval(self.coco_gt, self.image_ids, self.filepath, max_detection=self.max_detection)
+        stats = _eval(self.coco_gt, self.image_ids, self.filepath)
         return {
-            "MAP" : stats[0],
-            "MAPsmall" : stats[1],
-            "mAPmedium" : stats[2],
-            "mAPlarge" : stats[3],}
+            "MAP" : np.round(float(stats[0]),self.decimals),
+            "MAPsmall" : np.round(float(stats[3]),self.decimals),
+            "MAPmedium" : np.round(float(stats[4]),self.decimals),
+            "MAPlarge" : np.round(float(stats[5]),self.decimals),}
 
     def __str__(self):
         return f'Mean Average Precision: {self.value()}'
