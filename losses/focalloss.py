@@ -30,12 +30,13 @@ class FocalLoss(nn.Module):
         log_prob = F.log_softmax(input_tensor, dim=-1)
         prob = torch.exp(log_prob) 
         target = target_tensor.long()
-        return {'T':F.nll_loss(
+        loss = F.nll_loss(
             ((1 - prob) ** self.gamma) * log_prob, 
             target_tensor.long(), 
             weight=self.weight,
             reduction = self.reduction
-        ).mean()}
+        ).mean()
+        return loss, {'T': loss.item()}
 
 
 

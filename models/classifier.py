@@ -37,8 +37,8 @@ class Classifier(BaseModel):
             targets = targets.to(self.device)
         
         outputs = self(inputs)
-        loss = self.criterion(outputs, targets)
-        return loss
+        loss, loss_dict = self.criterion(outputs, targets)
+        return loss, loss_dict
 
     
     def inference_step(self, batch):
@@ -59,11 +59,11 @@ class Classifier(BaseModel):
             inputs = inputs.to(self.device)
             targets = targets.to(self.device)
         outputs = self(inputs) #batchsize, label_dim
-        loss = self.criterion(outputs, targets)
+        loss, loss_dict = self.criterion(outputs, targets)
 
         self.update_metrics(outputs = outputs, targets = targets)
         
-        return loss
+        return loss, loss_dict
 
     def forward_test(self):
         inputs = torch.rand(1,3,224,224)

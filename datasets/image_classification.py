@@ -89,7 +89,7 @@ class ImageClassificationDataset(data.Dataset):
             results = self.transforms.denormalize(img = img, box = None, label = label)
             img, label = results['img'], results['label']
 
-        label = label.numpy()
+        label = label.numpy().item()
         self.visualize(img, label, figsize = figsize)
 
     
