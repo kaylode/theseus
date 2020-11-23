@@ -1,23 +1,40 @@
 import torch
 import numpy as np
 
+def compute_multiclass(output, target):
+    pred = torch.argmax(output, dim=1)
+    correct = (pred == target).sum()
+    sample_size = output.size(0)
+    return correct, sample_size
+
+def compute_binary(output, target, thresh=0.7):
+    
+    pred = output >= thresh
+    correct = (pred == target).sum()
+    sample_size = output.size(0)
+    return correct, sample_size
+
+def get_compute(types):
+    if types == 'binary':
+        return compute_binary
+    elif types == 'multi':
+        return compute_multiclass
+
 class AccuracyMetric():
     """
     Accuracy metric for classification
     """
-    def __init__(self, decimals = 10):
+    def __init__(self, types = 'multi', decimals = 10):
         self.reset()
         self.decimals = decimals
+        self.compute_fn = get_compute(types)
+        
+    def compute(self, outputs, targets):
+        return self.compute_fn(outputs.squeeze(1), targets)
 
-    def compute(self, output, target):
-        pred = torch.argmax(output, dim=1)
-        correct = (pred == target).sum()
-        sample_size = output.size(0)
-        return correct, sample_size
-
-    def update(self,  output, target):
-        assert isinstance(output, torch.Tensor), "Please input tensors"
-        value = self.compute(output, target)
+    def update(self,  outputs, targets):
+        assert isinstance(outputs, torch.Tensor), "Please input tensors"
+        value = self.compute(outputs, targets)
         self.correct += value[0]
         self.sample_size += value[1]
 

@@ -12,7 +12,7 @@ class Classifier(BaseModel):
         super(Classifier, self).__init__(**kwargs)
         self.model = backbone
         self.model_name = "Classifier"
-        self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
+        self.optimizer = self.optimizer(self.parameters())
         self.set_optimizer_params()
         self.n_classes = n_classes
 
