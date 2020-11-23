@@ -29,6 +29,5 @@ class TemplateMetric():
     def __len__(self):
         return len(self.sample_size)
 
-if __name__ == '__main__':
     
   
