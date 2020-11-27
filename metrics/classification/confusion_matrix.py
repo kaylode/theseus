@@ -51,6 +51,10 @@ class ConfusionMatrix():
     def update(self,  outputs, targets):
         assert isinstance(outputs, torch.Tensor), "Please input tensors"
         outputs = torch.argmax(outputs,dim=1)
+        if outputs.is_cuda:
+            outputs = outputs.cpu()
+            targets = targets.cpu()
+
         self.outputs +=  outputs.numpy().tolist()
         self.targets +=  targets.numpy().tolist()
         
