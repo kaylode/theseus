@@ -23,7 +23,7 @@ class Classifier(BaseModel):
 
         if self.device:
             self.model.to(self.device)
-            self.criterion.to(self.device)
+            #self.criterion.to(self.device)
     
 
     def forward(self, x):
@@ -62,6 +62,7 @@ class Classifier(BaseModel):
         loss, loss_dict = self.criterion(outputs, targets)
 
         self.update_metrics(outputs = outputs, targets = targets)
+        
         
         return loss, loss_dict
 
