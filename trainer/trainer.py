@@ -7,7 +7,7 @@ import numpy as np
 from loggers.loggers import Logger
 from utils.utils import clip_gradient
 import time
-from utils.utils import box_nms_numpy, change_box_order
+from utils.utils import box_nms_numpy, change_box_order, draw_pred_gt_boxes
 
 class Trainer(nn.Module):
     def __init__(self, 
