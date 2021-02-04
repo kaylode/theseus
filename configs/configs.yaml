@@ -1,0 +1,25 @@
+settings:
+  project_name: ""  # also the folder name of the dataset that under datasets folder
+  train_imgs: images/train
+  val_imgs: images/train
+  test_imgs: images/test
+  train_anns: annotations/instances_train.json
+  val_anns: annotations/instances_val.json
+
+  # this is coco anchors, change it if necessary
+  anchors_scales: '[2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]'
+  anchors_ratios: '[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)]'
+
+  # must match your dataset's category_id.
+  # category_id is one_indexed,
+  # for example, index of 'car' here is 1, while category_id of is 2
+  obj_list: []
+
+  # custom augmentations
+  
+  image_size: [512,512]
+  keep_ratio: False
+
+  # Detection settings
+  cutmix: True
+  mixup: True
