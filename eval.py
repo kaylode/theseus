@@ -12,6 +12,7 @@ import pandas as pd
 from tqdm import tqdm
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
+from augmentations.transforms import get_resize_augmentation
 
 BATCH_SIZE = 4
 
@@ -21,6 +22,7 @@ class TestDataset(Dataset):
         self.root_dir = os.path.join('datasets', config.project_name, config.test_imgs)
         self.test_df = test_df
         self.transforms = transforms
+        self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=False)
         self.load_data()
 
     def load_data(self):
@@ -31,37 +33,51 @@ class TestDataset(Dataset):
         ]
 
     def __getitem__(self, idx):
-        image_id, image_w, image_h = self.fns[idx]
+        image_id, image_ori_w, image_ori_h = self.fns[idx]
         img_path = os.path.join(self.root_dir, image_id+'.png')
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
         img /= 255.0
-        img_ = cv2.resize(img, tuple(self.image_size))
+        label = np.array(0)
+        
+        image_h, image_w, c = img.shape
+
+        if self.resize_transforms is not None:
+            resized = self.resize_transforms(image=img, class_labels=label)
+            img_ = resized['image']
+            
 
         if self.transforms is not None:
             img = self.transforms(image=img_)['image']
         return {
-            'ori_image': img,
+            'ori_image': img_,
             'image_id': image_id,
             'img': img,
+            'image_ori_w': image_ori_w,
+            'image_ori_h': image_ori_h,
             'image_w': image_w,
-            'image_h': image_h
+            'image_h': image_h,
         }
 
     def collate_fn(self, batch):
         imgs = torch.stack([s['img'] for s in batch])   
         img_ids = [s['image_id'] for s in batch]
         ori_imgs = [s['ori_image'] for s in batch]
-        img_ws = [s['image_w'] for s in batch]
-        img_hs = [s['image_h'] for s in batch]
+        image_ori_ws = [s['image_ori_w'] for s in batch]
+        image_ori_hs = [s['image_ori_h'] for s in batch]
+        image_ws = [s['image_w'] for s in batch]
+        image_hs = [s['image_h'] for s in batch]
 
         return {
             'imgs': imgs,
             'ori_imgs': ori_imgs,
             'img_ids': img_ids,
-            'img_ws': img_ws,
-            'img_hs': img_hs
+            'image_ori_ws': image_ori_ws,
+            'image_ori_hs': image_ori_hs,
+            'image_ws': image_ws,
+            'image_hs': image_hs
         }
+
     def __len__(self):
       return len(self.fns)
 
@@ -111,8 +127,10 @@ def main(args, config):
                 for idx, outputs in enumerate(preds):
                     img_id = batch['img_ids'][idx]
                     ori_img = batch['ori_imgs'][idx]
-                    img_w = batch['img_ws'][idx]
-                    img_h = batch['img_hs'][idx]
+                    img_w = batch['image_ws'][idx]
+                    img_h = batch['image_hs'][idx]
+                    img_ori_ws = batch['image_ori_ws'][idx]
+                    img_ori_hs = batch['image_ori_hs'][idx]
                     
                     boxes = outputs['bboxes'] 
                     labels = outputs['classes']  
@@ -128,23 +146,32 @@ def main(args, config):
                             out_path = os.path.join(args.output_path, f'{img_id}.png')
                             draw_boxes_v2(out_path, ori_img , boxes, labels, scores, idx_classes)
 
+                    
+
                     if args.submission:
                         if boxes is not None:
                             pred_strs = []
                             for box, score, cls_id in zip(boxes, scores, labels):
                                 x,y,w,h = box
+                                
+                                if config.keep_ratio:
+                                    # Subtract left padding of image
+                                    if img_w > img_h:
+                                        y -= (img_w-img_h)/2 
+                                    else:
+                                        x -= (img_h-img_w)/2
 
-                                x = round(float(x*1.0*img_w/config.image_size[0]))
-                                y = round(float(y*1.0*img_h/config.image_size[1]))
-                                w = round(float(w*1.0*img_w/config.image_size[0]))
-                                h = round(float(h*1.0*img_h/config.image_size[1]))
+                                x = round(float(x*1.0*img_ori_ws/img_w))
+                                y = round(float(y*1.0*img_ori_hs/img_h))
+                                w = round(float(w*1.0*img_ori_ws/img_w))
+                                h = round(float(h*1.0*img_ori_hs/img_h))
                                 score = np.round(float(score),2)
                                 pred_strs.append(f'{cls_id} {score} {x} {y} {x+w} {y+h}')
                             pred_str = ' '.join(pred_strs)
                         else:
                             pred_str = '14 1 0 0 1 1'
                 
-                    results.append([img_id, pred_str])
+                        results.append([img_id, pred_str])
                 pbar.update(BATCH_SIZE)
                 pbar.set_description(f'Empty images: {empty_imgs}')
 
@@ -155,8 +182,8 @@ def main(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
-    parser.add_argument('--min_conf', type=float, default= 0.3, help='minimum confidence for an object to be detect')
-    parser.add_argument('--min_iou', type=float, default=0.4, help='minimum iou threshold for non max suppression')
+    parser.add_argument('--min_conf', type=float, default= 0.2, help='minimum confidence for an object to be detect')
+    parser.add_argument('--min_iou', type=float, default=0.15, help='minimum iou threshold for non max suppression')
     parser.add_argument('-c', type=int, default = 2, help='version of EfficentDet')
     parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
     parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
