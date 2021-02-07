@@ -7,7 +7,7 @@ import random
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as patches
+import matplotlib.patches as patches
 
 from utils.utils import change_box_order
 from augmentations.transforms import Denormalize, get_resize_augmentation
@@ -25,7 +25,7 @@ class CocoDataset(Dataset):
         self.image_size = config.image_size
         self.mixup = config.mixup
         self.cutmix = config.cutmix
-        self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio)
+        self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
         self.mode = 'xyxy' # Output format of the __getitem__
         self.inference = inference
         self.train = train
@@ -114,6 +114,29 @@ class CocoDataset(Dataset):
         }
 
     def collate_fn(self, batch):
+        imgs = torch.stack([s['img'] for s in batch])   
+        img_ids = [s['img_id'] for s in batch]
+        img_names = [s['img_name'] for s in batch]
+
+        if self.inference:
+             return {'imgs': imgs, 'img_ids': img_ids}
+
+        annots = [torch.cat([s['box'] , s['label'].unsqueeze(1)], dim=1) for s in batch]
+        max_num_annots = max(annot.shape[0] for annot in annots)
+        if max_num_annots > 0:
+            annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
+            for idx, annot in enumerate(annots):
+                if annot.shape[0] > 0:
+                    annot_padded[idx, :annot.shape[0], :] = annot
+        else:
+            annot_padded = torch.ones((len(annots), 1, 5)) * -1
+        return {
+            'imgs': imgs, 
+            'labels': annot_padded, 
+            'img_ids': img_ids,
+            'img_names': img_names}
+
+    def collate_fn_frcnn(self, batch):
         imgs = torch.stack([s['img'] for s in batch])   
         img_ids = [s['img_id'] for s in batch]
         img_names = [s['img_name'] for s in batch]
