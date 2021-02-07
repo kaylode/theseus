@@ -5,7 +5,7 @@ import os
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from utils.utils import init_weights
+from utils.utils import init_weights, one_cycle
 
 import torchvision
 
@@ -39,6 +39,8 @@ def train(args, config):
         train=False,
         transforms=val_transforms)
     
+    
+
     testset = CocoDataset(
         config = config,
         root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
@@ -91,8 +93,8 @@ def train(args, config):
 
     metric = mAPScores(
         dataset=testset,
-        min_conf = 0.3,
-        min_iou = 0.4,
+        min_conf = 0.2,
+        min_iou = 0.15,
         retransforms = None)
 
     model = Detector(
@@ -112,15 +114,23 @@ def train(args, config):
         init_weights(model.model)
         start_epoch, start_iter = 0, 0
 
+    # One cycle lr-scheduler. Source: https://github.com/ultralytics/yolov5
+    lf = one_cycle(1, 0.2, args.num_epochs)  # cosine 1->hyp['lrf']
+    scheduler = torch.optim.lr_scheduler.LambdaLR(model.optimizer, lr_lambda=lf)
+
     trainer = Trainer(model,
                      trainloader, 
                      valloader,
                      checkpoint = Checkpoint(save_per_iter=args.save_interval, path = args.saved_path),
                      logger = Logger(log_dir=args.log_path),
-                     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(model.optimizer, T_max= len(trainloader), eta_min=1e-6, last_epoch=-1),
+                     scheduler = scheduler,
                      evaluate_per_epoch = args.val_interval,
                      visualize_when_val = args.no_visualization)
 
+    print("---------TRAINSET INFO----------------")
+    print(trainset)
+    print("---------VALSET INFO----------------")
+    print(valset)
     print(trainer)
     trainer.fit(start_epoch = start_epoch, start_iter = start_iter, num_epochs=args.num_epochs, print_per_iter=10)
 

@@ -37,6 +37,11 @@ class Trainer(nn.Module):
             self.print_per_iter = int(len(self.trainloader)/10)
         
         self.epoch = start_epoch
+
+        # For one-cycle lr only
+        if self.scheduler is not None:
+            self.scheduler.last_epoch = start_epoch - 1
+
         self.start_iter = start_iter % len(self.trainloader)
 
         print(f'===========================START TRAINING=================================')
@@ -49,9 +54,9 @@ class Trainer(nn.Module):
                     if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                         self.evaluate_epoch()
                         
-                # If use LR STEPS, uncomment these line    
-                # if self.scheduler is not None:
-                #     self.scheduler.step()
+          
+                if self.scheduler is not None:
+                    self.scheduler.step()
                 
 
             except KeyboardInterrupt:   
@@ -83,10 +88,6 @@ class Trainer(nn.Module):
                 clip_gradient(self.optimizer, self.clip_grad)
 
             self.optimizer.step()
-
-            # For Other LR Schedulers
-            if self.scheduler is not None:
-                self.scheduler.step()
 
             end_time = time.time()
 
@@ -200,6 +201,8 @@ class Trainer(nn.Module):
                 target_boxes = target[:,:-1]
                 target_labels = target[:,-1]
                 
+                if len(boxes) == 0:
+                    continue
                 boxes = change_box_order(boxes, order='xyxy2xywh')
                 target_boxes = change_box_order(target_boxes, order='xyxy2xywh')
 
