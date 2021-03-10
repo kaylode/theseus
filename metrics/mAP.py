@@ -1,3 +1,26 @@
+"""
+COCO Mean Average Precision Evaluation
+
+True Positive (TP): Predicted as positive as was correct
+False Positive (FP): Predicted as positive but was incorrect
+False Negative (FN): Failed to predict an object that was there
+
+if IOU prediction >= IOU threshold, prediction is TP
+if 0 < IOU prediction < IOU threshold, prediction is FP
+
+Precision measures how accurate your predictions are. Precision = TP/(TP+FP)
+Recall measures how well you find all the positives. Recal = TP/(TP+FN)
+
+Average Precision (AP) is finding the area under the precision-recall curve.
+Mean Average  Precision (MAP) is AP averaged over all categories.
+
+AP@[.5:.95] corresponds to the average AP for IoU from 0.5 to 0.95 with a step size of 0.05
+AP@.75 means the AP with IoU=0.75
+
+*Under the COCO context, there is no difference between AP and mAP
+
+"""
+
 import os
 import torch
 import json
@@ -6,8 +29,8 @@ from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from .metrictemplate import TemplateMetric
-from utils.utils import postprocessing, box_nms_numpy, change_box_order
-
+from utils.utils import change_box_order
+from utils.postprocess import postprocessing
 
 def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
     # load results in COCO evaluation tool
@@ -16,6 +39,7 @@ def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
     # run COCO evaluation
     coco_eval = COCOeval(coco_gt, coco_pred, 'bbox')
     coco_eval.params.imgIds = image_ids
+    coco_eval.params.iouThrs = np.array([0.4])
     # Some params for COCO eval
     #imgIds = []
     #catIds = []
@@ -37,22 +61,24 @@ class mAPScores(TemplateMetric):
             self,
             dataset, 
             max_images = 10000,
-            retransforms=None,
+            mode=None,
             min_conf = 0.3, 
             min_iou = 0.3, 
+            tta = False,
             decimals = 4):
 
         self.coco_gt = COCO(dataset.ann_path)
         self.dataloader = torch.utils.data.DataLoader(
                 dataset, 
-                batch_size=1, 
+                batch_size=16, 
                 num_workers=4, 
                 pin_memory = True,
                 drop_last= True,
                 shuffle=True, 
                 collate_fn=dataset.collate_fn) # requires batch size = 1
-
-        self.retransforms = retransforms
+        
+        self.tta = tta
+        self.mode = mode
         self.min_conf = min_conf
         self.min_iou = min_iou
         self.decimals = decimals
@@ -63,7 +89,7 @@ class mAPScores(TemplateMetric):
 
         if not os.path.exists('results'):
             os.mkdir('results')
-
+            
     def reset(self):
         self.model = None
         self.image_ids = []
@@ -81,40 +107,43 @@ class mAPScores(TemplateMetric):
                 for idx, batch in enumerate(self.dataloader):
                     if idx > self.max_images:
                         break
-                    image_id = batch['img_ids'][0]
-                    self.image_ids.append(image_id)
-                    batch['imgs'] = batch['imgs'].to(self.model.device)
-                    preds = self.model.inference_step(batch, self.min_conf, self.min_iou)
-
-                    if self.retransforms is not None:
-                        preds = postprocessing(preds, batch['imgs'].cpu()[0], self.retransforms, out_format='xywh')[0]
-
-                    preds = preds[0]
-
-                    if self.retransforms is not None:
-                        bbox_xywh = preds['bboxes']
-                    else:
-                        bbox_xywh = preds['bboxes']
                     
-
-                    if bbox_xywh is None or len(bbox_xywh) == 0:
-                        empty_imgs += 1
+                    if self.tta is not None:
+                        preds = self.tta.make_tta_predictions(self.model, batch)
                     else:
-                        bbox_xywh = change_box_order(bbox_xywh, order='xyxy2xywh')
-                        cls_ids = preds['classes']
-                        cls_conf = preds['scores']
-                        for i in range(bbox_xywh.shape[0]):
-                            score = float(cls_conf[i])
-                            label = int(cls_ids[i])
-                            box = bbox_xywh[i, :]
-                            image_result = {
-                                'image_id': image_id,
-                                'category_id': label + 1,
-                                'score': float(score),
-                                'bbox': box.tolist(),
-                            }
+                        preds = self.model.inference_step(batch, self.min_conf, self.min_iou)
 
-                            results.append(image_result)
+                    for i in range(len(preds)):
+                        image_id = batch['img_ids'][i]
+                        img_size = batch['img_sizes'][i].numpy()
+                        self.image_ids.append(image_id)
+                        pred = postprocessing(
+                            preds[i], 
+                            current_img_size=img_size,
+                            ori_img_size=img_size,
+                            min_iou=self.min_iou,
+                            min_conf=self.min_conf,
+                            mode=self.mode)
+
+                        boxes = pred['bboxes'] 
+                        labels = pred['classes']  
+                        scores = pred['scores']
+
+                        if boxes is None or len(boxes) == 0:
+                            empty_imgs += 1
+                        else:
+                            for i in range(boxes.shape[0]):
+                                score = float(scores[i])
+                                label = int(labels[i])
+                                box = boxes[i, :]
+                                image_result = {
+                                    'image_id': image_id,
+                                    'category_id': label,
+                                    'score': float(score),
+                                    'bbox': box.tolist(),
+                                }
+
+                                results.append(image_result)
                     pbar.update(1)
                     pbar.set_description(f'Empty images: {empty_imgs}')
 
