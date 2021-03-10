@@ -53,20 +53,23 @@ def get_augmentation(config, _type='train'):
             A.GaussianBlur(),
             A.MedianBlur(blur_limit=3, p=0.3),
             A.Blur(blur_limit=3, p=0.1),
-        ], p=0.2),
+        ], p=0.3),
         A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=20, p=0.3),
+        A.CLAHE(clip_limit=2.0, tile_grid_size=(8,8), p=0.5),
         A.OneOf([
             A.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit= 0.2, 
                                  val_shift_limit=0.2, p=0.9),
-            A.RandomBrightnessContrast(brightness_limit=0.2, 
-                                       contrast_limit=0.2, 
+            A.RandomBrightnessContrast(brightness_limit=0.1, 
+                                       contrast_limit=0.1, 
                                        p=0.3),            
         ], p=0.5),
-        A.OneOf([
-            A.HorizontalFlip(p=0.3),
-            A.VerticalFlip(p=0.3),
-            A.RandomRotate90(p=0.3),
-        ], p=0.3),
+
+       
+        A.HorizontalFlip(p=0.3),
+        A.VerticalFlip(p=0.3),
+        A.RandomRotate90(p=0.3),
+        A.Cutout(num_holes=8, max_h_size=64, max_w_size=64, fill_value=0, p=0.5),
+        A.Normalize(mean=(0, 0, 0), std=(1, 1, 1), max_pixel_value=255.0, p=1.0),
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(
         format='pascal_voc',
@@ -76,6 +79,7 @@ def get_augmentation(config, _type='train'):
 
 
     val_transforms = A.Compose([
+        A.Normalize(mean=(0, 0, 0), std=(1, 1, 1), max_pixel_value=255.0, p=1.0),
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(
         format='pascal_voc', 
