@@ -5,121 +5,86 @@ import torchvision
 import numpy as np
 from torch import nn
 
-from .efficientdet.model import BiFPN, Regressor, Classifier, EfficientNet
-from .efficientdet.utils import Anchors
+from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
+from .effdet.efficientdet import HeadNet
 
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision.models.detection import FasterRCNN
+from torchvision.models.detection.rpn import AnchorGenerator
+
+def get_model(args, config):
+    NUM_CLASSES = len(config.obj_list)
+
+    if config.pretrained_backbone is None:
+        load_weights = True
+    else:
+        load_weights = False
+
+    net = None
+
+    if config.model_name.startswith('efficientdet'):
+        compound_coef = config.model_name.split('-')[1]
+        assert compound_coef in [f'd{i}' for i in range(8)], f"efficientdet version {i} is not supported"
+        net = EfficientDetBackbone(
+            num_classes=NUM_CLASSES, 
+            compound_coef=compound_coef, 
+            load_weights=load_weights, 
+            freeze_backbone = getattr(args, 'freeze_backbone', False),
+            pretrained_backbone_path=config.pretrained_backbone,
+            image_size=config.image_size)
+    elif config.model_name.startswith('fasterrcnn'):
+        raise NotImplementedError
+    return net
 
 class EfficientDetBackbone(nn.Module):
-    def __init__(self, num_classes=80, compound_coef=0, load_weights=False, **kwargs):
+    def __init__(
+        self, 
+        num_classes=80, 
+        compound_coef='d0', 
+        load_weights=False, 
+        image_size=[512,512], 
+        pretrained_backbone_path=None, 
+        freeze_backbone=False, 
+        **kwargs):
+
         super(EfficientDetBackbone, self).__init__()
-        self.compound_coef = compound_coef
+        self.name = f'efficientdet-{compound_coef}'
+        config = get_efficientdet_config(f'tf_efficientdet_{compound_coef}')
+        config.image_size = image_size
+        config.norm_kwargs=dict(eps=.001, momentum=.01)
 
-        self.backbone_compound_coef = [0, 1, 2, 3, 4, 5, 6, 6, 7]
-        self.fpn_num_filters = [64, 88, 112, 160, 224, 288, 384, 384, 384]
-        self.fpn_cell_repeats = [3, 4, 5, 6, 7, 7, 8, 8, 8]
-        self.input_sizes = [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
-        self.box_class_repeats = [3, 3, 3, 4, 4, 4, 5, 5, 5]
-        self.pyramid_levels = [5, 5, 5, 5, 5, 5, 5, 5, 6]
-        self.anchor_scale = [4., 4., 4., 4., 4., 4., 4., 5., 4.]
-        self.aspect_ratios = kwargs.get('ratios', [(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)])
-        self.num_scales = len(kwargs.get('scales', [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]))
-        conv_channel_coef = {
-            # the channels of P3/P4/P5.
-            0: [40, 112, 320],
-            1: [40, 112, 320],
-            2: [48, 120, 352],
-            3: [48, 136, 384],
-            4: [56, 160, 448],
-            5: [64, 176, 512],
-            6: [72, 200, 576],
-            7: [72, 200, 576],
-            8: [80, 224, 640],
-        }
+        net = EfficientDet(
+            config, 
+            pretrained_backbone=load_weights, 
+            freeze_backbone=freeze_backbone,
+            pretrained_backbone_path=pretrained_backbone_path)
+            
+        net.reset_head(num_classes=num_classes)
+        net.class_net = HeadNet(config, num_outputs=config.num_classes)
 
-        num_anchors = len(self.aspect_ratios) * self.num_scales
+        self.model = DetBenchTrain(net, config)
 
-        self.bifpn = nn.Sequential(
-            *[BiFPN(self.fpn_num_filters[self.compound_coef],
-                    conv_channel_coef[compound_coef],
-                    True if _ == 0 else False,
-                    attention=True if compound_coef < 6 else False,
-                    use_p8=compound_coef > 7)
-              for _ in range(self.fpn_cell_repeats[compound_coef])])
+    def forward(self, inputs, targets):
+        return self.model(inputs, targets)
 
-        self.num_classes = num_classes
-        self.regressor = Regressor(in_channels=self.fpn_num_filters[self.compound_coef], num_anchors=num_anchors,
-                                   num_layers=self.box_class_repeats[self.compound_coef],
-                                   pyramid_levels=self.pyramid_levels[self.compound_coef])
-        self.classifier = Classifier(in_channels=self.fpn_num_filters[self.compound_coef], num_anchors=num_anchors,
-                                     num_classes=num_classes,
-                                     num_layers=self.box_class_repeats[self.compound_coef],
-                                     pyramid_levels=self.pyramid_levels[self.compound_coef])
-
-        self.anchors = Anchors(anchor_scale=self.anchor_scale[compound_coef],
-                               pyramid_levels=(torch.arange(self.pyramid_levels[self.compound_coef]) + 3).tolist(),
-                               **kwargs)
-
-        self.backbone_net = EfficientNet(self.backbone_compound_coef[compound_coef], load_weights)
-
-    def freeze_bn(self):
-        for m in self.modules():
-            if isinstance(m, nn.BatchNorm2d):
-                m.eval()
-
-    def forward(self, inputs):
-        max_size = inputs.shape[-1]
-
-        _, p3, p4, p5 = self.backbone_net(inputs)
-
-        features = (p3, p4, p5)
-        features = self.bifpn(features)
-
-        regression = self.regressor(features)
-        classification = self.classifier(features)
-        anchors = self.anchors(inputs, inputs.dtype)
-
-        return None, regression, classification, anchors
-
-    def init_backbone(self, path):
-        state_dict = torch.load(path)
-        try:
-            ret = self.load_state_dict(state_dict, strict=False)
-            print(ret)
-        except RuntimeError as e:
-            print('Ignoring ' + str(e) + '"')
-
-
-    def detect(self, x, anchors, regression, classification, regressBoxes, clipBoxes, threshold, iou_threshold):
-        transformed_anchors = regressBoxes(anchors, regression)
-        transformed_anchors = clipBoxes(transformed_anchors, x)
-        scores = torch.max(classification, dim=2, keepdim=True)[0]
-        scores_over_thresh = (scores > threshold)[:, :, 0]
+    def detect(self, inputs, img_sizes, img_scales, conf_threshold=0.001):
+        outputs = self.model(inputs, inference=True, img_sizes=img_sizes, img_scales=img_scales)
+        outputs = outputs.cpu().numpy()
         out = []
-        for i in range(x.shape[0]):
-            if scores_over_thresh[i].sum() == 0:
+        for i, output in enumerate(outputs):
+            boxes = output[:, :4]
+            labels = output[:, -1]
+            scores = output[:,-2]
+
+            if len(boxes) > 0:
+                selected = scores >= conf_threshold
+                boxes = boxes[selected].astype(np.int32)
+                scores = scores[selected]
+                labels = labels[selected]
                 out.append({
-                    'bboxes': np.array(()),
-                    'classes': np.array(()),
-                    'scores': np.array(()),
-                })
-                continue
-
-            classification_per = classification[i, scores_over_thresh[i, :], ...].permute(1, 0) # [90, 84]
-            transformed_anchors_per = transformed_anchors[i, scores_over_thresh[i, :], ...]     # [84, 4]
-            scores_per = scores[i, scores_over_thresh[i, :], ...]                               # [84, 1]
-            scores_, classes_ = classification_per.max(dim=0)                                   # [84]
-
-            anchors_nms_idx = torchvision.ops.boxes.batched_nms(transformed_anchors_per, scores_per[:, 0], classes_, iou_threshold=iou_threshold)
-            # anchors_nms_idx = torchvision.ops.nms(transformed_anchors_per, scores_per[:, 0], iou_threshold=iou_threshold)
-            if anchors_nms_idx.shape[0] != 0:
-                classes_ = classes_[anchors_nms_idx]
-                scores_ = scores_[anchors_nms_idx]
-                boxes_ = transformed_anchors_per[anchors_nms_idx, :]
-
-                out.append({
-                    'bboxes': boxes_.cpu().numpy(),
-                    'classes': classes_.cpu().numpy(),
-                    'scores': scores_.cpu().numpy(),
+                    'bboxes': boxes,
+                    'classes': labels,
+                    'scores': scores,
                 })
             else:
                 out.append({
@@ -129,3 +94,4 @@ class EfficientDetBackbone(nn.Module):
                 })
 
         return out
+    

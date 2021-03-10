@@ -8,6 +8,7 @@ class BaseModel(nn.Module):
                 optimizer = None,
                 criterion = None,
                 metrics = None,
+                scaler = None,
                 lr = 1e-4,
                 device = None,
                 freeze = False,
@@ -21,6 +22,7 @@ class BaseModel(nn.Module):
         self.device = device
         self.freeze = freeze
         self.metrics = metrics
+        self.scaler = scaler
         if not isinstance(metrics, list):
             self.metrics = [metrics,]
 
