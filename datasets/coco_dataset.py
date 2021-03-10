@@ -26,6 +26,7 @@ class CocoDataset(Dataset):
         self.mixup = config.mixup
         self.cutmix = config.cutmix
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
+
         self.mode = 'xyxy' # Output format of the __getitem__
         self.inference = inference
         self.train = train
@@ -43,7 +44,7 @@ class CocoDataset(Dataset):
 
         self.classes = {}
         for c in categories:
-            self.classes[c['name']] = len(self.classes)
+            self.classes[c['name']] = len(self.classes) + 1
 
         # also load the reverse (label -> name)
         self.labels = {}
@@ -59,7 +60,7 @@ class CocoDataset(Dataset):
         annot = self.load_annotations(idx)
         box = annot[:, :4]
         label = annot[:, -1]
-        
+        label += 1
         box = change_box_order(box, order = 'xywh2xyxy')
         if self.resize_transforms is not None:
             resized = self.resize_transforms(
@@ -93,79 +94,61 @@ class CocoDataset(Dataset):
                     image, boxes, labels, img_id, img_name = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
                     image, boxes, labels, img_id, img_name = self.load_image_and_boxes(idx)
-
+        image = image.astype(np.uint8)
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
+            # Normalize
             image = item['image']
             boxes = item['bboxes']
             labels = item['class_labels']
             boxes = np.array([np.asarray(i) for i in boxes])
             labels = np.array(labels)
 
+        if len(boxes) == 0:
+            return self.__getitem__(idx)
         labels = torch.LongTensor(labels)
         boxes = torch.as_tensor(boxes, dtype=torch.float32) 
 
+        target = {}
+        boxes = change_box_order(boxes, 'xyxy2yxyx')
+        target['boxes'] = boxes
+        target['labels'] = labels
+        
+
         return {
             'img': image,
-            'box': boxes,
-            'label': labels,
+            'target': target,
             'img_id': img_id,
-            'img_name': img_name
+            'img_name': img_name,
         }
 
     def collate_fn(self, batch):
-        imgs = torch.stack([s['img'] for s in batch])   
+        imgs = torch.stack([s['img'] for s in batch])
+        targets = [s['target'] for s in batch]
         img_ids = [s['img_id'] for s in batch]
         img_names = [s['img_name'] for s in batch]
-
+        
+        img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
+        img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
         if self.inference:
-             return {'imgs': imgs, 'img_ids': img_ids}
+             return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
 
-        annots = [torch.cat([s['box'] , s['label'].unsqueeze(1)], dim=1) for s in batch]
-        max_num_annots = max(annot.shape[0] for annot in annots)
-        if max_num_annots > 0:
-            annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
-            for idx, annot in enumerate(annots):
-                if annot.shape[0] > 0:
-                    annot_padded[idx, :annot.shape[0], :] = annot
-        else:
-            annot_padded = torch.ones((len(annots), 1, 5)) * -1
         return {
             'imgs': imgs, 
-            'labels': annot_padded, 
+            'targets': targets, 
             'img_ids': img_ids,
-            'img_names': img_names}
-
-    def collate_fn_frcnn(self, batch):
-        imgs = torch.stack([s['img'] for s in batch])   
-        img_ids = [s['img_id'] for s in batch]
-        img_names = [s['img_name'] for s in batch]
-
-        if self.inference:
-             return {'imgs': imgs, 'img_ids': img_ids}
-
-        annots = [torch.cat([s['box'] , s['label'].unsqueeze(1)], dim=1) for s in batch]
-        max_num_annots = max(annot.shape[0] for annot in annots)
-        if max_num_annots > 0:
-            annot_padded = torch.ones((len(annots), max_num_annots, 5)) * -1
-            for idx, annot in enumerate(annots):
-                if annot.shape[0] > 0:
-                    annot_padded[idx, :annot.shape[0], :] = annot
-        else:
-            annot_padded = torch.ones((len(annots), 1, 5)) * -1
-        return {
-            'imgs': imgs, 
-            'labels': annot_padded, 
-            'img_ids': img_ids,
-            'img_names': img_names}
+            'img_names': img_names,
+            'img_sizes': img_sizes, 
+            'img_scales': img_scales}
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = os.path.join(self.root_dir, image_info['file_name'])
         
+        
         image = cv2.imread(path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        image /= 255.0
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         return image, image_info['file_name']
 
     def load_annotations(self, image_index):
@@ -260,8 +243,10 @@ class CocoDataset(Dataset):
         item = self.__getitem__(index)
         img_name = item['img_name']
         img = item['img']
-        box = item['box']
-        label = item['label']
+        target = item['target']
+        box = target['boxes']
+        box = change_box_order(box, 'yxyx2xyxy')
+        label = target['labels']
         
         normalize = False
         if self.transforms is not None:
@@ -391,9 +376,7 @@ class CocoDataset(Dataset):
             
         plt.show()
 
-    def __str__(self):
-        s = "Custom Dataset for Object Detection\n"
-        line = "-------------------------------\n"
+    def __str__(self): 
         s1 = "Number of samples: " + str(len(self.coco.anns)) + '\n'
         s2 = "Number of classes: " + str(len(self.labels)) + '\n'
-        return s + line + s1 + s2
+        return s1 + s2
