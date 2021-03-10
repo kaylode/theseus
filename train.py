@@ -2,29 +2,20 @@ from utils.getter import *
 import argparse
 import os
 
-import torch
-from torch import nn
-from torch.utils.data import DataLoader
-from utils.utils import init_weights, one_cycle
-
-import torchvision
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.fastest = True
+seed_everything()
 
 def train(args, config):
+    os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
+    num_gpus = len(config.gpu_devices.split(','))
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
-    else:
-        torch.manual_seed(42)
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     train_transforms = get_augmentation(config, _type = 'train')
     val_transforms = get_augmentation(config, _type = 'val')
     
-
-    #input_sizes = [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
     trainset = CocoDataset(
         config = config,
         root_dir = os.path.join('datasets', config.project_name, config.train_imgs),
@@ -39,8 +30,6 @@ def train(args, config):
         train=False,
         transforms=val_transforms)
     
-    
-
     testset = CocoDataset(
         config = config,
         root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
@@ -51,39 +40,23 @@ def train(args, config):
 
     trainloader = DataLoader(
         trainset, 
-        batch_size=args.batch_size, 
+        batch_size=config.batch_size, 
         shuffle = True, 
-        drop_last= True, 
         collate_fn=trainset.collate_fn, 
-        num_workers= args.num_workers, 
+        num_workers= config.num_workers, 
         pin_memory=True)
 
     valloader = DataLoader(
         valset, 
-        batch_size=args.batch_size, 
-        shuffle = False, 
-        drop_last= True, 
+        batch_size=config.batch_size, 
+        shuffle = False,
         collate_fn=valset.collate_fn, 
-        num_workers= args.num_workers, 
+        num_workers= config.num_workers, 
         pin_memory=True)
 
     NUM_CLASSES = len(config.obj_list)
 
-    net = EfficientDetBackbone(num_classes=NUM_CLASSES, compound_coef=args.compound_coef,
-                                 ratios=eval(config.anchors_ratios), scales=eval(config.anchors_scales))
-    
-    # freeze backbone if train head_only
-    if args.head_only:
-        def freeze_backbone(m):
-            classname = m.__class__.__name__
-            for ntl in ['EfficientNet', 'BiFPN']:
-                if ntl in classname:
-                    for param in m.parameters():
-                        param.requires_grad = False
-
-        net.apply(freeze_backbone)
-        print('[Info] freezed backbone')
-
+    net = get_model(args, config)
 
     if args.saved_path is not None:
         args.saved_path = os.path.join(args.saved_path, args.config)
@@ -91,73 +64,95 @@ def train(args, config):
     if args.log_path is not None:
         args.log_path = os.path.join(args.log_path, args.config)
 
+    if config.tta:
+        config.tta = TTA(
+            min_conf=config.min_conf_val, 
+            min_iou=config.min_iou_val, 
+            postprocess_mode=config.tta_ensemble_mode)
+    else:
+        config.tta = None
+
     metric = mAPScores(
         dataset=testset,
-        min_conf = 0.2,
-        min_iou = 0.15,
-        retransforms = None)
+        min_conf = config.min_conf_val,
+        min_iou = config.min_iou_val,
+        tta=config.tta,
+        mode=config.fusion_mode,
+        max_images=config.max_images_val)
+
+    optimizer, optimizer_params = get_lr_policy(config.lr_policy)
+
+    if config.mixed_precision:
+        scaler = NativeScaler()
+    else:
+        scaler = None
 
     model = Detector(
             n_classes=NUM_CLASSES,
             model = net,
-            criterion= FocalLoss(), 
             metrics=metric,
-            optimizer= torch.optim.AdamW,
-            optim_params = {'lr': args.lr},     
+            scaler=scaler,
+            optimizer= optimizer,
+            optim_params = optimizer_params,     
             device = device)
 
     if args.resume is not None:                
         load_checkpoint(model, args.resume)
-        start_epoch, start_iter = get_epoch_iters(args.resume)
+        start_epoch, start_iter, best_value = get_epoch_iters(args.resume)
     else:
-        print('[Info] initialize weights')
+        print('Not resume. Initialize weights')
         init_weights(model.model)
-        start_epoch, start_iter = 0, 0
+        start_epoch, start_iter, best_value = 0, 0, 0.0
+        
+    scheduler, step_per_epoch = get_lr_scheduler(
+        model.optimizer, 
+        opt_config=config.lr_scheduler,
+        num_epochs=config.num_epochs)
 
-    # One cycle lr-scheduler. Source: https://github.com/ultralytics/yolov5
-    lf = one_cycle(1, 0.2, args.num_epochs)  # cosine 1->hyp['lrf']
-    scheduler = torch.optim.lr_scheduler.LambdaLR(model.optimizer, lr_lambda=lf)
-
-    trainer = Trainer(model,
+    trainer = Trainer(config,
+                     model,
                      trainloader, 
                      valloader,
                      checkpoint = Checkpoint(save_per_iter=args.save_interval, path = args.saved_path),
+                     best_value=best_value,
                      logger = Logger(log_dir=args.log_path),
                      scheduler = scheduler,
                      evaluate_per_epoch = args.val_interval,
-                     visualize_when_val = args.no_visualization)
-
-    print("---------TRAINSET INFO----------------")
+                     visualize_when_val = args.no_visualization,
+                     step_per_epoch = step_per_epoch)
+    
+    print("##########   DATASET INFO   ##########")
+    print("Trainset: ")
     print(trainset)
-    print("---------VALSET INFO----------------")
+    print("Valset: ")
     print(valset)
+    print()
     print(trainer)
-    trainer.fit(start_epoch = start_epoch, start_iter = start_iter, num_epochs=args.num_epochs, print_per_iter=10)
+    print()
+    print(config)
+    print(f'Training with {num_gpus} gpu(s)')
+    print(f"Start training at [{start_epoch}|{start_iter}]")
+    print(f"Current best MAP: {best_value}")
+    
+    trainer.fit(start_epoch = start_epoch, start_iter = start_iter, num_epochs=config.num_epochs, print_per_iter=args.print_per_iter)
 
- 
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('--config' , type=str, help='project file that contains parameters')
-    parser.add_argument('-c', '--compound_coef', type=int, default=0, help='coefficients of efficientdet')
-    parser.add_argument('-n', '--num_workers', type=int, default=4, help='num_workers of dataloader')
-    parser.add_argument('--batch_size', type=int, default=4, help='The number of images per batch among all devices')
-    parser.add_argument('--head_only', action='store_true', default = False,
-                        help='whether finetunes only the regressor and the classifier, '
-                             'useful in early stage convergence or small/easy dataset')
-    parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--num_epochs', type=int, default=100)
-    parser.add_argument('--val_interval', type=int, default=1, help='Number of epoches between valing phases')
+    parser.add_argument('config' , type=str, help='project file that contains parameters')
+    parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
+    parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
     parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
     parser.add_argument('--log_path', type=str, default='loggers/runs')
     parser.add_argument('--resume', type=str, default=None,
                         help='whether to load weights from a checkpoint, set None to initialize')
     parser.add_argument('--saved_path', type=str, default='./weights')
     parser.add_argument('--no_visualization', action='store_false', help='whether to visualize box to ./sample when validating (for debug), default=on')
-
+    parser.add_argument('--freeze_backbone', action='store_true', help='whether to freeze the backbone')
+    
     args = parser.parse_args()
     config = Config(os.path.join('configs',args.config+'.yaml'))
-
 
     train(args, config)
     

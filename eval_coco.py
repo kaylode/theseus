@@ -9,9 +9,7 @@ from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-from models.backbone import EfficientDetBackbone
-from utils.utils import postprocessing, box_nms_numpy
-from metrics import mAP
+seed_everything()
 
 def _eval(coco_gt, image_ids, pred_json_path):
     # load results in COCO evaluation tool
@@ -27,11 +25,10 @@ def _eval(coco_gt, image_ids, pred_json_path):
     coco_eval.summarize()
 
 def main(args, config):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
-    else:
-        torch.manual_seed(42)
+    os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
+    num_gpus = len(config.gpu_devices.split(','))
+
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     val_transforms = get_augmentation(config, _type = 'val')
 
@@ -43,27 +40,36 @@ def main(args, config):
         train = False,
         transforms=val_transforms)
 
+    if config.tta:
+        config.tta = TTA(
+            min_conf=config.min_conf_val, 
+            min_iou=config.min_iou_val, 
+            postprocess_mode=config.tta_ensemble_mode)
+    else:
+        config.tta = None
+
     metric = mAPScores(
         dataset=testset,
-        max_images = args.max_images,
-        min_conf = args.min_conf,
-        min_iou = args.min_iou,
-        retransforms = None)
+        min_conf = config.min_conf_val,
+        min_iou = config.min_iou_val,
+        tta=config.tta,
+        max_images=config.max_images_val,
+        mode=config.fusion_mode)
 
     NUM_CLASSES = len(config.obj_list)
-    net = EfficientDetBackbone(num_classes=NUM_CLASSES, compound_coef=args.compound_coef,
-                                 ratios=eval(config.anchors_ratios), scales=eval(config.anchors_scales))
+
+    net = get_model(args, config)
+
     model = Detector(
                     n_classes=NUM_CLASSES,
                     model = net,
-                    criterion= FocalLoss(), 
-                    optimizer= torch.optim.Adam,
+                    optimizer= torch.optim.AdamW,
                     optim_params = {'lr': 0.1},     
                     device = device)
     model.eval()
 
     if args.weight is not None:                
-        load_checkpoint(net, args.weight)
+        load_checkpoint(model, args.weight)
     
     metric.update(model)
     metric.value()
@@ -72,12 +78,9 @@ def main(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('--config' , type=str, help='project file that contains parameters')
-    parser.add_argument('-c', '--compound_coef', type=int, default=0, help='coefficients of efficientdet')
+    parser.add_argument('config' , type=str, help='project file that contains parameters')
     parser.add_argument('--max_images' , type=int, help='max number of images', default=10000)
     parser.add_argument('--weight' , type=str, help='project file that contains parameters')
-    parser.add_argument('--min_conf', type=float, default= 0.2, help='minimum confidence for an object to be detect')
-    parser.add_argument('--min_iou', type=float, default = 0.15, help='minimum iou threshold for non max suppression')
 
     args = parser.parse_args()
     config = Config(os.path.join('configs',args.config+'.yaml'))
