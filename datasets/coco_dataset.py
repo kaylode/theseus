@@ -27,7 +27,8 @@ class CocoDataset(Dataset):
         self.cutmix = config.cutmix
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
 
-        self.mode = 'xyxy' # Output format of the __getitem__
+        self.box_format = config.box_format if config.box_format is not None else 'xyxy' # Output format of the __getitem__
+
         self.inference = inference
         self.train = train
 
@@ -94,7 +95,7 @@ class CocoDataset(Dataset):
                     image, boxes, labels, img_id, img_name = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
                     image, boxes, labels, img_id, img_name = self.load_image_and_boxes(idx)
-        image = image.astype(np.uint8)
+        image = image.astype(np.float32)
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
             # Normalize
@@ -110,7 +111,10 @@ class CocoDataset(Dataset):
         boxes = torch.as_tensor(boxes, dtype=torch.float32) 
 
         target = {}
-        boxes = change_box_order(boxes, 'xyxy2yxyx')
+
+        if self.box_format == 'yxyx':
+            boxes = change_box_order(boxes, 'xyxy2yxyx')
+
         target['boxes'] = boxes
         target['labels'] = labels
         
@@ -123,23 +127,7 @@ class CocoDataset(Dataset):
         }
 
     def collate_fn(self, batch):
-        imgs = torch.stack([s['img'] for s in batch])
-        targets = [s['target'] for s in batch]
-        img_ids = [s['img_id'] for s in batch]
-        img_names = [s['img_name'] for s in batch]
-        
-        img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
-        img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
-        if self.inference:
-             return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
-
-        return {
-            'imgs': imgs, 
-            'targets': targets, 
-            'img_ids': img_ids,
-            'img_names': img_names,
-            'img_sizes': img_sizes, 
-            'img_scales': img_scales}
+        raise NotImplementedError
 
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
@@ -245,7 +233,6 @@ class CocoDataset(Dataset):
         img = item['img']
         target = item['target']
         box = target['boxes']
-        box = change_box_order(box, 'yxyx2xyxy')
         label = target['labels']
         
         normalize = False
@@ -258,7 +245,10 @@ class CocoDataset(Dataset):
         # Denormalize and reverse-tensorize
         if normalize:
             img = denormalize(img = img)
-        
+
+        if self.box_format == 'yxyx':
+            box = change_box_order(box, 'yxyx2xyxy')
+
         box = box.numpy()
         label = label.numpy()
 
@@ -267,13 +257,11 @@ class CocoDataset(Dataset):
     
     def visualize(self, img, boxes, labels, figsize=(15,15), img_name=None):
         """
-        Visualize an image with its bouding boxes
+        Visualize an image with its bouding boxes, input: xyxy
         """
         fig,ax = plt.subplots(figsize=figsize)
 
-        if self.mode == 'xyxy':
-            boxes=change_box_order(boxes, 'xyxy2xywh')
-
+        boxes=change_box_order(boxes, 'xyxy2xywh')
         if isinstance(img, torch.Tensor):
             img = img.numpy().squeeze().transpose((1,2,0))
         # Display the image
@@ -299,7 +287,7 @@ class CocoDataset(Dataset):
         cnt_dict = {}
         if types == 1: # Object Frequencies
             for cl in self.classes.keys():
-                num_objs = sum([1 for i in self.coco.anns if self.coco.anns[i]['category_id']-1 == self.classes[cl]])
+                num_objs = sum([1 for i in self.coco.anns if self.coco.anns[i]['category_id'] == self.classes[cl]])
                 cnt_dict[cl] = num_objs
         elif types == 2:
             widths = [i['width'] for i in self.coco.anns['images']]
