@@ -5,11 +5,17 @@ class Config():
         yaml_file = open(yaml_path)
         self._attr = yaml.load(yaml_file, Loader=yaml.FullLoader)['settings']
 
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+
     def __getattr__(self, attr):
         try:
             return self._attr[attr]
         except KeyError:
-            return None
+            try:
+                return self.__dict__[attr]
+            except KeyError:
+                return None
 
     def __str__(self):
         print("##########   CONFIGURATION INFO   ##########")

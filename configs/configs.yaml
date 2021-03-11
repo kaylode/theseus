@@ -15,7 +15,7 @@ settings:
 
   #################   TRAINING CONFIG   ###################
   
-  model_name: 'efficientdet-d4' #[efficientdet-d{i}]
+  model_name: 'efficientdet-d4' #[efficientdet-d{i} | fasterrcnn-{backbone}]
 
   # pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
   
