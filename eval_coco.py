@@ -32,13 +32,7 @@ def main(args, config):
 
     val_transforms = get_augmentation(config, _type = 'val')
 
-    testset = CocoDataset(
-        config = config,
-        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
-        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
-        inference = True,
-        train = False,
-        transforms=val_transforms)
+    _, _, testset, _, _ = get_dataset_and_dataloader(config)
 
     if config.tta:
         config.tta = TTA(
@@ -56,16 +50,9 @@ def main(args, config):
         max_images=config.max_images_val,
         mode=config.fusion_mode)
 
-    NUM_CLASSES = len(config.obj_list)
-
     net = get_model(args, config)
 
-    model = Detector(
-                    n_classes=NUM_CLASSES,
-                    model = net,
-                    optimizer= torch.optim.AdamW,
-                    optim_params = {'lr': 0.1},     
-                    device = device)
+    model = Detector(model = net, device = device)
     model.eval()
 
     if args.weight is not None:                

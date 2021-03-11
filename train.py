@@ -13,49 +13,8 @@ def train(args, config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    train_transforms = get_augmentation(config, _type = 'train')
-    val_transforms = get_augmentation(config, _type = 'val')
-    
-    trainset = CocoDataset(
-        config = config,
-        root_dir = os.path.join('datasets', config.project_name, config.train_imgs),
-        ann_path = os.path.join('datasets', config.project_name, config.train_anns),
-        train=True,
-        transforms=train_transforms)
-    
-    valset = CocoDataset(
-        config = config,
-        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
-        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
-        train=False,
-        transforms=val_transforms)
-    
-    testset = CocoDataset(
-        config = config,
-        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
-        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
-        inference = True,
-        train = False,
-        transforms=val_transforms)
-
-    trainloader = DataLoader(
-        trainset, 
-        batch_size=config.batch_size, 
-        shuffle = True, 
-        collate_fn=trainset.collate_fn, 
-        num_workers= config.num_workers, 
-        pin_memory=True)
-
-    valloader = DataLoader(
-        valset, 
-        batch_size=config.batch_size, 
-        shuffle = False,
-        collate_fn=valset.collate_fn, 
-        num_workers= config.num_workers, 
-        pin_memory=True)
-
-    NUM_CLASSES = len(config.obj_list)
-
+    trainset, valset, testset, trainloader, valloader = get_dataset_and_dataloader(config)
+  
     net = get_model(args, config)
 
     if args.saved_path is not None:
@@ -88,7 +47,6 @@ def train(args, config):
         scaler = None
 
     model = Detector(
-            n_classes=NUM_CLASSES,
             model = net,
             metrics=metric,
             scaler=scaler,
@@ -106,7 +64,7 @@ def train(args, config):
         
     scheduler, step_per_epoch = get_lr_scheduler(
         model.optimizer, 
-        opt_config=config.lr_scheduler,
+        lr_config=config.lr_scheduler,
         num_epochs=config.num_epochs)
 
     trainer = Trainer(config,

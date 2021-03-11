@@ -20,7 +20,7 @@ BATCH_SIZE = 16
 class TestDataset(Dataset):
     def __init__(self, config, test_df, transforms=None):
         self.image_size = config.image_size
-        self.root_dir = os.path.join('datasets', config.project_name, config.test_imgs)
+        self.root_dir = os.path.join('datasets', config.project_name, config.train_imgs)
         self.test_df = test_df
         self.transforms = transforms
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=False)
@@ -95,7 +95,7 @@ def main(args, config):
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
 
-    test_df = pd.read_csv('./datasets/test_info.csv')
+    test_df = pd.read_csv('./datasets/train_info.csv')
     test_transforms = A.Compose([
         A.Resize(
             height = config.image_size[1],
@@ -118,12 +118,7 @@ def main(args, config):
 
     net = get_model(args, config)
 
-    model = Detector(
-                    n_classes=NUM_CLASSES,
-                    model = net,
-                    optimizer= torch.optim.AdamW,
-                    optim_params = {'lr': 0.1},     
-                    device = device)
+    model = Detector(model = net, device = device)
     model.eval()
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
@@ -136,7 +131,7 @@ def main(args, config):
                 if config.tta is not None:
                     preds = config.tta.make_tta_predictions(model, batch)
                 else:
-                    preds = model.inference_step(batch, config.min_conf_val, config.min_iou_val)
+                    preds = model.inference_step(batch)
 
                 for idx, outputs in enumerate(preds):
                     img_id = batch['img_ids'][idx]
@@ -195,13 +190,15 @@ def main(args, config):
 
         if args.submission:
             submission_df = pd.DataFrame(results, columns=['image_id', 'class_id', 'score', 'x_min', 'y_min' , 'x_max', 'y_max'])
-            submission_df.to_csv('results/output.csv', index=False)
+            submission_df.to_csv('results/0_train_pred.csv', index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
     parser.add_argument('config', type=str, default = None,help='save detection at')
-     parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
+    parser.add_argument('--min_conf', type=float, default= 0.001, help='minimum confidence for an object to be detect')
+    parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
+    parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
     parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
     parser.add_argument('--submission', action='store_true', default = False, help='output to submission file')
 
