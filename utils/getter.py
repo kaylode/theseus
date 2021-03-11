@@ -16,7 +16,7 @@ from utils.utils import init_weights, one_cycle
 import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
-from timm.utils import NativeScaler
+from utils.cuda import NativeScaler
 
 from .random_seed import seed_everything
 
@@ -45,12 +45,11 @@ def get_lr_policy(opt_config):
             'lr': lr, 
             'weight_decay': opt_config['weight_decay'],
             'betas': (opt_config['momentum'], 0.999)}
-    
     return optimizer, optimizer_params
 
-def get_lr_scheduler(optimizer, opt_config, **kwargs):
+def get_lr_scheduler(optimizer, lr_config, **kwargs):
 
-    scheduler_name = opt_config["name"]
+    scheduler_name = lr_config["name"]
     step_per_epoch = False
 
     if scheduler_name == '1cycle-yolo':
@@ -88,14 +87,102 @@ def get_lr_scheduler(optimizer, opt_config, **kwargs):
     elif scheduler_name == 'cosine':
         scheduler = CosineAnnealingWarmRestarts(
             optimizer,
-            T_0=kwargs['num_epochs'],
+            T_0=50,     #kwargs['num_epochs']
             T_mult=1,
             eta_min=0.0001,
             last_epoch=-1,
             verbose=False
         )
         step_per_epoch = False
-
-
-
     return scheduler, step_per_epoch
+
+
+def get_dataset_and_dataloader(config):
+
+    if config.model_name.startswith('efficientdet'):
+        box_format = 'yxyx' # Output of __getitem__ method  
+        def collate_fn(self, batch):
+            imgs = torch.stack([s['img'] for s in batch])
+            targets = [s['target'] for s in batch]
+            img_ids = [s['img_id'] for s in batch]
+            img_names = [s['img_name'] for s in batch]
+            
+            img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
+            img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
+            if self.inference:
+                return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
+
+            return {
+                'imgs': imgs, 
+                'targets': targets, 
+                'img_ids': img_ids,
+                'img_names': img_names,
+                'img_sizes': img_sizes, 
+                'img_scales': img_scales}
+
+    elif config.model_name.startswith('fasterrcnn'):
+        box_format = 'xyxy' # Output of __getitem__ method
+        def collate_fn(self, batch):
+            imgs = [s['img'] for s in batch]
+            targets = [s['target'] for s in batch]
+            img_ids = [s['img_id'] for s in batch]
+            img_names = [s['img_name'] for s in batch]
+            
+            img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
+            img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
+            if self.inference:
+                return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
+
+            return {
+                'imgs': imgs, 
+                'targets': targets, 
+                'img_ids': img_ids,
+                'img_names': img_names,
+                'img_sizes': img_sizes, 
+                'img_scales': img_scales}
+
+    CocoDataset.collate_fn = collate_fn
+    setattr(config, 'box_format', box_format)
+    train_transforms = get_augmentation(config, _type = 'train')
+    val_transforms = get_augmentation(config, _type = 'val')
+    
+    trainset = CocoDataset(
+        config = config,
+        root_dir = os.path.join('datasets', config.project_name, config.train_imgs),
+        ann_path = os.path.join('datasets', config.project_name, config.train_anns),
+        train=True,
+        transforms=train_transforms)
+    
+    valset = CocoDataset(
+        config = config,
+        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
+        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
+        train=False,
+        transforms=val_transforms)
+    
+    testset = CocoDataset(
+        config = config,
+        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
+        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
+        inference = True,
+        train = False,
+        transforms=val_transforms)
+
+    trainloader = DataLoader(
+        trainset, 
+        batch_size=config.batch_size, 
+        shuffle = True, 
+        collate_fn=trainset.collate_fn, 
+        num_workers= config.num_workers, 
+        pin_memory=True)
+
+    valloader = DataLoader(
+        valset, 
+        batch_size=config.batch_size, 
+        shuffle = False,
+        collate_fn=valset.collate_fn, 
+        num_workers= config.num_workers, 
+        pin_memory=True)
+
+    return  trainset, valset, testset, trainloader, valloader
+

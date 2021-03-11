@@ -36,8 +36,11 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size):
     Boxes format xyxy or xywh
     """
     new_boxes = boxes.copy()
-    new_boxes[:,[0, 2]] = (boxes[:,[0, 2]] * ori_img_size[0])/ current_img_size[0]
-    new_boxes[:,[1, 3]] = (boxes[:,[1, 3]] * ori_img_size[1])/ current_img_size[1]
+    new_boxes[:,0] = (boxes[:,0] * ori_img_size[0])/ current_img_size[0]
+    new_boxes[:,2] = (boxes[:,2] * ori_img_size[0])/ current_img_size[0]
+    new_boxes[:,1] = (boxes[:,1] * ori_img_size[1])/ current_img_size[1]
+    new_boxes[:,3] = (boxes[:,3] * ori_img_size[1])/ current_img_size[1]
+    # new_boxes[:,[1, 3]] = (boxes[:,[1, 3]] * ori_img_size[1])/ current_img_size[1]
     return new_boxes
 
 def postprocessing(
@@ -69,11 +72,11 @@ def postprocessing(
         scores = scores[indexes]
         labels = labels[indexes]
 
-    if ori_img_size is not None and current_img_size is not None:
-        boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)
+        # if ori_img_size is not None and current_img_size is not None:
+        #     boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)
 
-    if output_format == 'xywh':
-        boxes = change_box_order(boxes, order='xyxy2xywh')
+        if output_format == 'xywh':
+            boxes = change_box_order(boxes, order='xyxy2xywh')
 
 
     return {
