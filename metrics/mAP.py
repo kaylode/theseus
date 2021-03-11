@@ -111,7 +111,7 @@ class mAPScores(TemplateMetric):
                     if self.tta is not None:
                         preds = self.tta.make_tta_predictions(self.model, batch)
                     else:
-                        preds = self.model.inference_step(batch, self.min_conf, self.min_iou)
+                        preds = self.model.inference_step(batch)
 
                     for i in range(len(preds)):
                         image_id = batch['img_ids'][i]

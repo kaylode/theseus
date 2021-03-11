@@ -230,7 +230,7 @@ class Trainer():
             if self.cfg.tta is not None:
                 outputs = self.cfg.tta.make_tta_predictions(self.model, batch)
             else:
-                outputs = self.model.inference_step(batch, conf_threshold = self.cfg.min_conf_val, iou_threshold = self.cfg.min_iou_val)
+                outputs = self.model.inference_step(batch)
 
             for idx in range(len(outputs)):
                 img = imgs[idx]
@@ -257,7 +257,8 @@ class Trainer():
                 if len(boxes) == 0 or boxes is None:
                     continue
                 
-                target_boxes = change_box_order(target_boxes, 'yxyx2xyxy')
+                if self.cfg.box_format == 'yxyx':
+                    target_boxes = change_box_order(target_boxes, 'yxyx2xyxy')
                 target_boxes = change_box_order(target_boxes, order='xyxy2xywh')
 
                 pred_gt_imgs = img
