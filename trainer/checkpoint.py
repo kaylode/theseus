@@ -53,14 +53,16 @@ def load_checkpoint(model, path):
     """
     state = torch.load(path)
     current_lr = None
-    for param_group in model.optimizer.param_groups:
-        if 'lr' in param_group.keys():
-            current_lr = param_group['lr']
-            break
+    if model.optimizer is not None:
+        for param_group in model.optimizer.param_groups:
+            if 'lr' in param_group.keys():
+                current_lr = param_group['lr']
+                break
 
     try:
         model.model.load_state_dict(state["model"])
-        model.optimizer.load_state_dict(state["optimizer"])
+        if model.optimizer is not None:
+            model.optimizer.load_state_dict(state["optimizer"])
         if model.scaler is not None:
             model.scaler.load_state_dict(state[model.scaler.state_dict_key])
     except KeyError:
@@ -74,7 +76,7 @@ def load_checkpoint(model, path):
         except RuntimeError as e:
             print(f'[Warning] Ignoring {e}')
 
-    if current_lr is not None:
+    if current_lr is not None and model.optimizer is not None:
         for param_group in model.optimizer.param_groups:
             param_group['lr'] = current_lr
         print(f'Set learning rate to {current_lr}')
