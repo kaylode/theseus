@@ -1,5 +1,14 @@
-# Pytorch Custom Template
- Template for all Pytorch projects
+# Pytorch Custom Template for Image Classification
 
-# Reference:
-This repo is inspired by https://github.com/vltanh/pytorch-template
+## To-do list:
+- [ ] Semi-supervised integrations
+- [ ] Gradient checkpointing
+- [ ] Distributed data parallel
+- [ ] Sync BatchNorm
+- [x] Multi-GPU support (nn.DataParallel)
+- [x] GradCAM vizualization
+- [x] Gradient Accumulation
+- [x] Mixed precision
+
+## Reference:
+- timm models from https://github.com/rwightman/pytorch-image-models
