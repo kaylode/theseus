@@ -9,7 +9,10 @@ from utils.utils import clip_gradient
 import time
 from utils.utils import change_box_order, draw_pred_gt_boxes
 from utils.postprocess import box_fusion, postprocessing
+
 from torch.cuda import amp
+from utils.cuda import NativeScaler
+
 
 class Trainer():
     def __init__(self,
@@ -82,36 +85,36 @@ class Trainer():
         for i, batch in enumerate(self.trainloader):
             
             start_time = time.time()
-            
-            if self.use_amp:
-                with amp.autocast():
-                    loss, loss_dict = self.model.training_step(batch)
-                self.model.scaler(loss, self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
-            else:
+        
+            with amp.autocast(enabled=self.use_amp):
                 loss, loss_dict = self.model.training_step(batch)
-                loss.backward()
-            
-                if self.clip_grad is not None:
-                    clip_gradient(self.optimizer, self.clip_grad)
+                if self.use_accumulate:
+                    loss /= self.accumulate_steps
 
+            self.model.scaler(loss, self.optimizer)
+            
             if self.use_accumulate:
                 if (i+1) % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
-                    if not self.use_amp:
-                        self.optimizer.step()
-                    if self.scheduler is not None and not self.step_per_epoch:
-                        self.scheduler.step()
+                    self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
                     self.optimizer.zero_grad()
+
+                    if self.scheduler is not None and not self.step_per_epoch:
+                        self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
+                        lrl = [x['lr'] for x in self.optimizer.param_groups]
+                        lr = sum(lrl) / len(lrl)
+                        log_dict = {'Learning rate/Iterations': lr}
+                        self.logging(log_dict)
             else:
-                if not self.use_amp:
-                    self.optimizer.step()
+                self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
+                self.optimizer.zero_grad()
                 if self.scheduler is not None and not self.step_per_epoch:
                     # self.scheduler.step()
-                    self.scheduler.step(self.num_epochs + i / len(self.trainloader))
+                    self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
                     log_dict = {'Learning rate/Iterations': lr}
                     self.logging(log_dict)
-                self.optimizer.zero_grad()
+                
 
             torch.cuda.synchronize()
 
@@ -292,12 +295,6 @@ class Trainer():
         self.use_amp = False
         if self.cfg.mixed_precision:
             self.use_amp = True
-            
-
-    def forward_test(self):
-        self.model.eval()
-        outputs = self.model.forward_test()
-        print("Feed forward success, outputs's shape: ", outputs.shape)
 
     def __str__(self):
         s0 =  "##########   MODEL INFO   ##########"
@@ -311,7 +308,7 @@ class Trainer():
     def set_attribute(self, kwargs):
         self.checkpoint = None
         self.scheduler = None
-        self.clip_grad = None
+        self.clip_grad = 10.0
         self.logger = None
         self.step_per_epoch = False
         self.evaluate_per_epoch = 1

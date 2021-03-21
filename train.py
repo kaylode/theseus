@@ -13,15 +13,15 @@ def train(args, config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    trainset, valset, testset, trainloader, valloader = get_dataset_and_dataloader(config)
+    trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
     net = get_model(args, config)
 
     if args.saved_path is not None:
-        args.saved_path = os.path.join(args.saved_path, args.config)
+        args.saved_path = os.path.join(args.saved_path, config.project_name)
 
     if args.log_path is not None:
-        args.log_path = os.path.join(args.log_path, args.config)
+        args.log_path = os.path.join(args.log_path, config.project_name)
 
     if config.tta:
         config.tta = TTA(
@@ -32,7 +32,7 @@ def train(args, config):
         config.tta = None
 
     metric = mAPScores(
-        dataset=testset,
+        dataset=valset,
         min_conf = config.min_conf_val,
         min_iou = config.min_iou_val,
         tta=config.tta,
@@ -41,15 +41,10 @@ def train(args, config):
 
     optimizer, optimizer_params = get_lr_policy(config.lr_policy)
 
-    if config.mixed_precision:
-        scaler = NativeScaler()
-    else:
-        scaler = None
-
     model = Detector(
             model = net,
             metrics=metric,
-            scaler=scaler,
+            scaler=NativeScaler(),
             optimizer= optimizer,
             optim_params = optimizer_params,     
             device = device)
@@ -59,7 +54,6 @@ def train(args, config):
         start_epoch, start_iter, best_value = get_epoch_iters(args.resume)
     else:
         print('Not resume. Initialize weights')
-        init_weights(model.model)
         start_epoch, start_iter, best_value = 0, 0, 0.0
         
     scheduler, step_per_epoch = get_lr_scheduler(
@@ -108,9 +102,10 @@ if __name__ == '__main__':
     parser.add_argument('--saved_path', type=str, default='./weights')
     parser.add_argument('--no_visualization', action='store_false', help='whether to visualize box to ./sample when validating (for debug), default=on')
     parser.add_argument('--freeze_backbone', action='store_true', help='whether to freeze the backbone')
+    parser.add_argument('--freeze-bn', action='store_true', help='whether to freeze the backbone')
     
     args = parser.parse_args()
-    config = Config(os.path.join('configs',args.config+'.yaml'))
+    config = Config(os.path.join('configs','configs.yaml'))
 
     train(args, config)
     
