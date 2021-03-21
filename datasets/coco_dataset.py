@@ -17,7 +17,7 @@ import albumentations as A
 import cv2
 
 class CocoDataset(Dataset):
-    def __init__(self, config, root_dir, ann_path, train=True, inference=False, transforms=None):
+    def __init__(self, config, root_dir, ann_path, train=True, transforms=None):
         self.config = config
         self.root_dir = root_dir
         self.ann_path = ann_path
@@ -27,15 +27,17 @@ class CocoDataset(Dataset):
         self.cutmix = config.cutmix
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
 
-        self.box_format = config.box_format if config.box_format is not None else 'xyxy' # Output format of the __getitem__
+        self.box_format = 'yxyx' # Output format of the __getitem__
 
-        self.inference = inference
         self.train = train
 
         self.coco = COCO(ann_path)
         self.image_ids = self.coco.getImgIds()
 
         self.load_classes()
+
+    def set_box_format(self, format):
+        self.box_format = format
 
     def load_classes(self):
 
@@ -75,7 +77,6 @@ class CocoDataset(Dataset):
         box = np.array([np.asarray(i) for i in box])
         label = np.array(label)
         
-
         return img, box, label, img_id, img_name
 
     def __getitem__(self, idx):
@@ -95,7 +96,7 @@ class CocoDataset(Dataset):
                     image, boxes, labels, img_id, img_name = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
                     image, boxes, labels, img_id, img_name = self.load_image_and_boxes(idx)
-        image = image.astype(np.float32)
+        image = image.astype(np.uint8)
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
             # Normalize
