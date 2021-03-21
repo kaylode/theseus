@@ -150,34 +150,6 @@ def find_jaccard_overlap(set_1, set_2, order='xyxy'):
 
     return intersection / union  # (n1, n2)
 
-def init_weights(model):
-    for name, module in model.named_modules():
-        is_conv_layer = isinstance(module, nn.Conv2d)
-
-        if is_conv_layer:
-            if "conv_list" or "header" in name:
-                variance_scaling_(module.weight.data)
-            else:
-                nn.init.kaiming_uniform_(module.weight.data)
-
-            if module.bias is not None:
-                if "classifier.header" in name:
-                    bias_value = -np.log((1 - 0.01) / 0.01)
-                    torch.nn.init.constant_(module.bias, bias_value)
-                else:
-                    module.bias.data.zero_()
-
-def variance_scaling_(tensor, gain=1.):
-    # type: (Tensor, float) -> Tensor
-    r"""
-    initializer for SeparableConv in Regressor/Classifier
-    reference: https://keras.io/zh/initializers/  VarianceScaling
-    """
-    fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
-    std = math.sqrt(gain / float(fan_in))
-
-    return _no_grad_normal_(tensor, 0., std)
-
 def draw_boxes(img, preds, obj_list):
     bboxes = preds['bboxes']
     labels = preds['classes']
@@ -276,10 +248,4 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
     plt.axis('off')
     plt.savefig(image_outname,bbox_inches='tight')
     plt.close()
-
-def one_cycle(y1=0.0, y2=1.0, steps=100):
-    # lambda function for sinusoidal ramp from y1 to y2
-    return lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
-
-
 
