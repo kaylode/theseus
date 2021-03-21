@@ -3,77 +3,46 @@ import torch
 import torchvision.models as models
 import torch.nn as nn
 from tqdm import tqdm
-from torchvision import transforms
-
-
+import sys
+sys.path.append('..')
 
 class Classifier(BaseModel):
-    def __init__(self, backbone, n_classes, **kwargs):
+    def __init__(self, model, **kwargs):
         super(Classifier, self).__init__(**kwargs)
-        self.model = backbone
-        self.model_name = "Classifier"
-        self.optimizer = self.optimizer(self.parameters())
-        self.set_optimizer_params()
-        self.n_classes = n_classes
+        self.model = model
+        self.model_name = self.model.name
+        if self.optimizer is not None:
+            self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
+            self.set_optimizer_params()
 
         if self.freeze:
             for params in self.model.parameters():
                 params.requires_grad = False
-  
 
         if self.device:
             self.model.to(self.device)
-            #self.criterion.to(self.device)
-    
-
+        
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch):
-        inputs = batch["imgs"]
-        targets = batch["labels"]
-        if self.device:
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
-        
-        outputs = self(inputs)
-        loss, loss_dict = self.criterion(outputs, targets)
+        outputs = self.model(batch, self.device)
+        targets =  batch['targets'].to(self.device)
+        loss = self.criterion(outputs, targets)
+        loss_dict = {'T': loss.item()}
         return loss, loss_dict
 
-    
     def inference_step(self, batch):
-        inputs = batch['imgs']
-        if self.device:
-            inputs = inputs.to(self.device)
-        outputs = self(inputs)
+        outputs = self.model(batch, self.device)
         preds = torch.argmax(outputs, dim=1)
-
-        if self.device:
-            preds = preds.cpu()
+        preds = preds.detach()
         return preds.numpy()
 
     def evaluate_step(self, batch):
-        inputs = batch["imgs"]
-        targets = batch["labels"]
-        if self.device:
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
-        outputs = self(inputs) #batchsize, label_dim
-        loss, loss_dict = self.criterion(outputs, targets)
+        outputs = self.model(batch, self.device)
+        targets =  batch['targets'].to(self.device)
+        loss = self.criterion(outputs, targets)
+        loss_dict = {'T': loss.item()}
 
         self.update_metrics(outputs = outputs, targets = targets)
-        
-        
         return loss, loss_dict
-
-    def forward_test(self):
-        inputs = torch.rand(1,3,224,224)
-        if self.device:
-            inputs = inputs.to(self.device)
-        with torch.no_grad():
-            outputs = self(inputs)
-        return outputs
-
-    
-
-    

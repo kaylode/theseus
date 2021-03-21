@@ -48,7 +48,6 @@ class BalancedAccuracyMetric():
     def value(self):
         self.compute(self.outputs, self.targets)
         each_acc = [self.corrects[i]*1.0/(self.total[i]+0.0001) for i in range(self.num_classes)]
-        print(each_acc)
         values = sum(each_acc)/self.num_classes
 
         return {"bl_acc" : np.around(values, decimals = self.decimals)}
@@ -68,6 +67,3 @@ if __name__ == '__main__':
     targets = torch.LongTensor(label)
     accuracy.update(outputs, targets)
     print(accuracy.value())
-    
-    
-  
