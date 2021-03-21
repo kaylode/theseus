@@ -20,7 +20,7 @@ BATCH_SIZE = 16
 class TestDataset(Dataset):
     def __init__(self, config, test_df, transforms=None):
         self.image_size = config.image_size
-        self.root_dir = os.path.join('datasets', config.project_name, config.train_imgs)
+        self.root_dir = os.path.join('datasets', config.project_name, config.test_imgs)
         self.test_df = test_df
         self.transforms = transforms
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=False)
@@ -95,7 +95,7 @@ def main(args, config):
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
 
-    test_df = pd.read_csv('./datasets/train_info.csv')
+    test_df = pd.read_csv('./datasets/test_info.csv')
     test_transforms = A.Compose([
         A.Resize(
             height = config.image_size[1],
@@ -110,8 +110,8 @@ def main(args, config):
 
     if config.tta:
         config.tta = TTA(
-            min_conf=config.min_conf_val, 
-            min_iou=config.min_iou_val, 
+            min_conf=config.tta_conf_threshold, 
+            min_iou=config.tta_iou_threshold, 
             postprocess_mode=config.tta_ensemble_mode)
     else:
         config.tta = None
@@ -196,8 +196,6 @@ def main(args, config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
     parser.add_argument('config', type=str, default = None,help='save detection at')
-    parser.add_argument('--min_conf', type=float, default= 0.001, help='minimum confidence for an object to be detect')
-    parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
     parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
     parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
     parser.add_argument('--submission', action='store_true', default = False, help='output to submission file')

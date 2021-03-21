@@ -9,10 +9,11 @@ from configs import *
 
 import torch
 from tqdm import tqdm
+import math
 import torch.nn as nn
 import torch.utils.data as data
 from torch.utils.data import DataLoader
-from utils.utils import init_weights, one_cycle
+from utils.utils import init_weights
 import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
@@ -53,6 +54,10 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
     step_per_epoch = False
 
     if scheduler_name == '1cycle-yolo':
+        def one_cycle(y1=0.0, y2=1.0, steps=100):
+            # lambda function for sinusoidal ramp from y1 to y2
+            return lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
+
         lf = one_cycle(1, 0.158, kwargs['num_epochs'])  # cosine 1->hyp['lrf']
         scheduler = LambdaLR(optimizer, lr_lambda=lf)
         step_per_epoch = True
@@ -87,7 +92,7 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
     elif scheduler_name == 'cosine':
         scheduler = CosineAnnealingWarmRestarts(
             optimizer,
-            T_0=50,     #kwargs['num_epochs']
+            T_0=kwargs['num_epochs'],
             T_mult=1,
             eta_min=0.0001,
             last_epoch=-1,
@@ -109,8 +114,6 @@ def get_dataset_and_dataloader(config):
             
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
             img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
-            if self.inference:
-                return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
 
             return {
                 'imgs': imgs, 
@@ -123,15 +126,13 @@ def get_dataset_and_dataloader(config):
     elif config.model_name.startswith('fasterrcnn'):
         box_format = 'xyxy' # Output of __getitem__ method
         def collate_fn(self, batch):
-            imgs = [s['img'] for s in batch]
+            imgs = torch.stack([s['img'] for s in batch], dim=0)
             targets = [s['target'] for s in batch]
             img_ids = [s['img_id'] for s in batch]
             img_names = [s['img_name'] for s in batch]
             
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
             img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
-            if self.inference:
-                return {'imgs': imgs, 'img_ids': img_ids, 'img_sizes': img_sizes, 'img_scales': img_scales}
 
             return {
                 'imgs': imgs, 
@@ -142,7 +143,6 @@ def get_dataset_and_dataloader(config):
                 'img_scales': img_scales}
 
     CocoDataset.collate_fn = collate_fn
-    setattr(config, 'box_format', box_format)
     train_transforms = get_augmentation(config, _type = 'train')
     val_transforms = get_augmentation(config, _type = 'val')
     
@@ -159,14 +159,9 @@ def get_dataset_and_dataloader(config):
         ann_path = os.path.join('datasets', config.project_name, config.val_anns),
         train=False,
         transforms=val_transforms)
-    
-    testset = CocoDataset(
-        config = config,
-        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
-        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
-        inference = True,
-        train = False,
-        transforms=val_transforms)
+
+    trainset.set_box_format(box_format)
+    valset.set_box_format(box_format)
 
     trainloader = DataLoader(
         trainset, 
@@ -184,5 +179,5 @@ def get_dataset_and_dataloader(config):
         num_workers= config.num_workers, 
         pin_memory=True)
 
-    return  trainset, valset, testset, trainloader, valloader
+    return  trainset, valset, trainloader, valloader
 
