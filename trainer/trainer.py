@@ -5,18 +5,21 @@ from tqdm import tqdm
 from .checkpoint import Checkpoint
 import numpy as np
 from loggers.loggers import Logger
-from utils.utils import clip_gradient
 import time
+from utils.cuda import NativeScaler
+from torch.cuda import amp
+from utils.gradcam import GradCam, show_cam_on_image
+from augmentations import Denormalize
 
-
-class Trainer(nn.Module):
-    def __init__(self, 
+class Trainer():
+    def __init__(self,
+                config,
                 model, 
                 trainloader, 
                 valloader,
                 **kwargs):
 
-        super(Trainer, self).__init__()
+        self.cfg = config
         self.model = model
         self.optimizer = model.optimizer
         self.criterion = model.criterion
@@ -39,6 +42,11 @@ class Trainer(nn.Module):
             self.print_per_iter = int(len(self.trainloader)/10)
         
         self.epoch = start_epoch
+
+        # For one-cycle lr only
+        if self.scheduler is not None and self.step_per_epoch:
+            self.scheduler.last_epoch = start_epoch - 1
+
         self.start_iter = start_iter % len(self.trainloader)
 
         print(f'===========================START TRAINING=================================')
@@ -51,13 +59,16 @@ class Trainer(nn.Module):
                     if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                         self.evaluate_epoch()
                         
-                    
-                if self.scheduler is not None:
+                if self.scheduler is not None and self.step_per_epoch:
                     self.scheduler.step()
+                    lrl = [x['lr'] for x in self.optimizer.param_groups]
+                    lr = sum(lrl) / len(lrl)
+                    log_dict = {'Learning rate/Epoch': lr}
+                    self.logging(log_dict)
                 
 
             except KeyboardInterrupt:   
-                self.checkpoint.save(self.model, epoch = self.epoch, iters = self.iters, interrupted = True)
+                self.checkpoint.save(self.model, save_mode = 'last', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
                 print("Stop training, checkpoint saved...")
                 break
 
@@ -69,22 +80,42 @@ class Trainer(nn.Module):
         running_loss = {}
         running_time = 0
 
+        self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
-            self.optimizer.zero_grad()
-            start_time = time.time()
-            loss, loss_dict = self.model.training_step(batch)
-
-
-            if loss.item() == 0 or not torch.isfinite(loss):
-                continue
-
-            loss.backward()
             
-            # 
-            if self.clip_grad is not None:
-                clip_gradient(self.optimizer, self.clip_grad)
+            start_time = time.time()
+        
+            with amp.autocast(enabled=self.use_amp):
+                loss, loss_dict = self.model.training_step(batch)
+                if self.use_accumulate:
+                    loss /= self.accumulate_steps
 
-            self.optimizer.step()
+            self.model.scaler(loss, self.optimizer)
+            
+            if self.use_accumulate:
+                if (i+1) % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
+                    self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
+                    self.optimizer.zero_grad()
+
+                    if self.scheduler is not None and not self.step_per_epoch:
+                        self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
+                        lrl = [x['lr'] for x in self.optimizer.param_groups]
+                        lr = sum(lrl) / len(lrl)
+                        log_dict = {'Learning rate/Iterations': lr}
+                        self.logging(log_dict)
+            else:
+                self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
+                self.optimizer.zero_grad()
+                if self.scheduler is not None and not self.step_per_epoch:
+                    # self.scheduler.step()
+                    self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
+                    lrl = [x['lr'] for x in self.optimizer.param_groups]
+                    lr = sum(lrl) / len(lrl)
+                    log_dict = {'Learning rate/Iterations': lr}
+                    self.logging(log_dict)
+                
+            torch.cuda.synchronize()
+
             end_time = time.time()
 
             for (key,value) in loss_dict.items():
@@ -107,29 +138,13 @@ class Trainer(nn.Module):
                 running_time = 0
 
             if (self.iters % self.checkpoint.save_per_iter == 0 or self.iters == self.num_iters - 1):
-                self.checkpoint.save(self.model, epoch = self.epoch, iters=self.iters)
-
-    def inference_batch(self, testloader):
-        self.model.eval()
-        results = []
-        with torch.no_grad():
-            for batch in testloader:
-                outputs = self.model.inference_step(batch)
-                if isinstance(outputs, (list, tuple)):
-                    for i in outputs:
-                        results.append(i)
-                else:
-                    results = outputs
-                break      
-        return results
-
-    def inference_item(self, img):
-        self.model.eval()
-
-        with torch.no_grad():
-            outputs = self.model.inference_step({"imgs": img.unsqueeze(0)})      
-        return outputs
-
+                print(f'Save model at [{self.epoch}|{self.iters}] to last.pth')
+                self.checkpoint.save(
+                    self.model, 
+                    save_mode = 'last', 
+                    epoch = self.epoch, 
+                    iters = self.iters, 
+                    best_value=self.best_value)
 
     def evaluate_epoch(self):
         self.model.eval()
@@ -162,41 +177,84 @@ class Trainer(nn.Module):
 
         for metric, score in metric_dict.items():
             print(metric +': ' + str(score), end = ' | ')
+        print()
         print('==========================================================================')
 
         log_dict = {"Validation Loss/Epoch" : epoch_loss['T'] / len(self.valloader),}
         log_dict.update(metric_dict)
         self.logging(log_dict)
 
+        # Save model gives best mAP score
+        if metric_dict['acc'] > self.best_value:
+            self.best_value = metric_dict['acc']
+            self.checkpoint.save(self.model, save_mode = 'best', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
+
+        if self.visualize_when_val:
+            self.visualize_batch()
+
+    def visualize_batch(self):
+        # Vizualize Grad Class Activation Mapping
+        if not os.path.exists('./samples'):
+            os.mkdir('./samples')
+
+        denom = Denormalize()
+        batch = next(iter(self.valloader))
+        images = batch["imgs"]
+        #targets = batch["targets"]
+
+        self.model.eval()
+
+        config_name = self.cfg.model_name.split('_')[0]
+        grad_cam = GradCam(model=self.model.model, config_name= config_name)
+
+        for idx, inputs in enumerate(images):
+            image_outname = os.path.join('samples', f'{self.epoch}_{self.iters}_{idx}.jpg')
+            img_show = denom(inputs)
+            inputs = inputs.unsqueeze(0)
+            inputs = inputs.to(self.model.device)
+            target_category = None
+            grayscale_cam, label_idx = grad_cam(inputs, target_category)
+            label = self.cfg.obj_list[label_idx]
+            img_cam = show_cam_on_image(img_show, grayscale_cam, label)
+            cv2.imwrite(image_outname, img_cam)
+
+
     def logging(self, logs):
         tags = [l for l in logs.keys()]
         values = [l for l in logs.values()]
         self.logger.write(tags= tags, values= values)
 
+    def set_accumulate_step(self):
+        self.use_accumulate = False
+        if self.cfg.total_accumulate_steps > 0:
+            self.use_accumulate = True
+            self.accumulate_steps = max(round(self.cfg.total_accumulate_steps / self.cfg.batch_size), 1) 
 
-
-    def forward_test(self):
-        self.model.eval()
-        outputs = self.model.forward_test()
-        print("Feed forward success, outputs's shape: ", outputs.shape)
+    def set_amp(self):
+        self.use_amp = False
+        if self.cfg.mixed_precision:
+            self.use_amp = True
 
     def __str__(self):
-        s0 = "---------MODEL INFO----------------"
+        s0 =  "##########   MODEL INFO   ##########"
         s1 = "Model name: " + self.model.model_name
         s2 = f"Number of trainable parameters:  {self.model.trainable_parameters():,}"
        
-        s3 = "Loss function: " + str(self.criterion)[:-2]
-        s4 = "Optimizer: " + str(self.optimizer)
         s5 = "Training iterations per epoch: " + str(len(self.trainloader))
         s6 = "Validating iterations per epoch: " + str(len(self.valloader))
-        return "\n".join([s0,s1,s2,s3,s4,s5,s6])
+        return "\n".join([s0,s1,s2,s5,s6])
 
     def set_attribute(self, kwargs):
         self.checkpoint = None
         self.scheduler = None
-        self.clip_grad = None
+        self.clip_grad = 10.0
         self.logger = None
+        self.visualize_when_val = True
+        self.step_per_epoch = False
         self.evaluate_per_epoch = 1
+        self.best_value = 0.0
+        self.set_accumulate_step()
+        self.set_amp()
         for i,j in kwargs.items():
             setattr(self, i, j)
 
