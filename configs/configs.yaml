@@ -1,7 +1,7 @@
 settings:
   #################   DATASET CONFIG   ###################
 
-  project_name: ""    # also the folder name of the dataset that under ./datasets folder
+  project_name: ""    # also the folder name of the dataset that under ./data folder
   train_imgs: images/train
   val_imgs: images/train
   test_imgs: images/test
@@ -25,7 +25,7 @@ settings:
   num_workers: 4
 
   fusion_mode: 'nms'                  # Post-process method [nms | wbf | None]
-  min_iou_val:  0.4                     # IOU threshold for validation
+  min_iou_val:  0.6                     # IOU threshold for validation
   min_conf_val: 0.1                    # Confidence score threshold for validation
   max_images_val: 10000                 # max number of images for validation
   
@@ -53,3 +53,5 @@ settings:
   # Test time augmentation
   tta: False                             # whether to use TTA while validation
   tta_ensemble_mode: "wbf"              # ensemble method when TTA
+  tta_conf_threshold: 0.01
+  tta_iou_threshold: 0.7
