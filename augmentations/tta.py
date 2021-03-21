@@ -104,7 +104,7 @@ class TTA():
         #                             [TTAVerticalFlip(), None],
         #                             [TTARotate90(), None]):
         #     self.tta_transforms.append(TTACompose([tta_transform for tta_transform in tta_combination if tta_transform]))
-        self.tta_transforms = [None, TTAHorizontalFlip(), TTAVerticalFlip(), TTARotate90()]
+        self.tta_transforms = [TTACompose([i]) if i is not None else None for i in [None, TTAHorizontalFlip(), TTAVerticalFlip(), TTARotate90()] ]
 
     def make_tta_predictions(self, model, batch, weights = None):
         
@@ -127,9 +127,9 @@ class TTA():
             for aug_idx, tta_transform in enumerate(self.tta_transforms):
                 imgs = batch['imgs']
                 if tta_transform is not None:
-                    tta_imgs = tta_transform.batch_augment(imgs.clone())
+                    tta_imgs = tta_transform.batch_augment(imgs)
                 else:
-                    tta_imgs = imgs.clone()
+                    tta_imgs = imgs
 
                 tta_batch = {
                     'imgs': tta_imgs, 
@@ -137,7 +137,7 @@ class TTA():
                     'img_scales': batch['img_scales']}
 
                 #  Feed imgs through model
-                outputs = model.inference_step(tta_batch, conf_threshold = self.min_conf, iou_threshold = self.min_iou)
+                outputs = model.inference_step(tta_batch)
                 
                 for i, output in enumerate(outputs):
 
@@ -155,8 +155,12 @@ class TTA():
                     boxes = boxes[indexes]
                     scores = scores[indexes]
                     classes = classes[indexes]
+                    
+                    if len(boxes) != 0:
+                        if tta_transform is not None:
+                            boxes = tta_transform.deaugment_boxes(boxes.copy())
+                            
 
-                    boxes = tta_transform.deaugment_boxes(boxes.copy())
                     
                     predictions['bboxes'][i].append(boxes)
                     predictions['classes'][i].append(classes)

@@ -3,11 +3,14 @@ import numpy as np
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 
+MEAN = [0.485, 0.456, 0.406]
+STD = [0.229, 0.224, 0.225]
+
 class Denormalize(object):
     """
     Denormalize image and boxes for visualization
     """
-    def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
+    def __init__(self, mean = MEAN, std = STD, **kwargs):
         self.mean = mean
         self.std = std
         
@@ -69,7 +72,7 @@ def get_augmentation(config, _type='train'):
         A.VerticalFlip(p=0.3),
         A.RandomRotate90(p=0.3),
         A.Cutout(num_holes=8, max_h_size=64, max_w_size=64, fill_value=0, p=0.5),
-        A.Normalize(mean=(0, 0, 0), std=(1, 1, 1), max_pixel_value=255.0, p=1.0),
+        A.Normalize(mean=MEAN, std=STD, max_pixel_value=255.0, p=1.0),
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(
         format='pascal_voc',
@@ -79,7 +82,7 @@ def get_augmentation(config, _type='train'):
 
 
     val_transforms = A.Compose([
-        A.Normalize(mean=(0, 0, 0), std=(1, 1, 1), max_pixel_value=255.0, p=1.0),
+        A.Normalize(mean=MEAN, std=STD, max_pixel_value=255.0, p=1.0),
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(
         format='pascal_voc', 
