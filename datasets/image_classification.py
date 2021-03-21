@@ -5,23 +5,19 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from augmentations.transforms import Compose
+from augmentations.transforms import Denormalize
+import albumentations as A
+import cv2
 
 class ImageClassificationDataset(data.Dataset):
     """
     Reads a folder of images
     """
-    def __init__(self,
-                img_dir,
-                transforms = None,
-                max_samples = None,
-                shuffle = False):
+    def __init__(self, config, img_dir, transforms=None):
 
         self.dir = img_dir
         self.classes = os.listdir(img_dir)
         self.transforms = transforms
-        self.shuffle = shuffle
-        self.max_samples = max_samples
         self.classes_idx = self.labels_to_idx()
         self.fns = self.load_images()
         
@@ -32,6 +28,7 @@ class ImageClassificationDataset(data.Dataset):
         for cl in self.classes:
             indexes[cl] = idx
             idx += 1
+        self.num_classes = len(self.classes)
         return indexes
     
     def load_images(self):
@@ -39,25 +36,23 @@ class ImageClassificationDataset(data.Dataset):
         for cl in self.classes:
             img_names = sorted(os.listdir(os.path.join(self.dir,cl)))
             for name in img_names:
-                data_list.append([cl+'/'+name, cl])
-        if self.shuffle:
-            random.shuffle(data_list)
-        data_list = data_list[:self.max_samples] if self.max_samples is not None else data_list
+                img_path = os.path.join(self.dir, cl, name)
+                data_list.append([img_path, cl])
         return data_list
         
     def __getitem__(self, index):
-        img_name, class_name = self.fns[index]
-        label = self.classes_idx[class_name]
-        img_path = os.path.join(self.dir, img_name)
-        img = Image.open(img_path).convert('RGB')
-
+        img_path, class_name = self.fns[index]
+        label = self.classes_idx[class_name]   
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = img.astype(np.uint8)
         if self.transforms:
-            results = self.transforms(img= img, label=[label])
-            img = results['img']
-            label = results['label']
-
-        return {"img" : img,
-                 "label" : label}
+            item = self.transforms(image=img)
+            img = item['image']
+        label  = torch.LongTensor([label])
+        return {
+            "img" : img,
+            "target" : label}
     
     def count_dict(self):
         cnt_dict = {}
@@ -66,7 +61,6 @@ class ImageClassificationDataset(data.Dataset):
             cnt_dict[cl] = num_imgs
         return cnt_dict
     
-
     def visualize_item(self, index = None, figsize=(15,15)):
         """
         Visualize an image with its bouding boxes by index
@@ -76,18 +70,19 @@ class ImageClassificationDataset(data.Dataset):
             index = np.random.randint(0,len(self.fns))
         item = self.__getitem__(index)
         img = item['img']
-        label = item['label']
+        label = item['target']
 
         # Denormalize and reverse-tensorize
-        if any(isinstance(x, Normalize) for x in self.transforms.transforms_list):
-            normalize = True
-        else:
-            normalize = False
+        normalize = False
+        if self.transforms is not None:
+            for x in self.transforms.transforms:
+                if isinstance(x, A.Normalize):
+                    normalize = True
+                    denormalize = Denormalize(mean=x.mean, std=x.std)
 
         # Denormalize and reverse-tensorize
         if normalize:
-            results = self.transforms.denormalize(img = img, box = None, label = label)
-            img, label = results['img'], results['label']
+            img = denormalize(img = img)
 
         label = label.numpy().item()
         self.visualize(img, label, figsize = figsize)
@@ -101,8 +96,7 @@ class ImageClassificationDataset(data.Dataset):
 
         # Display the image
         ax.imshow(img)
-        plt.title(self.classes[label])
-        
+        plt.title(self.classes[int(label)])
         plt.show()
 
     def plot(self, figsize = (8,8), types = ["freqs"]):
@@ -124,11 +118,9 @@ class ImageClassificationDataset(data.Dataset):
         return len(self.fns)
     
     def __str__(self):
-        s = "Custom Dataset for Image Classification\n"
-        line = "-------------------------------\n"
         s1 = "Number of samples: " + str(len(self.fns)) + '\n'
         s2 = "Number of classes: " + str(len(self.classes)) + '\n'
-        return s + line + s1 + s2
+        return s1 + s2
 
     def collate_fn(self, batch):
         """
@@ -138,8 +130,8 @@ class ImageClassificationDataset(data.Dataset):
         """
 
         images = torch.stack([b['img'] for b in batch], dim=0)
-        labels = torch.LongTensor([b['label'] for b in batch])
+        labels = torch.LongTensor([b['target'] for b in batch])
 
         return {
             'imgs': images,
-            'labels': labels} # tensor (N, 3, 300, 300), 3 lists of N tensors each
+            'targets': labels} 
