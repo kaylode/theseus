@@ -8,12 +8,11 @@ class Logger():
     Logger for Tensorboard visualization
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, log_dir=None):
+    def __init__(self, log_dir='./logger/runs'):
         self.log_dir = log_dir
-        if self.log_dir is None:
-            self.log_dir = os.path.join('loggers/runs',datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        self.log_dir = os.path.join(log_dir,datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         if not os.path.exists(self.log_dir):
-            os.mkdir(self.log_dir)
+            os.makedirs(self.log_dir)
         self.writer = SummaryWriter(log_dir=self.log_dir)
         self.iters = {}
 
