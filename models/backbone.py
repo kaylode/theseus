@@ -28,14 +28,16 @@ def get_model(args, config):
             load_weights=load_weights, 
             freeze_backbone = getattr(args, 'freeze_backbone', False),
             pretrained_backbone_path=config.pretrained_backbone,
+            freeze_batchnorm=args.freeze_bn,
             image_size=config.image_size)
     elif config.model_name.startswith('fasterrcnn'):
         backbone_name = config.model_name.split('-')[1]
         net = FRCNNBackbone(
             backbone_name=backbone_name,
             num_classes=NUM_CLASSES, 
-            pretrained=True
-        )
+            pretrained=True,
+            image_size=config.image_size)
+
     return net
 
 class BaseBackbone(nn.Module):
@@ -56,6 +58,7 @@ class EfficientDetBackbone(BaseBackbone):
         image_size=[512,512], 
         pretrained_backbone_path=None, 
         freeze_backbone=False, 
+        freeze_batchnorm = False,
         **kwargs):
 
         super(EfficientDetBackbone, self).__init__(**kwargs)
@@ -69,7 +72,12 @@ class EfficientDetBackbone(BaseBackbone):
             pretrained_backbone=load_weights, 
             freeze_backbone=freeze_backbone,
             pretrained_backbone_path=pretrained_backbone_path)
-            
+        
+        if freeze_batchnorm:
+            print("freeze batchnorm")
+            freeze_bn(net.backbone)
+            freeze_bn(net.fpn)
+
         net.reset_head(num_classes=num_classes)
         net.class_net = HeadNet(config, num_outputs=config.num_classes)
 
@@ -122,17 +130,24 @@ class FRCNNBackbone(BaseBackbone):
         self, 
         backbone_name,
         num_classes=80, 
+        image_size=[512,512], 
         pretrained=False,
         **kwargs):
 
         super(FRCNNBackbone, self).__init__(**kwargs)
         self.name = f'fasterrcnn-{backbone_name}'
-        self.model = create_fasterrcnn_fpn(backbone_name,pretrained=pretrained, num_classes=num_classes)
+        self.model = create_fasterrcnn_fpn(backbone_name,pretrained=pretrained, num_classes=num_classes, min_size = image_size[0], max_size = image_size[1])
         self.num_classes = num_classes
 
     def forward(self, batch, device):
         self.model.train()
+
+        # Tensor of images
         inputs = batch["imgs"]
+
+        # Unwrap tensor into list of images
+        inputs = [i for i in inputs]
+        
         targets = batch['targets']
 
         inputs = list(image.to(device) for image in inputs)
@@ -173,3 +188,13 @@ class FRCNNBackbone(BaseBackbone):
                 })
 
         return out
+
+def freeze_bn(model):
+    def set_bn_eval(m):
+        classname = m.__class__.__name__
+        if "BatchNorm2d" in classname:
+            m.affine = False
+            m.weight.requires_grad = False
+            m.bias.requires_grad = False
+            m.eval() 
+    model.apply(set_bn_eval)

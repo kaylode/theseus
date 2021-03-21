@@ -1,8 +1,6 @@
 """ RetinaNet / EfficientDet Anchor Gen
-
 Adapted for PyTorch from Tensorflow impl at
     https://github.com/google/automl/blob/6f6694cec1a48cdb33d5d1551a2d5db8ad227798/efficientdet/anchors.py
-
 Hacked together by Ross Wightman, original copyright below
 """
 # Copyright 2020 Google Research. All Rights Reserved.
@@ -20,7 +18,6 @@ Hacked together by Ross Wightman, original copyright below
 # limitations under the License.
 # ==============================================================================
 """Anchor definition.
-
 This module is borrowed from TPU RetinaNet implementation:
 https://github.com/tensorflow/tpu/blob/master/models/official/retinanet/anchors.py
 """
@@ -46,18 +43,13 @@ _DUMMY_DETECTION_SCORE = -1e5
 
 def decode_box_outputs(rel_codes, anchors, output_xyxy: bool=False):
     """Transforms relative regression coordinates to absolute positions.
-
     Network predictions are normalized and relative to a given anchor; this
     reverses the transformation and outputs absolute coordinates for the input image.
-
     Args:
         rel_codes: box regression targets.
-
         anchors: anchors on all feature levels.
-
     Returns:
         outputs: bounding boxes.
-
     """
     ycenter_a = (anchors[:, 0] + anchors[:, 2]) / 2
     xcenter_a = (anchors[:, 1] + anchors[:, 3]) / 2
@@ -93,30 +85,22 @@ def generate_detections(
         img_scale: Optional[torch.Tensor], img_size: Optional[torch.Tensor],
         max_det_per_image: int = 100, soft_nms: bool = False):
     """Generates detections with RetinaNet model outputs and anchors.
-
     Args:
         cls_outputs: a torch tensor with shape [N, 1], which has the highest class
             scores on all feature levels. The N is the number of selected
             top-K total anchors on all levels.
-
         box_outputs: a torch tensor with shape [N, 4], which stacks box regression
             outputs on all feature levels. The N is the number of selected top-k
             total anchors on all levels.
-
         anchor_boxes: a torch tensor with shape [N, 4], which stacks anchors on all
             feature levels. The N is the number of selected top-k total anchors on all levels.
-
         indices: a torch tensor with shape [N], which is the indices from top-k selection.
-
         classes: a torch tensor with shape [N], which represents the class
             prediction on all selected anchors from top-k selection.
-
         img_scale: a float tensor representing the scale between original image
             and input image for the detector. It is used to rescale detections for
             evaluating with the original groundtruth annotations.
-
         max_det_per_image: an int constant, added as argument to make torchscript happy
-
     Returns:
         detections: detection results in a tensor with shape [max_det_per_image, 6],
             each row representing [x_min, y_min, x_max, y_max, score, class]
@@ -185,23 +169,17 @@ class Anchors(nn.Module):
 
     def __init__(self, min_level, max_level, num_scales, aspect_ratios, anchor_scale, image_size: Tuple[int, int]):
         """Constructs multiscale RetinaNet anchors.
-
         Args:
             min_level: integer number of minimum level of the output feature pyramid.
-
             max_level: integer number of maximum level of the output feature pyramid.
-
             num_scales: integer number representing intermediate scales added
                 on each level. For instances, num_scales=2 adds two additional
                 anchor scales [2^0, 2^0.5] on each level.
-
             aspect_ratios: list of tuples representing the aspect ratio anchors added
                 on each level. For instances, aspect_ratios =
                 [(1, 1), (1.4, 0.7), (0.7, 1.4)] adds three anchors on each level.
-
             anchor_scale: float number representing the scale of size of the base
                 anchor to the feature stride 2^level.
-
             image_size: Sequence specifying input image size of model (H, W).
                 The image_size should be divided by the largest feature stride 2^max_level.
         """
@@ -294,12 +272,9 @@ class AnchorLabeler(object):
 
     def __init__(self, anchors, num_classes: int, match_threshold: float = 0.5):
         """Constructs anchor labeler to assign labels to anchors.
-
         Args:
             anchors: an instance of class Anchors.
-
             num_classes: integer number representing number of classes in the dataset.
-
             match_threshold: float number between 0 and 1 representing the threshold
                 to assign positive labels for anchors.
         """
@@ -319,24 +294,18 @@ class AnchorLabeler(object):
 
     def label_anchors(self, gt_boxes, gt_classes, filter_valid=True):
         """Labels anchors with ground truth inputs.
-
         Args:
             gt_boxes: A float tensor with shape [N, 4] representing groundtruth boxes.
                 For each row, it stores [y0, x0, y1, x1] for four corners of a box.
-
             gt_classes: A integer tensor with shape [N, 1] representing groundtruth classes.
-
             filter_valid: Filter out any boxes w/ gt class <= -1 before assigning
-
         Returns:
             cls_targets_dict: ordered dictionary with keys [min_level, min_level+1, ..., max_level].
                 The values are tensor with shape [height_l, width_l, num_anchors]. The height_l and width_l
                 represent the dimension of class logits at l-th level.
-
             box_targets_dict: ordered dictionary with keys [min_level, min_level+1, ..., max_level].
                 The values are tensor with shape [height_l, width_l, num_anchors * 4]. The height_l and
                 width_l represent the dimension of bounding box regression output at l-th level.
-
             num_positives: scalar tensor storing number of positives in an image.
         """
         cls_targets_out = []
@@ -412,4 +381,3 @@ class AnchorLabeler(object):
                 num_positives_out = torch.stack(num_positives_out)
 
         return cls_targets_out, box_targets_out, num_positives_out
-
