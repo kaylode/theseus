@@ -9,7 +9,9 @@ from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
 from .effdet.efficientdet import HeadNet
 from .frcnn import create_fasterrcnn_fpn
 
-def get_model(args, config):
+from .yolov4 import YoloLoss, Yolov4, non_max_suppression
+
+def get_model(args, config, device):
     NUM_CLASSES = len(config.obj_list)
 
     if config.pretrained_backbone is None:
@@ -28,7 +30,7 @@ def get_model(args, config):
             load_weights=load_weights, 
             freeze_backbone = getattr(args, 'freeze_backbone', False),
             pretrained_backbone_path=config.pretrained_backbone,
-            freeze_batchnorm=args.freeze_bn,
+            freeze_batchnorm = getattr(args, 'freeze_bn', False),
             image_size=config.image_size)
     elif config.model_name.startswith('fasterrcnn'):
         backbone_name = config.model_name.split('-')[1]
@@ -37,6 +39,19 @@ def get_model(args, config):
             num_classes=NUM_CLASSES, 
             pretrained=True,
             image_size=config.image_size)
+    elif config.model_name.startswith('yolo'):
+        version_name = config.model_name.split('-')[1]
+        net = Yolov4Backbone(
+            batch_size=config.batch_size,
+            version=version_name,
+            device=device,
+            num_classes=NUM_CLASSES, 
+            image_size=config.image_size, 
+            pretrained_backbone_path=config.pretrained_backbone)
+
+    # if args.sync_bn:
+    #     net = nn.SyncBatchNorm.convert_sync_batchnorm(net).to(device)
+
 
     return net
 
@@ -189,6 +204,92 @@ class FRCNNBackbone(BaseBackbone):
 
         return out
 
+class Yolov4Backbone(BaseBackbone):
+    def __init__(
+        self, 
+        batch_size,
+        device,
+        version='p5',
+        num_classes=80, 
+        image_size=[512,512], 
+        pretrained_backbone_path=None, 
+        **kwargs):
+
+        super(Yolov4Backbone, self).__init__(**kwargs)
+        self.name = f'yolov4-{version}'
+        self.model = Yolov4(
+            cfg=f'./models/yolov4/configs/yolov4-{version}.yaml', ch=3, nc=num_classes
+        )
+
+        if pretrained_backbone_path is not None:
+            ckpt = torch.load(pretrained_backbone_path, map_location='cpu')  # load checkpoint
+            self.model.load_state_dict(ckpt, strict=False) 
+
+        self.model = nn.DataParallel(self.model).cuda()
+        self.loss_fn = YoloLoss(
+            num_classes=num_classes,
+            model=self.model)
+
+        self.num_classes = num_classes
+
+    def forward(self, batch, device):
+        inputs = batch["imgs"]
+        targets = batch['yolo_targets']
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+        
+        if self.model.training:
+            outputs = self.model(inputs)
+        else:
+            _ , outputs = self.model(inputs)
+
+        loss, loss_items = self.loss_fn(outputs, targets)
+
+        ret_loss_dict = {
+            'T': loss,
+            'IOU': loss_items[0],
+            'OBJ': loss_items[1],
+            'CLS': loss_items[2],
+        }
+        return ret_loss_dict
+
+    def detect(self, batch, device):
+        inputs = batch["imgs"]
+        inputs = inputs.to(device)
+        outputs, _ = self.model(inputs)
+        outputs = non_max_suppression(outputs, conf_thres=0.0001, iou_thres=0.8) #[bs, max_det, 6]
+    
+        out = []
+        for i, output in enumerate(outputs):
+            # [x1,y1,x2,y2, score, label]
+            if output is not None and len(output) != 0:
+                output = output.detach().cpu().numpy()
+                boxes = output[:, :4]
+                boxes[:,[0,2]] = boxes[:,[0,2]] 
+                boxes[:,[1,3]] = boxes[:,[1,3]] 
+                labels = output[:, -1]
+                scores = output[:, -2]
+          
+            else:
+                boxes = []
+                labels = []
+                scores = []
+            if len(boxes) > 0:
+                out.append({
+                    'bboxes': boxes,
+                    'classes': labels,
+                    'scores': scores,
+                })
+            else:
+                out.append({
+                    'bboxes': np.array(()),
+                    'classes': np.array(()),
+                    'scores': np.array(()),
+                })
+
+        return out
+
 def freeze_bn(model):
     def set_bn_eval(m):
         classname = m.__class__.__name__
@@ -198,3 +299,8 @@ def freeze_bn(model):
             m.bias.requires_grad = False
             m.eval() 
     model.apply(set_bn_eval)
+
+
+
+
+    
