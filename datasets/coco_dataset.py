@@ -133,8 +133,6 @@ class CocoDataset(Dataset):
     def load_image(self, image_index):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = os.path.join(self.root_dir, image_info['file_name'])
-        
-        
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -166,7 +164,7 @@ class CocoDataset(Dataset):
 
     def load_mixup_image_and_boxes(self, index):
         image, boxes, labels, _, _ = self.load_image_and_boxes(index)    
-        r_image, r_boxes, r_labels, _, _ = self.load_image_and_boxes(1) #(random.randint(0, len(self.image_ids) - 1))
+        r_image, r_boxes, r_labels, _, _ = self.load_image_and_boxes(random.randint(0, len(self.image_ids) - 1))
         
         return (image+r_image)/2, np.vstack((boxes, r_boxes)).astype(np.int32), np.concatenate((labels, r_labels)),  None, None
 

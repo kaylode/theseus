@@ -44,10 +44,10 @@ def main(args, config):
         min_conf = config.min_conf_val,
         min_iou = config.min_iou_val,
         tta=config.tta,
-        max_images=args.max_images_val,
+        max_images=config.max_images_val,
         mode=config.fusion_mode)
 
-    net = get_model(args, config)
+    net = get_model(args, config, device)
 
     model = Detector(model = net, device = device)
     model.eval()

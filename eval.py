@@ -14,8 +14,36 @@ from tqdm import tqdm
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import get_resize_augmentation
+import pandas as pd 
+
 
 BATCH_SIZE = 16
+
+USE_FILTER = False
+
+def binary_filter(df, image_id, boxes, scores, labels, low_thr=0.06, high_thr=0.94):
+    non_abnormal_prob_series = df[df['image_id'] == image_id].class14prob
+    non_abnormal_prob = float(non_abnormal_prob_series.tolist()[0])
+
+    if non_abnormal_prob >= high_thr:
+        new_boxes = [[0,0,1,1]]
+        new_labels = [15]
+        new_scores = [1.0]
+    elif non_abnormal_prob > low_thr:
+        new_boxes = boxes.tolist()
+        new_labels = labels.tolist()
+        new_scores = scores.tolist()
+
+        new_boxes.append([0,0,1,1])
+        new_labels.append(15)
+        new_scores.append(non_abnormal_prob)
+    else:
+        new_boxes = boxes
+        new_scores = scores
+        new_labels = labels
+
+    return np.array(new_boxes), np.array(new_scores), np.array(new_labels)
+
 
 class TestDataset(Dataset):
     def __init__(self, config, test_df, transforms=None):
@@ -95,7 +123,7 @@ def main(args, config):
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
 
-    test_df = pd.read_csv('./datasets/test_info.csv')
+    test_df = pd.read_csv('/home/pmkhoi/source/vinaichestxray/datasets/ken_test_info.csv')
     test_transforms = A.Compose([
         A.Resize(
             height = config.image_size[1],
@@ -106,6 +134,7 @@ def main(args, config):
     testset = TestDataset(config, test_df, test_transforms)
     testloader = DataLoader(testset, batch_size = BATCH_SIZE, collate_fn=testset.collate_fn)
     idx_classes = {idx:i for idx,i in enumerate(config.obj_list)}
+    idx_classes[15] = 'No Finding'
     NUM_CLASSES = len(config.obj_list)
 
     if config.tta:
@@ -116,7 +145,7 @@ def main(args, config):
     else:
         config.tta = None
 
-    net = get_model(args, config)
+    net = get_model(args, config, device)
 
     model = Detector(model = net, device = device)
     model.eval()
@@ -138,8 +167,8 @@ def main(args, config):
                     ori_img = batch['ori_imgs'][idx]
                     img_w = batch['image_ws'][idx]
                     img_h = batch['image_hs'][idx]
-                    # img_ori_ws = batch['image_ori_ws'][idx]
-                    # img_ori_hs = batch['image_ori_hs'][idx]
+                    img_ori_ws = batch['image_ori_ws'][idx]
+                    img_ori_hs = batch['image_ori_hs'][idx]
                     
                     outputs = postprocessing(
                         outputs, 
@@ -152,6 +181,15 @@ def main(args, config):
                     boxes = outputs['bboxes'] 
                     labels = outputs['classes']  
                     scores = outputs['scores']
+
+                    if USE_FILTER:
+                        boxes, scores, labels = binary_filter(
+                            test_df, 
+                            image_id=img_id, 
+                            boxes=boxes, 
+                            scores=scores, 
+                            labels=labels)
+                        
 
                     if len(boxes) == 0:
                         empty_imgs += 1
@@ -174,11 +212,13 @@ def main(args, config):
                                     else:
                                         x -= (img_h-img_w)/2
 
-                                x = float(x*1.0/img_w)
-                                y = float(y*1.0/img_h)
-                                w = float(w*1.0/img_w)
-                                h = float(h*1.0/img_h)
-                                score = np.round(float(score),2)
+                                if cls_id != 14:
+                                    x = float(x*1.0/img_w)
+                                    y = float(y*1.0/img_h)
+                                    w = float(w*1.0/img_w)
+                                    h = float(h*1.0/img_h)
+
+                                score = np.round(float(score),3)
                                 results.append([img_id, cls_id, score, x, y, x+w, y+h])
                         else:
                             results.append([img_id, 14, 1.0, 0, 0, 1, 1])
@@ -190,12 +230,14 @@ def main(args, config):
 
         if args.submission:
             submission_df = pd.DataFrame(results, columns=['image_id', 'class_id', 'score', 'x_min', 'y_min' , 'x_max', 'y_max'])
-            submission_df.to_csv('results/0_train_pred.csv', index=False)
+            submission_df.to_csv('results/folds/test_pred_f4.csv', index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
     parser.add_argument('config', type=str, default = None,help='save detection at')
+    parser.add_argument('--min_conf', type=float, default= 0.001, help='minimum confidence for an object to be detect')
+    parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
     parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
     parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
     parser.add_argument('--submission', action='store_true', default = False, help='output to submission file')
