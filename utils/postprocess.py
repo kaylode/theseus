@@ -43,6 +43,23 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size):
     # new_boxes[:,[1, 3]] = (boxes[:,[1, 3]] * ori_img_size[1])/ current_img_size[1]
     return new_boxes
 
+def clip_coords(boxes, img_shape):
+    # Clip bounding xyxy bounding boxes to image shape (width, height)
+    if isinstance(boxes, torch.Tensor):
+        _boxes = boxes.clone()
+        _boxes[:, 0].clamp_(0, img_shape[0])  # x1
+        _boxes[:, 1].clamp_(0, img_shape[1])  # y1
+        _boxes[:, 2].clamp_(0, img_shape[0])  # x2
+        _boxes[:, 3].clamp_(0, img_shape[1])  # y2
+    else:
+        _boxes = boxes.copy()
+        _boxes[:, 0] = np.clip(_boxes[:, 0], 0, img_shape[0])  # x1
+        _boxes[:, 1] = np.clip(_boxes[:, 1], 0, img_shape[1])  # y1
+        _boxes[:, 2] = np.clip(_boxes[:, 2], 0, img_shape[0])  # x2
+        _boxes[:, 3] = np.clip(_boxes[:, 3], 0, img_shape[1])  # y2
+
+    return _boxes
+
 def postprocessing(
         preds, 
         current_img_size=None,  # Need to be square
@@ -56,13 +73,18 @@ def postprocessing(
     Output: bounding boxes in xywh format
     """
     boxes, scores, labels = preds['bboxes'], preds['scores'], preds['classes']
+
+    # Clip boxes in image size
+    boxes = clip_coords(boxes, current_img_size)
+
+    current_img_size = current_img_size[0] if current_img_size is not None else None
     if len(boxes) != 0:
         if mode is not None:
             boxes, scores, labels = box_fusion(
                 [boxes],
                 [scores],
                 [labels],
-                image_size=current_img_size[0],
+                image_size=current_img_size,
                 mode=mode,
                 iou_threshold=min_iou)
 
@@ -124,5 +146,3 @@ def box_fusion(
         picked_boxes = picked_boxes*image_size
 
     return np.array(picked_boxes), np.array(picked_score), np.array(picked_classes)
-
-

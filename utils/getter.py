@@ -13,7 +13,7 @@ import math
 import torch.nn as nn
 import torch.utils.data as data
 from torch.utils.data import DataLoader
-from utils.utils import init_weights
+from utils.utils import change_box_order
 import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
@@ -141,6 +141,40 @@ def get_dataset_and_dataloader(config):
                 'img_names': img_names,
                 'img_sizes': img_sizes, 
                 'img_scales': img_scales}
+                
+    elif config.model_name.startswith('yolo'):
+        box_format = 'xyxy' # Output of __getitem__ method
+        def collate_fn(self, batch):
+            imgs = torch.stack([s['img'] for s in batch], dim=0)
+            targets = [s['target'] for s in batch] # box in center xywh format
+            img_names = [s['img_name'] for s in batch]
+            img_ids = [s['img_id'] for s in batch]
+            img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
+            img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
+            img_size = imgs[0].shape[-1]
+            targets_out = []
+            for idx, item in enumerate(targets):
+                # Convert to center xywh
+                cxcy_boxes = change_box_order(item['boxes'], order='xyxy2cxcy')
+                cxcy_boxes = cxcy_boxes / img_size #normalize
+                num_boxes = cxcy_boxes.shape[0]
+                labels_out = torch.zeros([num_boxes, 6])
+                labels = item['labels'].unsqueeze(1) 
+                out_anns = torch.cat([labels, cxcy_boxes], dim=1)
+                labels_out[:, 1:] = out_anns[:,:]
+                labels_out[:, 0] = idx
+                targets_out.append(labels_out)
+            targets_out = torch.cat(targets_out, dim=0)
+
+            return {
+                'imgs': imgs, 
+                'targets': targets,
+                'yolo_targets': targets_out,
+                'img_ids': img_ids,
+                'img_names': img_names,
+                'img_scales': img_scales,
+                'img_sizes': img_sizes
+            }
 
     CocoDataset.collate_fn = collate_fn
     train_transforms = get_augmentation(config, _type = 'train')
@@ -148,20 +182,21 @@ def get_dataset_and_dataloader(config):
     
     trainset = CocoDataset(
         config = config,
-        root_dir = os.path.join('datasets', config.project_name, config.train_imgs),
-        ann_path = os.path.join('datasets', config.project_name, config.train_anns),
+        root_dir = os.path.join('data', config.project_name, config.train_imgs),
+        ann_path = os.path.join('data', config.project_name, config.train_anns),
         train=True,
         transforms=train_transforms)
     
     valset = CocoDataset(
         config = config,
-        root_dir=os.path.join('datasets', config.project_name, config.val_imgs), 
-        ann_path = os.path.join('datasets', config.project_name, config.val_anns),
+        root_dir=os.path.join('data', config.project_name, config.val_imgs), 
+        ann_path = os.path.join('data', config.project_name, config.val_anns),
         train=False,
         transforms=val_transforms)
 
     trainset.set_box_format(box_format)
     valset.set_box_format(box_format)
+    config.box_format = box_format
 
     trainloader = DataLoader(
         trainset, 
@@ -169,12 +204,14 @@ def get_dataset_and_dataloader(config):
         shuffle = True, 
         collate_fn=trainset.collate_fn, 
         num_workers= config.num_workers, 
+        drop_last=True,
         pin_memory=True)
 
     valloader = DataLoader(
         valset, 
         batch_size=config.batch_size, 
         shuffle = False,
+        drop_last=True,
         collate_fn=valset.collate_fn, 
         num_workers= config.num_workers, 
         pin_memory=True)
