@@ -2,11 +2,11 @@ settings:
   #################   DATASET CONFIG   ###################
 
   project_name: ""    # also the folder name of the dataset that under ./data folder
-  train_imgs: images/train
-  val_imgs: images/train
-  test_imgs: images/test
-  train_anns: annotations/0_train.json
-  val_anns: annotations/0_val.json
+  train_imgs: 
+  val_imgs: 
+  test_imgs: 
+  train_anns: 
+  val_anns: 
 
   obj_list: [
     'Background',                       #Background
@@ -15,18 +15,18 @@ settings:
 
   #################   TRAINING CONFIG   ###################
   
-  model_name: 'efficientdet-d4' #[efficientdet-d{i} | fasterrcnn-{backbone}]
+  model_name: 'efficientdet-d4' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7)]
 
-  # pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
+  #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
   
-  gpu_devices: '0,1'                     # supports multi-gpus
+  gpu_devices: '1'                     # supports multi-gpus
   num_epochs: 100
-  batch_size: 4
+  batch_size: 1
   num_workers: 4
 
   fusion_mode: 'nms'                  # Post-process method [nms | wbf | None]
-  min_iou_val:  0.6                     # IOU threshold for validation
-  min_conf_val: 0.1                    # Confidence score threshold for validation
+  min_iou_val:  0.5                     # IOU threshold for validation
+  min_conf_val: 0.01                    # Confidence score threshold for validation
   max_images_val: 10000                 # max number of images for validation
   
   image_size: [1024,1024]               # should be square to prevent bugs [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
@@ -38,7 +38,7 @@ settings:
   # learning rate policy
   lr_policy:
     name: "adam"                         #[adam|sgd]
-    lr: 0.002                            #[adam: 1e-3 | sgd: 1e-2]
+    lr: 0.005                            #[adam: 1e-3 | sgd: 1e-2]
     momentum: 0.937
     weight_decay: 0.0005
 
@@ -47,11 +47,11 @@ settings:
                                         # if need to specify more scheduler arguments, do it here
 
   # gradient accumulation
-  mixed_precision: True                # whether to use mixed precision to reduce GPPU memory
-  total_accumulate_steps: 0            # step * batch_size, not use if equal 0
+  mixed_precision: True                # whether to use nvidia apex
+  total_accumulate_steps: 64          # step * batch_size, not use if equal 0
 
   # Test time augmentation
   tta: False                             # whether to use TTA while validation
   tta_ensemble_mode: "wbf"              # ensemble method when TTA
   tta_conf_threshold: 0.01
-  tta_iou_threshold: 0.7
+  tta_iou_threshold: 0.9
