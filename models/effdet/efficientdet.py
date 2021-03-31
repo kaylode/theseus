@@ -556,7 +556,7 @@ class EfficientDet(nn.Module):
         if pretrained_backbone_path is not None:
             print("load pretrained")
             state = self.get_pretrained(pretrained_backbone_path)
-            self.backbone.load_state_dict(state)
+            self.backbone.load_state_dict(state, strict=False)
 
         if freeze_backbone and pretrained_backbone_path is not None:
             print("freeze backbone")

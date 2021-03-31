@@ -62,7 +62,7 @@ def default_detection_model_configs():
     # classification loss (used by train bench)
     h.alpha = 0.25
     h.gamma = 1.5
-    h.label_smoothing = 0.1  # only supported if legacy_focal == False, haven't produced great results
+    h.label_smoothing = 0.0  # only supported if legacy_focal == False, haven't produced great results
     h.legacy_focal = False  # use legacy focal loss (less stable, lower memory use in some cases)
     h.jit_loss = False  # torchscript jit for loss fn speed improvement, can impact stability and/or increase mem usage
 
@@ -72,8 +72,8 @@ def default_detection_model_configs():
 
     # nms
     h.soft_nms = False  # use soft-nms, this is incredibly slow
-    h.max_detection_points = 30000  # max detections for post process, input to NMS
-    h.max_det_per_image = 300  # max detections per image limit, output of NMS
+    h.max_detection_points = 5000  # max detections for post process, input to NMS
+    h.max_det_per_image = 100  # max detections per image limit, output of NMS
 
     return h
 
