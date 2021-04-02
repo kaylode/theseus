@@ -13,4 +13,5 @@
 ## Reference:
 - Efficientdet from https://github.com/rwightman/efficientdet-pytorch
 - FasterRCNN from torchvision
+- Scaled YOLOv4 from https://github.com/WongKinYiu/ScaledYOLOv4
 - Box fusion ensemble from https://github.com/ZFTurbo/Weighted-Boxes-Fusion
