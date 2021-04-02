@@ -1,6 +1,8 @@
 # Pytorch Custom Template for Image Classification
 
 ## To-do list:
+- [ ] K-Fold splitting
+- [ ] Test time augmentation
 - [ ] Semi-supervised integrations
 - [ ] Gradient checkpointing
 - [ ] Distributed data parallel
