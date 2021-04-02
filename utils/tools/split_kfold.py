@@ -11,8 +11,8 @@ parser.add_argument('--seed', type=int, default=0,
                     help='random seed (default: 0)')
 parser.add_argument('--out', type=str, default='.',
                     help='directory to save the splits (default: .)')
-parser.add_argument('--n_splits', type=int, default=3,
-                    help='Number of folds, at least 2, value from 3 -> 5')
+parser.add_argument('--n_splits', type=int, default=5,
+                    help='Number of folds, at least 2')
 parser.add_argument('--shuffle', type=bool, default=True,
                     help='Whether to shuffle each class’s samples before splitting into batches (default: True)')
 
@@ -33,16 +33,17 @@ if __name__ == '__main__':
 
     for fold, (train_idx, val_idx) in enumerate(cv.split(X_train, Y_train)):
 
-        TRAIN = str(fold + 1) + '_train'
-        VAL = str(fold + 1) + '_val'
+        TRAIN = str(fold) + '_train.csv'
+        VAL = str(fold) + '_val.csv'
 
         train_df = df.iloc[train_idx].reset_index(drop=True)
         val_df = df.iloc[val_idx].reset_index(drop=True)
 
-        os.makedirs(f'{args.out}/{fold + 1}')
+        if not os.path.exists(os.path.join(args.out, str(fold))):
+            os.makedirs(os.path.join(args.out, str(fold)))
 
-        train_csv_path = f'{args.out}/{fold + 1}/{TRAIN}.csv'
-        val_csv_path = f'{args.out}/{fold + 1}/{VAL}.csv'
+        train_csv_path = os.path.join(args.out, str(fold), TRAIN)
+        val_csv_path = os.path.join(args.out, str(fold), VAL)
 
         train_df.to_csv(train_csv_path, encoding='utf8', index=False)
         val_df.to_csv(val_csv_path, encoding='utf8', index=False)
