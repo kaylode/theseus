@@ -4,14 +4,15 @@ import torch
 import torchvision
 import numpy as np
 from torch import nn
-
+from utils.utils import get_class_names
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
 from .effdet.efficientdet import HeadNet
 from .frcnn import create_fasterrcnn_fpn
-
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
+
 def get_model(args, config, device):
+    config.obj_list = get_class_names(config.obj_list)
     NUM_CLASSES = len(config.obj_list)
 
     if config.pretrained_backbone is None:

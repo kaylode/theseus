@@ -48,6 +48,15 @@ def standard_to_bgr(list_color_name):
 
 color_list = standard_to_bgr(STANDARD_COLORS)
 
+def get_class_names(txt_path):
+    class_names = []
+    with open(txt_path, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.split('\n')[0]
+        class_names.append(line)
+    return class_names
+
 def one_hot_embedding(labels, num_classes):
     '''
     Embedding labels to one-hot form.

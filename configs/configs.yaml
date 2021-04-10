@@ -8,9 +8,7 @@ settings:
   train_anns: 
   val_anns: 
 
-  obj_list: [
-    'Background',                       #Background
-  ]
+  obj_list: # path to .txt file that contains all class's names corresponding to index ### The first class must be background ###
 
 
   #################   TRAINING CONFIG   ###################
