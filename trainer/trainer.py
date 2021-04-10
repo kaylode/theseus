@@ -248,6 +248,7 @@ class Trainer():
                         min_iou=self.cfg.min_iou_val,
                         min_conf=self.cfg.min_conf_val,
                         output_format='xywh',
+                        max_dets=self.cfg.max_post_nms,
                         mode=self.cfg.fusion_mode)
 
                 boxes = pred['bboxes']
