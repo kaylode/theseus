@@ -15,7 +15,7 @@ def train(args, config):
 
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
-    net = get_model(args, config)
+    net = get_model(args, config, device)
 
     if args.saved_path is not None:
         args.saved_path = os.path.join(args.saved_path, config.project_name)
@@ -92,7 +92,6 @@ def train(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('config' , type=str, help='project file that contains parameters')
     parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
     parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
     parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
