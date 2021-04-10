@@ -47,7 +47,7 @@ class CocoDataset(Dataset):
 
         self.classes = {}
         for c in categories:
-            self.classes[c['name']] = c['id'] #len(self.classes) + 1
+            self.classes[c['name']] = len(self.classes) + 1
 
         # also load the reverse (label -> name)
         self.labels = {}
