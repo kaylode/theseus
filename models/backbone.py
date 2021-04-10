@@ -14,7 +14,8 @@ from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 def get_model(args, config, device):
     config.obj_list = get_class_names(config.obj_list)
     NUM_CLASSES = len(config.obj_list)
-
+    max_post_nms = config.max_post_nms if config.max_post_nms > 0 else None
+    max_pre_nms = config.max_pre_nms if config.max_pre_nms > 0 else None
     if config.pretrained_backbone is None:
         load_weights = True
     else:
@@ -32,6 +33,7 @@ def get_model(args, config, device):
             freeze_backbone = getattr(args, 'freeze_backbone', False),
             pretrained_backbone_path=config.pretrained_backbone,
             freeze_batchnorm = getattr(args, 'freeze_bn', False),
+            max_pre_nms=max_pre_nms,
             image_size=config.image_size)
     elif config.model_name.startswith('fasterrcnn'):
         backbone_name = config.model_name.split('-')[1]
@@ -46,6 +48,7 @@ def get_model(args, config, device):
             version_name=version_name,
             device=device,
             num_classes=NUM_CLASSES, 
+            max_pre_nms=max_pre_nms,
             pretrained_backbone_path=config.pretrained_backbone)
   
     # if args.sync_bn:
@@ -73,6 +76,7 @@ class EfficientDetBackbone(BaseBackbone):
         pretrained_backbone_path=None, 
         freeze_backbone=False, 
         freeze_batchnorm = False,
+        max_pre_nms=None,
         **kwargs):
 
         super(EfficientDetBackbone, self).__init__(**kwargs)
@@ -81,6 +85,11 @@ class EfficientDetBackbone(BaseBackbone):
         config.image_size = image_size
         config.norm_kwargs=dict(eps=.001, momentum=.01)
 
+        if max_pre_nms is None:
+            max_pre_nms = 5000
+
+        config.max_detection_points = max_pre_nms 
+        
         net = EfficientDet(
             config, 
             pretrained_backbone=load_weights, 
@@ -147,10 +156,15 @@ class FRCNNBackbone(BaseBackbone):
         image_size=[512,512], 
         pretrained=False,
         **kwargs):
-
+        
         super(FRCNNBackbone, self).__init__(**kwargs)
         self.name = f'fasterrcnn-{backbone_name}'
-        self.model = create_fasterrcnn_fpn(backbone_name,pretrained=pretrained, num_classes=num_classes, min_size = image_size[0], max_size = image_size[1])
+        self.model = create_fasterrcnn_fpn(
+            backbone_name,
+            pretrained=pretrained, 
+            num_classes=num_classes, 
+            min_size = image_size[0], 
+            max_size = image_size[1])
         self.num_classes = num_classes
 
     def forward(self, batch, device):
@@ -210,9 +224,19 @@ class YoloBackbone(BaseBackbone):
         version_name='5s',
         num_classes=80, 
         pretrained_backbone_path=None, 
+        max_pre_nms=None,
+        max_post_nms=None,
         **kwargs):
 
         super(YoloBackbone, self).__init__(**kwargs)
+
+        if max_pre_nms is None:
+            max_pre_nms = 30000
+        self.max_pre_nms = max_pre_nms
+
+        if max_post_nms is None:
+            max_post_nms = 300
+        self.max_post_nms = max_post_nms
 
         version = version_name[0]
         if version=='4':
@@ -269,7 +293,12 @@ class YoloBackbone(BaseBackbone):
         inputs = batch["imgs"]
         inputs = inputs.to(device)
         outputs, _ = self.model(inputs)
-        outputs = non_max_suppression(outputs, conf_thres=0.0001, iou_thres=0.8) #[bs, max_det, 6]
+        outputs = non_max_suppression(
+            outputs, 
+            conf_thres=0.0001, 
+            iou_thres=0.8, 
+            max_nms=self.max_pre_nms,
+            max_det=self.max_post_nms) #[bs, max_det, 6]
     
         out = []
         for i, output in enumerate(outputs):
