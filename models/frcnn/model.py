@@ -13,7 +13,7 @@ from torchvision.ops import MultiScaleRoIAlign
 from torchvision.models.utils import load_state_dict_from_url
 
 from .rpn import AnchorGenerator, RPNHead, RegionProposalNetwork
-from torchvision.models.detection.roi_heads import RoIHeads
+from .roi_heads import RoIHeads
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
@@ -332,10 +332,8 @@ class FasterRCNN(GeneralizedRCNN):
             bbox_reg_weights,
             box_score_thresh, box_nms_thresh, box_detections_per_img)
 
-        if image_mean is None:
-            image_mean = [0.485, 0.456, 0.406]
-        if image_std is None:
-            image_std = [0.229, 0.224, 0.225]
+        image_mean = [0.0, 0.0, 0.0]
+        image_std = [1.0, 1.0, 1.0]
         transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
 
         super(FasterRCNN, self).__init__(backbone, rpn, roi_heads, transform)
