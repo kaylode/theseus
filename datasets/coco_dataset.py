@@ -58,7 +58,7 @@ class CocoDataset(Dataset):
         return len(self.image_ids)
 
     def load_image_and_boxes(self, idx):
-        img, img_name = self.load_image(idx)
+        img, img_name, ori_width, ori_height  = self.load_image(idx)
         img_id = self.image_ids[idx]
         annot = self.load_annotations(idx)
         box = annot[:, :4]
@@ -77,26 +77,27 @@ class CocoDataset(Dataset):
         box = np.array([np.asarray(i) for i in box])
         label = np.array(label)
         
-        return img, box, label, img_id, img_name
+        return img, box, label, img_id, img_name, ori_width, ori_height
 
     def __getitem__(self, idx):
-        
+        ori_width, ori_height = None, None
+        img_id, img_name = None, None
         if not self.train or random.random() > 0.33:
-            image, boxes, labels, img_id, img_name = self.load_image_and_boxes(idx)
+            image, boxes, labels, img_id, img_name, ori_width, ori_height = self.load_image_and_boxes(idx)
         else:
             if self.mixup and self.cutmix:
                 if random.random() > 0.5:
-                    image, boxes, labels, img_id, img_name = self.load_cutmix_image_and_boxes(idx, self.image_size)
+                    image, boxes, labels  = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
-                    image, boxes, labels, img_id, img_name = self.load_mixup_image_and_boxes(idx)
+                    image, boxes, labels = self.load_mixup_image_and_boxes(idx)
             else:
                 if self.mixup:
-                    image, boxes, labels, img_id, img_name = self.load_mixup_image_and_boxes(idx)
+                    image, boxes, labels = self.load_mixup_image_and_boxes(idx)
                 elif self.cutmix:
-                    image, boxes, labels, img_id, img_name = self.load_cutmix_image_and_boxes(idx, self.image_size)
+                    image, boxes, labels = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
-                    image, boxes, labels, img_id, img_name = self.load_image_and_boxes(idx)
-        image = image.astype(np.uint8)
+                    image, boxes, labels, img_id, img_name, ori_width, ori_height = self.load_image_and_boxes(idx)
+        image = image.astype(np.float32)
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
             # Normalize
@@ -125,6 +126,7 @@ class CocoDataset(Dataset):
             'target': target,
             'img_id': img_id,
             'img_name': img_name,
+            'ori_size': [ori_width, ori_height]
         }
 
     def collate_fn(self, batch):
@@ -136,7 +138,7 @@ class CocoDataset(Dataset):
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        return image, image_info['file_name']
+        return image, image_info['file_name'], image_info['width'], image_info['height']
 
     def load_annotations(self, image_index):
         # get ground truth annotations
@@ -163,10 +165,10 @@ class CocoDataset(Dataset):
         return annotations
 
     def load_mixup_image_and_boxes(self, index):
-        image, boxes, labels, _, _ = self.load_image_and_boxes(index)    
-        r_image, r_boxes, r_labels, _, _ = self.load_image_and_boxes(random.randint(0, len(self.image_ids) - 1))
+        image, boxes, labels, _, _, _, _ = self.load_image_and_boxes(index)    
+        r_image, r_boxes, r_labels, _, _, _, _ = self.load_image_and_boxes(random.randint(0, len(self.image_ids) - 1))
         
-        return (image+r_image)/2, np.vstack((boxes, r_boxes)).astype(np.int32), np.concatenate((labels, r_labels)),  None, None
+        return (image+r_image)/2, np.vstack((boxes, r_boxes)).astype(np.int32), np.concatenate((labels, r_labels))
 
 
     def load_cutmix_image_and_boxes(self, index, imsize=[512,512]):
@@ -185,7 +187,7 @@ class CocoDataset(Dataset):
         result_labels = np.array([], dtype=np.int)
         
         for i,index in enumerate(indexes):
-            image, boxes, labels, _, _ = self.load_image_and_boxes(index)
+            image, boxes, labels, _, _, _, _ = self.load_image_and_boxes(index)
             if i == 0:
                 x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
                 x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
@@ -218,7 +220,7 @@ class CocoDataset(Dataset):
         result_boxes = result_boxes[index_to_use]
         result_labels = result_labels[index_to_use]
         
-        return result_image, result_boxes, result_labels, None, None
+        return result_image, result_boxes, result_labels
 
     def visualize_item(self, index = None, figsize=(15,15)):
         """

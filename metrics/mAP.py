@@ -116,13 +116,15 @@ class mAPScores(TemplateMetric):
                     for i in range(len(preds)):
                         image_id = batch['img_ids'][i]
                         img_size = batch['img_sizes'][i].numpy()
+                        ori_size = batch['ori_sizes'][i]
                         self.image_ids.append(image_id)
                         pred = postprocessing(
                             preds[i], 
                             current_img_size=img_size,
-                            ori_img_size=img_size,
+                            ori_img_size=ori_size,
                             min_iou=self.min_iou,
                             min_conf=self.min_conf,
+                            output_format='xywh',
                             mode=self.mode)
 
                         boxes = pred['bboxes'] 

@@ -10,19 +10,24 @@ import matplotlib.patches as patches
 from .utils import change_box_order
 from ensemble_boxes import weighted_boxes_fusion, nms
 
-def filter_area(boxes, confidence_score, labels, min_area=10):
+def filter_area(boxes, confidence_score, labels, min_area=10, max_area=4096):
     """
-    Boxes in xywh format
+    Boxes in xyxy format
     """
 
     # dimension of bounding boxes
-    width = boxes[:, 2]
-    height = boxes[:, 3]
+    width = boxes[:, 2] - boxes[:, 0]
+    height = boxes[:, 3] - boxes[:, 1]
+
+    width = width.astype(int)
+    height = height.astype(int)
 
     # boxes areas
     areas = width * height
 
-    picked_index = areas >= min_area
+    picked_index_min = areas >= min_area
+    picked_index_max = areas <= max_area
+    picked_index = picked_index_min & picked_index_max
 
     # Picked bounding boxes
     picked_boxes = boxes[picked_index]
@@ -40,7 +45,6 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size):
     new_boxes[:,2] = (boxes[:,2] * ori_img_size[0])/ current_img_size[0]
     new_boxes[:,1] = (boxes[:,1] * ori_img_size[1])/ current_img_size[1]
     new_boxes[:,3] = (boxes[:,3] * ori_img_size[1])/ current_img_size[1]
-    # new_boxes[:,[1, 3]] = (boxes[:,[1, 3]] * ori_img_size[1])/ current_img_size[1]
     return new_boxes
 
 def clip_coords(boxes, img_shape):
@@ -74,17 +78,28 @@ def postprocessing(
     """
     boxes, scores, labels = preds['bboxes'], preds['scores'], preds['classes']
 
+    if len(boxes) == 0 or boxes is None:
+        return {
+            'bboxes': boxes, 
+            'scores': scores, 
+            'classes': labels}
+
     # Clip boxes in image size
     boxes = clip_coords(boxes, current_img_size)
 
-    current_img_size = current_img_size[0] if current_img_size is not None else None
+    # Filter small area boxes
+    boxes, scores, labels = filter_area(
+        boxes, scores, labels, min_area=2
+    )
+
+    current_img_size = current_img_size if current_img_size is not None else None
     if len(boxes) != 0:
         if mode is not None:
             boxes, scores, labels = box_fusion(
                 [boxes],
                 [scores],
                 [labels],
-                image_size=current_img_size,
+                image_size=current_img_size[0],
                 mode=mode,
                 iou_threshold=min_iou)
 
@@ -94,8 +109,8 @@ def postprocessing(
         scores = scores[indexes]
         labels = labels[indexes]
 
-        # if ori_img_size is not None and current_img_size is not None:
-        #     boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)
+        if ori_img_size is not None and current_img_size is not None:
+            boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)
 
         if output_format == 'xywh':
             boxes = change_box_order(boxes, order='xyxy2xywh')
