@@ -76,8 +76,8 @@ def get_augmentation(config, _type='train'):
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(
         format='pascal_voc',
-        min_area=0, 
-        min_visibility=0, 
+        min_area=2, 
+        min_visibility=0.2, 
         label_fields=['class_labels']))
 
 
