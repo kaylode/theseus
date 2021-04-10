@@ -34,4 +34,13 @@ class Logger():
             self.writer.add_scalar(tag, value, self.iters[tag])
             self.iters[tag] += 1
 
+    def write_image(self, tag, image):
+        """
+        Write a matplotlib fig to tensorboard
+        """
+        if tag not in self.iters.keys():
+            self.iters[tag] = 0
+
+        self.writer.add_figure(tag, image, global_step=self.iters[tag])
+        self.iters[tag] += 1
 

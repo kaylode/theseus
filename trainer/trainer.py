@@ -13,6 +13,7 @@ from utils.postprocess import box_fusion, postprocessing
 from torch.cuda import amp
 from utils.cuda import NativeScaler
 
+from augmentations import Denormalize, MEAN, STD
 
 class Trainer():
     def __init__(self,
@@ -228,7 +229,8 @@ class Trainer():
 
             image_names = batch['img_names']
             imgs = batch['imgs']
-            img_sizes = batch['img_sizes']
+            img_sizes = batch['img_sizes'].numpy()
+            ori_sizes = batch['ori_sizes']
 
             if self.cfg.tta is not None:
                 outputs = self.cfg.tta.make_tta_predictions(self.model, batch)
@@ -237,16 +239,15 @@ class Trainer():
 
             for idx in range(len(outputs)):
                 img = imgs[idx]
-                img_size = img_sizes[idx]
                 image_name = image_names[idx]
                 image_outname = os.path.join('samples', f'{self.epoch}_{self.iters}_{idx}.jpg')
 
                 pred = postprocessing(
                         outputs[idx], 
-                        current_img_size=self.cfg.image_size,
-                        ori_img_size=self.cfg.image_size,
+                        current_img_size=img_sizes[idx],
                         min_iou=self.cfg.min_iou_val,
                         min_conf=self.cfg.min_conf_val,
+                        output_format='xywh',
                         mode=self.cfg.fusion_mode)
 
                 boxes = pred['bboxes']
@@ -264,21 +265,28 @@ class Trainer():
                     target_boxes = change_box_order(target_boxes, 'yxyx2xyxy')
                 target_boxes = change_box_order(target_boxes, order='xyxy2xywh')
 
+                denormalize = Denormalize(
+                    mean=MEAN, 
+                    std=STD
+                )
+                img = denormalize(img = img)
+
                 pred_gt_imgs = img
                 pred_gt_boxes = [boxes, target_boxes]
                 pred_gt_labels = [labels, target_labels]
                 pred_gt_scores = scores
                 pred_gt_name = image_name
 
-                draw_pred_gt_boxes(
+                fig = draw_pred_gt_boxes(
                     image_outname = image_outname, 
                     img = img, 
                     boxes = pred_gt_boxes, 
                     labels = pred_gt_labels, 
                     scores = pred_gt_scores,
                     image_name = pred_gt_name,
-                    figsize=(15,15))
+                    figsize=(10,10))
 
+                #self.logger.write_image('samples', fig)
 
     def logging(self, logs):
         tags = [l for l in logs.keys()]
