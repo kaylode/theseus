@@ -150,26 +150,6 @@ def find_jaccard_overlap(set_1, set_2, order='xyxy'):
 
     return intersection / union  # (n1, n2)
 
-def draw_boxes(img, preds, obj_list):
-    bboxes = preds['bboxes']
-    labels = preds['classes']
-    scores = preds['scores']
-    for i, box in enumerate(bboxes):
-        x1,y1,w,h = [int(i) for i in box]
-        x2 = x1+w
-        y2 = y1+h
-    
-        label = labels[i]
-        score = np.round(scores[i], 3)
-        color = color_list[label]
-        text = '{}: {}'.format(obj_list[label], str(score))
-        
-        t_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_PLAIN, 1 , 2)[0]
-        cv2.rectangle(img,(x1, y1),(x2,y2),color,2)
-        cv2.rectangle(img,(x1, y1),(x1+t_size[0]+3,y1+t_size[1]+4), color,-1)
-        cv2.putText(img,text,(x1,y1+t_size[1]+4), cv2.FONT_HERSHEY_PLAIN, 1, [255,255,255], 2)
-    return img
-
 def draw_boxes_v2(img_name, img, boxes, labels, scores, obj_list=None, figsize=(15,15)):
     """
     Visualize an image with its bouding boxes
@@ -199,10 +179,11 @@ def draw_boxes_v2(img_name, img, boxes, labels, scores, obj_list=None, figsize=(
     plt.savefig(img_name,bbox_inches='tight')
     plt.close()
 
-def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=None, figsize=(15,15)):
+def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=None, figsize=(10,10)):
     """
     Visualize an image with its bouding boxes
     """
+    plt.close('all')
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=figsize)
     if image_name is not None:
         fig.suptitle(image_name)
@@ -247,5 +228,42 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
 
     plt.axis('off')
     plt.savefig(image_outname,bbox_inches='tight')
-    plt.close()
+    return fig
 
+    # plt.close()
+
+
+
+def write_to_video(img, boxes, labels, scores, imshow=True,  outvid = None, obj_list=None):
+    
+    def plot_one_box(img, coord, label=None, score=None, color=None, line_thickness=None):
+        tl = line_thickness or int(round(0.001 * max(img.shape[0:2])))  # line thickness
+        color = color
+        c1, c2 = (int(coord[0]), int(coord[1])), (int(coord[2]), int(coord[3]))
+        cv2.rectangle(img, c1, c2, color, thickness=tl)
+        if label:
+            tf = max(tl - 2, 1)  # font thickness
+            s_size = cv2.getTextSize(str('{:.0%}'.format(score)), 0, fontScale=float(tl) / 3, thickness=tf)[0]
+            t_size = cv2.getTextSize(label, 0, fontScale=float(tl) / 3, thickness=tf)[0]
+            c2 = c1[0] + t_size[0] + s_size[0] + 15, c1[1] - t_size[1] - 3
+            cv2.rectangle(img, c1, c2, color, -1)  # filled
+            cv2.putText(img, '{}: {:.0%}'.format(label, score), (c1[0], c1[1] - 2), 0, float(tl) / 3, [0, 0, 0],
+                        thickness=tf, lineType=cv2.FONT_HERSHEY_SIMPLEX)
+
+    boxes = boxes.astype(np.int)
+    for idx, (box, label, score) in enumerate(zip(boxes, labels, scores)):
+        plot_one_box(
+            img, 
+            box, 
+            label=obj_list[int(label)],
+            score=float(score),
+            color=color_list[int(label)])
+
+    if imshow:
+        cv2.namedWindow('img',cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('image', 600,600)
+        cv2.imshow('img', img)
+        cv2.waitKey(1)
+
+    if outvid is not None:
+        outvid.write(img)
