@@ -47,7 +47,7 @@ class CocoDataset(Dataset):
 
         self.classes = {}
         for c in categories:
-            self.classes[c['name']] = len(self.classes) + 1
+            self.classes[c['name']] = c['id'] #len(self.classes) + 1
 
         # also load the reverse (label -> name)
         self.labels = {}
@@ -58,12 +58,14 @@ class CocoDataset(Dataset):
         return len(self.image_ids)
 
     def load_image_and_boxes(self, idx):
+        """
+        Load an image and its boxes, also do scaling here
+        """
         img, img_name, ori_width, ori_height  = self.load_image(idx)
         img_id = self.image_ids[idx]
         annot = self.load_annotations(idx)
         box = annot[:, :4]
         label = annot[:, -1]
-        label += 1
         box = change_box_order(box, order = 'xywh2xyxy')
         if self.resize_transforms is not None:
             resized = self.resize_transforms(
@@ -159,7 +161,7 @@ class CocoDataset(Dataset):
 
             annotation = np.zeros((1, 5))
             annotation[0, :4] = a['bbox'] # xywh
-            annotation[0, 4] = a['category_id'] - 1
+            annotation[0, 4] = a['category_id']
             annotations = np.append(annotations, annotation, axis=0)
 
         return annotations

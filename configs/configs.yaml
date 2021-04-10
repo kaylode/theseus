@@ -8,23 +8,23 @@ settings:
   train_anns: 
   val_anns: 
 
-  obj_list: # path to .txt file that contains all class's names corresponding to index ### The first class must be background ###
+  obj_list: "./datasets/classnames.txt" # path to .txt file that contains all class's names corresponding to index ### The first class must be background ###
 
 
   #################   TRAINING CONFIG   ###################
   
-  model_name: 'efficientdet-d4' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7) | yolov5{i} (s,m,l,x)]
+  model_name: 'yolov5m' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7) | yolov5{i} (s,m,l,x)]
 
   #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
   
   gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
-  batch_size: 1
-  num_workers: 4
+  batch_size: 16
+  num_workers: 2
 
   fusion_mode: 'nms'                    # Post-process method [nms | wbf | None]
   min_iou_val:  0.5                     # IOU threshold for validation
-  min_conf_val: 0.01                    # Confidence score threshold for validation
+  min_conf_val: 0.1                    # Confidence score threshold for validation
   max_images_val: 10000                 # max number of images for validation
   max_pre_nms: 30000                     # max detections for post process, input to NMS, set <0 for default [effdet: 5000; frcnn: 1000; yolo: 30000]
   max_post_nms: 300                     # max detections per image limit, output of NMS, set <0 for default [effdet: 100; frcnn: 100; yolo: 300]
