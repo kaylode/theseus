@@ -118,18 +118,25 @@ def generate_detections(
         boxes = clip_boxes_xyxy(boxes, img_size / img_scale)  # clip before NMS better?
 
     scores = cls_outputs.sigmoid().squeeze(1).float()
-    if soft_nms:
+
+    """ Turn off NMS
+    if ""soft_nms:
         top_detection_idx, soft_scores = batched_soft_nms(
             boxes, scores, classes, method_gaussian=True, iou_threshold=0.3, score_threshold=.001)
         scores[top_detection_idx] = soft_scores
     else:
         top_detection_idx = batched_nms(boxes, scores, classes, iou_threshold=0.5)
 
-    # keep only top max_det_per_image scoring predictions
+    keep only top max_det_per_image scoring predictions
     top_detection_idx = top_detection_idx[:max_det_per_image]
     boxes = boxes[top_detection_idx]
     scores = scores[top_detection_idx, None]
-    classes = classes[top_detection_idx, None] + 1  # back to class idx with background class = 0
+    classes = classes[top_""detection_idx, None] + 1  # back to class idx with background class = 0
+    """
+
+    boxes = boxes[:]
+    scores = scores[:, None]
+    classes = classes[:, None] + 1
 
     if img_scale is not None:
         boxes = boxes * img_scale
@@ -138,7 +145,7 @@ def generate_detections(
     # that is the preferred output format.
 
     # stack em and pad out to max_det_per_image if necessary
-    num_det = len(top_detection_idx)
+    num_det = len(boxes) #num_det = len(top_detection_idx)
     detections = torch.cat([boxes, scores, classes.float()], dim=1)
     if num_det < max_det_per_image:
         detections = torch.cat([
