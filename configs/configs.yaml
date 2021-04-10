@@ -15,11 +15,11 @@ settings:
 
   #################   TRAINING CONFIG   ###################
   
-  model_name: 'efficientdet-d4' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7)]
+  model_name: 'efficientdet-d4' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7) | yolov5{i} (s,m,l,x)]
 
   #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
   
-  gpu_devices: '1'                     # supports multi-gpus
+  gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
   batch_size: 1
   num_workers: 4

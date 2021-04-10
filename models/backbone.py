@@ -9,7 +9,7 @@ from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
 from .effdet.efficientdet import HeadNet
 from .frcnn import create_fasterrcnn_fpn
 
-from .yolov4 import YoloLoss, Yolov4, non_max_suppression
+from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
 def get_model(args, config, device):
     NUM_CLASSES = len(config.obj_list)
@@ -40,15 +40,13 @@ def get_model(args, config, device):
             pretrained=True,
             image_size=config.image_size)
     elif config.model_name.startswith('yolo'):
-        version_name = config.model_name.split('-')[1]
-        net = Yolov4Backbone(
-            batch_size=config.batch_size,
-            version=version_name,
+        version_name = config.model_name.split('v')[1]
+        net = YoloBackbone(
+            version_name=version_name,
             device=device,
             num_classes=NUM_CLASSES, 
-            image_size=config.image_size, 
             pretrained_backbone_path=config.pretrained_backbone)
-
+  
     # if args.sync_bn:
     #     net = nn.SyncBatchNorm.convert_sync_batchnorm(net).to(device)
 
@@ -204,26 +202,38 @@ class FRCNNBackbone(BaseBackbone):
 
         return out
 
-class Yolov4Backbone(BaseBackbone):
+class YoloBackbone(BaseBackbone):
     def __init__(
         self, 
-        batch_size,
         device,
-        version='p5',
+        version_name='5s',
         num_classes=80, 
-        image_size=[512,512], 
         pretrained_backbone_path=None, 
         **kwargs):
 
-        super(Yolov4Backbone, self).__init__(**kwargs)
-        self.name = f'yolov4-{version}'
-        self.model = Yolov4(
-            cfg=f'./models/yolov4/configs/yolov4-{version}.yaml', ch=3, nc=num_classes
-        )
+        super(YoloBackbone, self).__init__(**kwargs)
+
+        version = version_name[0]
+        if version=='4':
+            version_mode = version_name.split('-')[1]
+            self.name = f'yolov4-{version_mode}'
+            self.model = Yolov4(
+                cfg=f'./models/yolo/configs/yolov4-{version_mode}.yaml', ch=3, nc=num_classes
+            )
+        elif version =='5':
+            version_mode = version_name[-1]
+            self.name = f'yolov5{version_mode}'
+            self.model = Yolov5(
+                cfg=f'./models/yolo/configs/yolov5{version_mode}.yaml', ch=3, nc=num_classes
+            )
+        
 
         if pretrained_backbone_path is not None:
             ckpt = torch.load(pretrained_backbone_path, map_location='cpu')  # load checkpoint
-            self.model.load_state_dict(ckpt, strict=False) 
+            try:
+                self.model.load_state_dict(ckpt, strict=False) 
+            except:
+                pass
 
         self.model = nn.DataParallel(self.model).cuda()
         self.loss_fn = YoloLoss(
@@ -268,7 +278,9 @@ class Yolov4Backbone(BaseBackbone):
                 boxes = output[:, :4]
                 boxes[:,[0,2]] = boxes[:,[0,2]] 
                 boxes[:,[1,3]] = boxes[:,[1,3]] 
-                labels = output[:, -1]
+
+                # Convert labels to COCO format
+                labels = output[:, -1] + 1
                 scores = output[:, -2]
           
             else:

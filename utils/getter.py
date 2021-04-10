@@ -111,9 +111,9 @@ def get_dataset_and_dataloader(config):
             targets = [s['target'] for s in batch]
             img_ids = [s['img_id'] for s in batch]
             img_names = [s['img_name'] for s in batch]
-            
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
             img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
+            ori_sizes = [s['ori_size'] for s in batch]
 
             return {
                 'imgs': imgs, 
@@ -121,7 +121,8 @@ def get_dataset_and_dataloader(config):
                 'img_ids': img_ids,
                 'img_names': img_names,
                 'img_sizes': img_sizes, 
-                'img_scales': img_scales}
+                'img_scales': img_scales,
+                'ori_sizes': ori_sizes}
 
     elif config.model_name.startswith('fasterrcnn'):
         box_format = 'xyxy' # Output of __getitem__ method
@@ -132,7 +133,8 @@ def get_dataset_and_dataloader(config):
             img_names = [s['img_name'] for s in batch]
             
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
-            img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
+            img_sizes = torch.tensor([config.image_size]*len(batch), dtype=torch.float)
+            ori_sizes = [s['ori_size'] for s in batch]
 
             return {
                 'imgs': imgs, 
@@ -140,7 +142,8 @@ def get_dataset_and_dataloader(config):
                 'img_ids': img_ids,
                 'img_names': img_names,
                 'img_sizes': img_sizes, 
-                'img_scales': img_scales}
+                'img_scales': img_scales,
+                'ori_sizes': ori_sizes}
                 
     elif config.model_name.startswith('yolo'):
         box_format = 'xyxy' # Output of __getitem__ method
@@ -149,6 +152,7 @@ def get_dataset_and_dataloader(config):
             targets = [s['target'] for s in batch] # box in center xywh format
             img_names = [s['img_name'] for s in batch]
             img_ids = [s['img_id'] for s in batch]
+            ori_sizes = [s['ori_size'] for s in batch]
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
             img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
             img_size = imgs[0].shape[-1]
@@ -160,6 +164,9 @@ def get_dataset_and_dataloader(config):
                 num_boxes = cxcy_boxes.shape[0]
                 labels_out = torch.zeros([num_boxes, 6])
                 labels = item['labels'].unsqueeze(1) 
+
+                # Yolo need class starts at 0
+                labels = labels - 1
                 out_anns = torch.cat([labels, cxcy_boxes], dim=1)
                 labels_out[:, 1:] = out_anns[:,:]
                 labels_out[:, 0] = idx
@@ -173,7 +180,8 @@ def get_dataset_and_dataloader(config):
                 'img_ids': img_ids,
                 'img_names': img_names,
                 'img_scales': img_scales,
-                'img_sizes': img_sizes
+                'img_sizes': img_sizes,
+                'ori_sizes': ori_sizes
             }
 
     CocoDataset.collate_fn = collate_fn
