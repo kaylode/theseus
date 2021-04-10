@@ -44,6 +44,7 @@ def main(args, config):
         min_iou = config.min_iou_val,
         tta=config.tta,
         max_images=config.max_images_val,
+        max_dets=config.max_post_nms,
         mode=config.fusion_mode)
 
     net = get_model(args, config, device)

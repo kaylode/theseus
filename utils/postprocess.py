@@ -10,7 +10,7 @@ import matplotlib.patches as patches
 from .utils import change_box_order
 from ensemble_boxes import weighted_boxes_fusion, nms
 
-def filter_area(boxes, confidence_score, labels, min_area=10, max_area=4096):
+def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
     """
     Boxes in xyxy format
     """
@@ -22,11 +22,9 @@ def filter_area(boxes, confidence_score, labels, min_area=10, max_area=4096):
     width = width.astype(int)
     height = height.astype(int)
 
-    # boxes areas
-    areas = width * height
+    picked_index_min = (width >= min_wh) & (height >= min_wh)
+    picked_index_max = (width <= max_wh) & (height <= max_wh)
 
-    picked_index_min = areas >= min_area
-    picked_index_max = areas <= max_area
     picked_index = picked_index_min & picked_index_max
 
     # Picked bounding boxes
@@ -71,6 +69,7 @@ def postprocessing(
         min_iou=0.5, 
         min_conf=0.1,
         mode=None,
+        max_dets=None,
         output_format='xywh'):
     """
     Input: bounding boxes in xyxy format
@@ -89,7 +88,7 @@ def postprocessing(
 
     # Filter small area boxes
     boxes, scores, labels = filter_area(
-        boxes, scores, labels, min_area=2
+        boxes, scores, labels, min_wh=10, max_wh=4096
     )
 
     current_img_size = current_img_size if current_img_size is not None else None
@@ -108,6 +107,11 @@ def postprocessing(
         boxes = boxes[indexes]
         scores = scores[indexes]
         labels = labels[indexes]
+
+        if max_dets is not None:
+            boxes = boxes[:max_dets]
+            scores = scores[:max_dets]
+            labels = labels[:max_dets]
 
         if ori_img_size is not None and current_img_size is not None:
             boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)

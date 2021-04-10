@@ -176,6 +176,7 @@ def main(args, config):
                         ori_img_size=[img_w, img_h],
                         min_iou=config.min_iou_val,
                         min_conf=config.min_conf_val,
+                        max_dets=connfig.max_post_nms,
                         mode=config.fusion_mode)
 
                     boxes = outputs['bboxes'] 

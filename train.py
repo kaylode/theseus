@@ -37,6 +37,7 @@ def train(args, config):
         min_iou = config.min_iou_val,
         tta=config.tta,
         mode=config.fusion_mode,
+        max_dets=config.max_post_nms,
         max_images=config.max_images_val)
 
     optimizer, optimizer_params = get_lr_policy(config.lr_policy)

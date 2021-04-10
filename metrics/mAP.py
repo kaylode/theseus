@@ -65,6 +65,7 @@ class mAPScores(TemplateMetric):
             min_conf = 0.3, 
             min_iou = 0.3, 
             tta = False,
+            max_dets=None,
             decimals = 4):
 
         self.coco_gt = COCO(dataset.ann_path)
@@ -81,6 +82,7 @@ class mAPScores(TemplateMetric):
         self.mode = mode
         self.min_conf = min_conf
         self.min_iou = min_iou
+        self.max_dets = max_dets
         self.decimals = decimals
         self.max_images = max_images
         self.filepath = f'results/bbox_results.json'
@@ -125,6 +127,7 @@ class mAPScores(TemplateMetric):
                             min_iou=self.min_iou,
                             min_conf=self.min_conf,
                             output_format='xywh',
+                            max_dets=self.max_dets,
                             mode=self.mode)
 
                         boxes = pred['bboxes'] 
