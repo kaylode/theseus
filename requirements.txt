@@ -1,4 +1,9 @@
-yaml
+albumentations==0.5.2
+pyyaml>=5.1
 webcolors
 tensorboard
 tqdm
+ensemble-boxes
+timm
+omegaconf
+pycocotools
