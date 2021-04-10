@@ -15,7 +15,7 @@ def train(args, config):
 
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
-    net = get_model(args, config, device)
+    net = get_model(args, config, device, num_classes=trainset.num_classes)
 
     if args.saved_path is not None:
         args.saved_path = os.path.join(args.saved_path, config.project_name)

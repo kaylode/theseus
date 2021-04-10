@@ -11,9 +11,8 @@ from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
 
-def get_model(args, config, device):
-    config.obj_list = get_class_names(config.obj_list)
-    NUM_CLASSES = len(config.obj_list)
+def get_model(args, config, device, num_classes):
+    NUM_CLASSES = num_classes
     max_post_nms = config.max_post_nms if config.max_post_nms > 0 else None
     max_pre_nms = config.max_pre_nms if config.max_pre_nms > 0 else None
     if config.pretrained_backbone is None:

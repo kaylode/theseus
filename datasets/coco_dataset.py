@@ -46,14 +46,19 @@ class CocoDataset(Dataset):
         categories.sort(key=lambda x: x['id'])
 
         self.classes = {}
+        self.idx_mapping = {}
         for c in categories:
-            self.classes[c['name']] = len(self.classes) + 1
+            idx = len(self.classes) + 1
+            self.classes[c['name']] = idx
+            self.idx_mapping[c['id']] = idx
 
         # also load the reverse (label -> name)
         self.labels = {}
         for key, value in self.classes.items():
             self.labels[value] = key
 
+        self.num_classes = len(self.labels)
+        
     def __len__(self):
         return len(self.image_ids)
 
@@ -161,7 +166,7 @@ class CocoDataset(Dataset):
 
             annotation = np.zeros((1, 5))
             annotation[0, :4] = a['bbox'] # xywh
-            annotation[0, 4] = a['category_id']
+            annotation[0, 4] = self.idx_mapping[a['category_id']]
             annotations = np.append(annotations, annotation, axis=0)
 
         return annotations
