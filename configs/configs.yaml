@@ -1,12 +1,12 @@
 settings:
   #################   DATASET CONFIG   ###################
 
-  project_name: ""    # also the folder name of the dataset that under ./data folder
-  train_imgs: 
-  val_imgs: 
+  project_name: "coco2017"    # also the folder name of the dataset that under ./data folder
+  train_imgs: images/train2017
+  val_imgs: images/val2017
   test_imgs: 
-  train_anns: 
-  val_anns: 
+  train_anns: annotations/instances_train2017.json
+  val_anns: annotations/instances_val2017.json
 
   obj_list: "./datasets/classnames.txt" # path to .txt file that contains all class's names corresponding to index ### The first class must be background ###
 
