@@ -1,6 +1,7 @@
 # Pytorch Custom Template for Object Detection
 
 ## To-do list:
+- [ ] Autoanchors
 - [ ] Multi-scale training
 - [ ] Gradient checkpointing
 - [ ] Distributed data parallel
