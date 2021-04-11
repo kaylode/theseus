@@ -44,10 +44,12 @@ def main(args, config):
         min_iou = config.min_iou_val,
         tta=config.tta,
         max_images=config.max_images_val,
+        keep_ratio=config.keep_ratio,
         max_dets=config.max_post_nms,
         mode=config.fusion_mode)
 
-    net = get_model(args, config, device)
+    net = get_model(args, config, device, num_classes=valset.num_classes)
+
 
     model = Detector(model = net, device = device)
     model.eval()
@@ -56,7 +58,7 @@ def main(args, config):
         load_checkpoint(model, args.weight)
     
     metric.update(model)
-    metric.value()
+    print(metric.value())
 
 
 

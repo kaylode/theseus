@@ -248,7 +248,7 @@ class Trainer():
                         min_conf=self.cfg.min_conf_val,
                         output_format='xywh',
                         max_dets=self.cfg.max_post_nms,
-                        keep_ratio=self.cfg.keep_ratio,
+                        keep_ratio=False,
                         mode=self.cfg.fusion_mode)
 
                 boxes = pred['bboxes']
