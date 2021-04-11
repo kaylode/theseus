@@ -65,6 +65,7 @@ class mAPScores(TemplateMetric):
             min_iou = 0.3, 
             tta = False,
             max_dets=None,
+            keep_ratio=False,
             decimals = 4):
 
         self.coco_gt = COCO(dataset.ann_path)
@@ -77,6 +78,7 @@ class mAPScores(TemplateMetric):
                 shuffle=True, 
                 collate_fn=dataset.collate_fn) # requires batch size = 1
         
+        self.keep_ratio = keep_ratio
         self.tta = tta
         self.mode = mode
         self.min_conf = min_conf
@@ -127,6 +129,7 @@ class mAPScores(TemplateMetric):
                             min_conf=self.min_conf,
                             output_format='xywh',
                             max_dets=self.max_dets,
+                            keep_ratio=self.keep_ratio,
                             mode=self.mode)
 
                         boxes = pred['bboxes'] 

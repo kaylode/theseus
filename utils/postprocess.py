@@ -73,10 +73,35 @@ def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
 
     return np.array(picked_boxes), np.array(picked_score), np.array(picked_classes)
 
-def resize_postprocessing(boxes, current_img_size, ori_img_size):
+def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=False):
     """
-    Boxes format xyxy or xywh
+    Boxes format must be in xyxy
     """
+
+    if keep_ratio:
+        ori_w, ori_h = ori_img_size
+        ratio = float(ori_w/ori_h)
+
+        # If ratio equals 1.0, skip to scaling
+        if ratio != 1.0: 
+            if ratio > 1.0: # width > height, width = current_img_size, meaning padding along height
+                true_width = current_img_size[0]
+                true_height = current_img_size[0] / ratio # true height without padding equals (current width / ratio)
+                pad_size = int((true_width-true_height)/2) # Albumentation padding
+
+                # Subtract padding size from heights
+                boxes[:,1] -= pad_size
+                boxes[:,3] -= pad_size
+            else: # height > width, height = current_img_size, meaning padding along width
+                true_height = current_img_size[1]
+                true_width = current_img_size[1] * ratio # true width without padding equals (current height * ratio)
+                pad_size = int((true_height-true_width)/2) # Albumentation padding
+
+                # Subtract padding size from widths
+                boxes[:,0] -= pad_size
+                boxes[:,2] -= pad_size
+
+    # Scaling boxes to match original image shape 
     new_boxes = boxes.copy()
     new_boxes[:,0] = (boxes[:,0] * ori_img_size[0])/ current_img_size[0]
     new_boxes[:,2] = (boxes[:,2] * ori_img_size[0])/ current_img_size[0]
@@ -109,6 +134,7 @@ def postprocessing(
         min_conf=0.1,
         mode=None,
         max_dets=None,
+        keep_ratio=False,
         output_format='xywh'):
     """
     Input: bounding boxes in xyxy format
@@ -153,7 +179,11 @@ def postprocessing(
             labels = labels[:max_dets]
 
         if ori_img_size is not None and current_img_size is not None:
-            boxes = resize_postprocessing(boxes, current_img_size=current_img_size, ori_img_size=ori_img_size)
+            boxes = resize_postprocessing(
+                boxes, 
+                current_img_size=current_img_size, 
+                ori_img_size=ori_img_size, 
+                keep_ratio=keep_ratio)
 
         if output_format == 'xywh':
             boxes = change_box_order(boxes, order='xyxy2xywh')
