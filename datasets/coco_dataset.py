@@ -168,6 +168,10 @@ class CocoDataset(Dataset):
             # some annotations have basically no width / height, skip them
             if a['bbox'][2] < 2 or a['bbox'][3] < 2:
                 continue
+            
+            # some annotations have wrong coordinate
+            if a['bbox'][0] < 0 or a['bbox'][1] < 0:
+                continue
 
             annotation = np.zeros((1, 5))
             annotation[0, :4] = a['bbox'] # xywh
