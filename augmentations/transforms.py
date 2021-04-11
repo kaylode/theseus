@@ -77,7 +77,7 @@ def get_augmentation(config, _type='train'):
             A.RandomRotate90(p=0.3),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.3),
-        ])
+        ], p=0.8),
         CustomCutout(bbox_removal_threshold=0.50,min_cutout_size=32,max_cutout_size=96,number=12,p=0.8),
         A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),
         ToTensorV2(p=1.0)
