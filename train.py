@@ -12,7 +12,8 @@ def train(args, config):
     num_gpus = len(config.gpu_devices.split(','))
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-
+    devices_info = get_devices_info(config.gpu_devices)
+    
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
     net = get_model(args, config, device, num_classes=trainset.num_classes)
@@ -73,7 +74,7 @@ def train(args, config):
                      evaluate_per_epoch = args.val_interval,
                      visualize_when_val = args.no_visualization,
                      step_per_epoch = step_per_epoch)
-    
+    print()
     print("##########   DATASET INFO   ##########")
     print("Trainset: ")
     print(trainset)
@@ -83,7 +84,8 @@ def train(args, config):
     print(trainer)
     print()
     print(config)
-    print(f'Training with {num_gpus} gpu(s)')
+    print(f'Training with {num_gpus} gpu(s): ')
+    print(devices_info)
     print(f"Start training at [{start_epoch}|{start_iter}]")
     print(f"Current best MAP: {best_value}")
     

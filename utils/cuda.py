@@ -11,6 +11,12 @@ except ImportError:
     amp = None
     has_apex = False
 
+def get_devices_info(gpu_devices="0"):
+    devices_info = ""
+    for i, device_id in enumerate(gpu_devices.split(',')):
+        p = torch.cuda.get_device_properties(i)
+        devices_info += f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
+    return devices_info
 
 class ApexScaler:
     state_dict_key = "amp"
