@@ -105,6 +105,9 @@ class CocoDataset(Dataset):
                 else:
                     image, boxes, labels, img_id, img_name, ori_width, ori_height = self.load_image_and_boxes(idx)
         image = image.astype(np.float32)
+        boxes = boxes.astype(np.int32)
+        labels = labels.astype(np.int32)
+
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
             # Normalize
@@ -143,8 +146,8 @@ class CocoDataset(Dataset):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = os.path.join(self.root_dir, image_info['file_name'])
         image = cv2.imread(path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        image /= 255.0
         return image, image_info['file_name'], image_info['width'], image_info['height']
 
     def load_annotations(self, image_index):
@@ -171,12 +174,29 @@ class CocoDataset(Dataset):
 
         return annotations
 
-    def load_mixup_image_and_boxes(self, index):
+    def load_mixup_image_and_boxes(self, index, alpha=1.0):
+        """
+        Randomly mixes the given list if images with each other
+        source: https://www.kaggle.com/kaushal2896/data-augmentation-tutorial-basic-cutout-mixup
+        :param images: The images to be mixed up
+        :param bboxes: The bounding boxes (labels)
+        :param areas: The list of area of all the bboxes
+        :param alpha: Required to generate image wieghts (lambda) using beta distribution. In this case we'll use alpha=1, which is same as uniform distribution
+        """
         image, boxes, labels, _, _, _, _ = self.load_image_and_boxes(index)    
         r_image, r_boxes, r_labels, _, _, _, _ = self.load_image_and_boxes(random.randint(0, len(self.image_ids) - 1))
         
-        return (image+r_image)/2, np.vstack((boxes, r_boxes)).astype(np.int32), np.concatenate((labels, r_labels))
+        # Generate image weight (minimum 0.4 and maximum 0.6)
+        lam = np.clip(np.random.beta(alpha, alpha), 0.4, 0.6)
+        
+        # Weighted Mixup
+        mixedup_images = lam*image + (1 - lam)*r_image
 
+        # Mixup annotations
+        mixedup_bboxes = np.vstack((boxes, r_boxes)).astype(np.int32)
+        mixedup_labels = np.concatenate((labels, r_labels))
+
+        return mixedup_images, mixedup_bboxes, mixedup_labels
 
     def load_cutmix_image_and_boxes(self, index, imsize=[512,512]):
         """ 

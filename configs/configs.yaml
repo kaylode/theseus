@@ -5,17 +5,14 @@ settings:
   train_imgs: images/train2017
   val_imgs: images/val2017
   test_imgs: 
-  train_anns: annotations/instances_train2017.json
-  val_anns: annotations/instances_val2017.json
-
-  obj_list: "./datasets/classnames.txt" # path to .txt file that contains all class's names corresponding to index ### The first class must be background ###
-
+  train_anns: annotations/instances_train2017.json    # class index must start from 1
+  val_anns: annotations/instances_val2017.json        # class index must start from 1
 
   #################   TRAINING CONFIG   ###################
   
   model_name: 'yolov5m' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7) | yolov5{i} (s,m,l,x)]
 
-  #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone
+  #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone, uncomment to use
   
   gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
