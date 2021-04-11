@@ -148,9 +148,10 @@ class CocoDataset(Dataset):
         image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
         path = os.path.join(self.root_dir, image_info['file_name'])
         image = cv2.imread(path)
+        height, width, c = image.shape
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image /= 255.0
-        return image, image_info['file_name'], image_info['width'], image_info['height']
+        return image, image_info['file_name'], width, height
 
     def load_annotations(self, image_index):
         # get ground truth annotations

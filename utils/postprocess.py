@@ -78,31 +78,29 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=Fals
     Boxes format must be in xyxy
     """
 
+    new_boxes = boxes.copy()
     if keep_ratio:
         ori_w, ori_h = ori_img_size
-        ratio = float(ori_w/ori_h)
-
+        ratio = float(ori_w*1.0/ori_h)
         # If ratio equals 1.0, skip to scaling
         if ratio != 1.0: 
             if ratio > 1.0: # width > height, width = current_img_size, meaning padding along height
                 true_width = current_img_size[0]
                 true_height = current_img_size[0] / ratio # true height without padding equals (current width / ratio)
                 pad_size = int((true_width-true_height)/2) # Albumentation padding
-
                 # Subtract padding size from heights
-                boxes[:,1] -= pad_size
-                boxes[:,3] -= pad_size
+                new_boxes[:,1] -= pad_size
+                new_boxes[:,3] -= pad_size
             else: # height > width, height = current_img_size, meaning padding along width
                 true_height = current_img_size[1]
                 true_width = current_img_size[1] * ratio # true width without padding equals (current height * ratio)
                 pad_size = int((true_height-true_width)/2) # Albumentation padding
 
                 # Subtract padding size from widths
-                boxes[:,0] -= pad_size
-                boxes[:,2] -= pad_size
+                new_boxes[:,0] -= pad_size
+                new_boxes[:,2] -= pad_size
 
     # Scaling boxes to match original image shape 
-    new_boxes = boxes.copy()
     new_boxes[:,0] = (boxes[:,0] * ori_img_size[0])/ current_img_size[0]
     new_boxes[:,2] = (boxes[:,2] * ori_img_size[0])/ current_img_size[0]
     new_boxes[:,1] = (boxes[:,1] * ori_img_size[1])/ current_img_size[1]
