@@ -1,4 +1,7 @@
+import numpy as np
+from collections import namedtuple 
 from albumentations.core.transforms_interface import DualTransform
+from albumentations.augmentations.bbox_utils import denormalize_bbox, normalize_bbox
 
 class CustomCutout(DualTransform):
     """

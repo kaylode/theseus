@@ -8,8 +8,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
-from utils.utils import change_box_order
+from utils.postprocess import change_box_order
 from augmentations.transforms import Denormalize, get_resize_augmentation
 from torch.utils.data import Dataset, DataLoader
 from pycocotools.coco import COCO
@@ -83,7 +82,7 @@ class CocoDataset(Dataset):
 
         if len(box) == 0:
             return self.load_image_and_boxes(idx+1)
-            
+
         box = np.array([np.asarray(i) for i in box])
         label = np.array(label)
         

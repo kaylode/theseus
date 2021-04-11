@@ -29,7 +29,6 @@ from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from .metrictemplate import TemplateMetric
-from utils.utils import change_box_order
 from utils.postprocess import postprocessing
 
 def _eval(coco_gt, image_ids, pred_json_path, **kwargs):

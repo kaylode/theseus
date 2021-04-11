@@ -5,10 +5,9 @@ from tqdm import tqdm
 from .checkpoint import Checkpoint
 import numpy as np
 from loggers.loggers import Logger
-from utils.utils import clip_gradient
 import time
-from utils.utils import change_box_order, draw_pred_gt_boxes
-from utils.postprocess import box_fusion, postprocessing
+from utils.utils import draw_pred_gt_boxes
+from utils.postprocess import change_box_order, box_fusion, postprocessing
 
 from torch.cuda import amp
 from utils.cuda import NativeScaler

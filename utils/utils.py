@@ -48,117 +48,6 @@ def standard_to_bgr(list_color_name):
 
 color_list = standard_to_bgr(STANDARD_COLORS)
 
-def get_class_names(txt_path):
-    class_names = []
-    with open(txt_path, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.split('\n')[0]
-        class_names.append(line)
-    return class_names
-
-def one_hot_embedding(labels, num_classes):
-    '''
-    Embedding labels to one-hot form.
-    :param labels: (LongTensor) class labels, sized [N,].
-    :param num_classes: (int) number of classes.
-    :return: (tensor) encoded labels, sized [N,#classes].
-    '''
-    y = torch.eye(num_classes)  # [D,D]
-    return y[labels]            # [N,D]
-
-def clip_gradient(optimizer, grad_clip):
-    """
-    Clips gradients computed during backpropagation to avoid explosion of gradients.
-    :param optimizer: optimizer with the gradients to be clipped
-    :param grad_clip: clip value
-    """
-    for group in optimizer.param_groups:
-        for param in group['params']:
-            if param.grad is not None:
-                param.grad.data.clamp_(-grad_clip, grad_clip)
-
-
-def change_box_order(boxes, order):
-    """
-    Change box order between (xmin, ymin, xmax, ymax) and (xcenter, ycenter, width, height).
-    :param boxes: (tensor) or {np.array) bounding boxes, sized [N, 4]
-    :param order: (str) ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
-    :return: (tensor) converted bounding boxes, size [N, 4]
-    """
-
-    assert order in ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy', 'yxyx2xyxy', 'xyxy2yxyx']
-
-    # Convert 1-d to a 2-d tensor of boxes, which first dim is 1
-    if isinstance(boxes, torch.Tensor):
-        if len(boxes.shape) == 1:
-            boxes = boxes.unsqueeze(0)
-
-        if order == 'xyxy2xywh':
-            return torch.cat([boxes[:, :2], boxes[:, 2:] - boxes[:, :2]], 1)
-        elif order ==  'xywh2xyxy':
-            return torch.cat([boxes[:, :2], boxes[:, :2] + boxes[:, 2:]], 1)
-        elif order == 'xyxy2cxcy':
-            return torch.cat([(boxes[:, 2:] + boxes[:, :2]) / 2,  # c_x, c_y
-                            boxes[:, 2:] - boxes[:, :2]], 1)  # w, h
-        elif order == 'cxcy2xyxy':
-            return torch.cat([boxes[:, :2] - (boxes[:, 2:] *1.0 / 2),  # x_min, y_min
-                            boxes[:, :2] + (boxes[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
-        elif order == 'xyxy2yxyx' or order == 'yxyx2xyxy':
-            return boxes[:,[1,0,3,2]]
-        
-    else:
-        # Numpy
-        new_boxes = boxes.copy()
-        if order == 'xywh2xyxy':
-            new_boxes[:,2] = boxes[:,0] + boxes[:,2]
-            new_boxes[:,3] = boxes[:,1] + boxes[:,3]
-            return new_boxes
-        elif order == 'xyxy2xywh':
-            new_boxes[:,2] = boxes[:,2] - boxes[:,0]
-            new_boxes[:,3] = boxes[:,3] - boxes[:,1]
-            return new_boxes
-
-def find_intersection(set_1, set_2):
-    """
-    Find the intersection of every box combination between two sets of boxes that are in boundary coordinates.
-    :param set_1: set 1, a tensor of dimensions (n1, 4)
-    :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: intersection of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
-    """
-
-    # PyTorch auto-broadcasts singleton dimensions
-    lower_bounds = torch.max(set_1[:, :2].unsqueeze(1), set_2[:, :2].unsqueeze(0))  # (n1, n2, 2)
-    upper_bounds = torch.min(set_1[:, 2:].unsqueeze(1), set_2[:, 2:].unsqueeze(0))  # (n1, n2, 2)
-    intersection_dims = torch.clamp(upper_bounds - lower_bounds, min=0)  # (n1, n2, 2)
-    return intersection_dims[:, :, 0] * intersection_dims[:, :, 1]  # (n1, n2)
-
-def find_jaccard_overlap(set_1, set_2, order='xyxy'):
-    """
-    Find the Jaccard Overlap (IoU) of every box combination between two sets of boxes that are in boundary coordinates.
-    The default box order is (xmin, ymin, xmax, ymax).
-    :param set_1: set 1, a tensor of dimensions (n1, 4)
-    :param set_2: set 2, a tensor of dimensions (n2, 4)
-    :return: Jaccard Overlap of each of the boxes in set 1 with respect to each of the boxes in set 2, a tensor of dimensions (n1, n2)
-    """
-
-    if order == 'xywh':
-        set_1 = change_box_order(set_1, 'xywh2xyxy')
-        set_2 = change_box_order(set_2, 'xywh2xyxy')
-
-    # Find intersections
-    intersection = find_intersection(set_1, set_2)  # (n1, n2)
-
-    # Find areas of each box in both sets
-    areas_set_1 = (set_1[:, 2] - set_1[:, 0]) * (set_1[:, 3] - set_1[:, 1])  # (n1)
-    areas_set_2 = (set_2[:, 2] - set_2[:, 0]) * (set_2[:, 3] - set_2[:, 1])  # (n2)
-
-    # Find the union
-    # PyTorch auto-broadcasts singleton dimensions
-    union = areas_set_1.unsqueeze(1) + areas_set_2.unsqueeze(0) - intersection  # (n1, n2)
-
-    return intersection / union  # (n1, n2)
-
 def draw_boxes_v2(img_name, img, boxes, labels, scores, obj_list=None, figsize=(15,15)):
     """
     Visualize an image with its bouding boxes
@@ -240,8 +129,6 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
     return fig
 
     # plt.close()
-
-
 
 def write_to_video(img, boxes, labels, scores, imshow=True,  outvid = None, obj_list=None):
     

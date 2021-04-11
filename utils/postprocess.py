@@ -7,8 +7,47 @@ import webcolors
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from .utils import change_box_order
 from ensemble_boxes import weighted_boxes_fusion, nms
+
+def change_box_order(boxes, order):
+    """
+    Change box order between (xmin, ymin, xmax, ymax) and (xcenter, ycenter, width, height).
+    :param boxes: (tensor) or {np.array) bounding boxes, sized [N, 4]
+    :param order: (str) ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy']
+    :return: (tensor) converted bounding boxes, size [N, 4]
+    """
+
+    assert order in ['xyxy2xywh', 'xywh2xyxy', 'xyxy2cxcy', 'cxcy2xyxy', 'yxyx2xyxy', 'xyxy2yxyx']
+
+    # Convert 1-d to a 2-d tensor of boxes, which first dim is 1
+    if isinstance(boxes, torch.Tensor):
+        if len(boxes.shape) == 1:
+            boxes = boxes.unsqueeze(0)
+
+        if order == 'xyxy2xywh':
+            return torch.cat([boxes[:, :2], boxes[:, 2:] - boxes[:, :2]], 1)
+        elif order ==  'xywh2xyxy':
+            return torch.cat([boxes[:, :2], boxes[:, :2] + boxes[:, 2:]], 1)
+        elif order == 'xyxy2cxcy':
+            return torch.cat([(boxes[:, 2:] + boxes[:, :2]) / 2,  # c_x, c_y
+                            boxes[:, 2:] - boxes[:, :2]], 1)  # w, h
+        elif order == 'cxcy2xyxy':
+            return torch.cat([boxes[:, :2] - (boxes[:, 2:] *1.0 / 2),  # x_min, y_min
+                            boxes[:, :2] + (boxes[:, 2:] *1.0 / 2)], 1)  # x_max, y_max
+        elif order == 'xyxy2yxyx' or order == 'yxyx2xyxy':
+            return boxes[:,[1,0,3,2]]
+        
+    else:
+        # Numpy
+        new_boxes = boxes.copy()
+        if order == 'xywh2xyxy':
+            new_boxes[:,2] = boxes[:,0] + boxes[:,2]
+            new_boxes[:,3] = boxes[:,1] + boxes[:,3]
+            return new_boxes
+        elif order == 'xyxy2xywh':
+            new_boxes[:,2] = boxes[:,2] - boxes[:,0]
+            new_boxes[:,3] = boxes[:,3] - boxes[:,1]
+            return new_boxes
 
 def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
     """
