@@ -14,58 +14,50 @@ from tqdm import tqdm
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import get_resize_augmentation
-import pandas as pd 
+from augmentations.transforms import MEAN, STD
 
+parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
+parser.add_argument('--min_conf', type=float, default= 0.1, help='minimum confidence for an object to be detect')
+parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
+parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
+parser.add_argument('--image', type=str, help='path to an image to inference')
+args = parser.parse_args() 
 
-BATCH_SIZE = 16
-
-class TestDataset(Dataset):
-    def __init__(self, config, transforms=None):
-        self.image_size = config.image_size
-        self.root_dir = os.path.join('datasets', config.project_name, config.test_imgs)
-        self.test_df = test_df
+class Testset():
+    def __init__(self, config, input_path, transforms=None):
+        self.input_path = input_path # path to image folder or a single image
         self.transforms = transforms
-        self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=False)
-        self.load_data()
+        self.image_size = config.image_size
+        self.load_images()
 
-    def load_data(self):
-        self.fns = [
-            annotations for annotations in zip(
-                self.test_df['image_id'], self.test_df['width'], self.test_df['height']
-            )
-        ]
+    def load_images(self):
+        self.all_image_paths = []   
+        if os.path.isdir(self.input_path):  # path to image folder
+            paths = sorted(os.listdir(self.input_path))
+            for path in paths:
+                self.all_image_paths.append(os.path.join(self.input_path, path))
+        elif os.path.isfile(self.input_path): # path to single image
+            self.all_image_paths.append(self.input_path)
 
     def __getitem__(self, idx):
-        image_id, image_ori_w, image_ori_h = self.fns[idx]
-        img_path = os.path.join(self.root_dir, image_id+'.png')
-        img = cv2.imread(img_path)
+        image_path = self.all_image_paths[idx]
+        img = cv2.imread(image_path)
+        image_w, image_h = self.image_size
+        ori_height, ori_width, c = image.shape
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
         img /= 255.0
-        label = np.array(0)
-        
-        image_h, image_w, c = img.shape
-
-        if self.resize_transforms is not None:
-            resized = self.resize_transforms(image=img, class_labels=label)
-            img_ = resized['image']
-            
-
         if self.transforms is not None:
-            img = self.transforms(image=img_)['image']
+            img = self.transforms(image=img)['image']
         return {
-            'ori_image': img_,
-            'image_id': image_id,
             'img': img,
-            'image_ori_w': image_ori_w,
-            'image_ori_h': image_ori_h,
+            'image_ori_w': ori_width,
+            'image_ori_h': ori_height,
             'image_w': image_w,
             'image_h': image_h,
         }
 
     def collate_fn(self, batch):
         imgs = torch.stack([s['img'] for s in batch])   
-        img_ids = [s['image_id'] for s in batch]
-        ori_imgs = [s['ori_image'] for s in batch]
         image_ori_ws = [s['image_ori_w'] for s in batch]
         image_ori_hs = [s['image_ori_h'] for s in batch]
         image_ws = [s['image_w'] for s in batch]
@@ -74,8 +66,6 @@ class TestDataset(Dataset):
         img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
         return {
             'imgs': imgs,
-            'ori_imgs': ori_imgs,
-            'img_ids': img_ids,
             'image_ori_ws': image_ori_ws,
             'image_ori_hs': image_ori_hs,
             'image_ws': image_ws,
@@ -85,7 +75,8 @@ class TestDataset(Dataset):
         }
 
     def __len__(self):
-      return len(self.fns)
+        return len(self.all_image_paths)
+
 
 def main(args, config):
     os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
@@ -93,23 +84,11 @@ def main(args, config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    if args.output_path is not None:
-        if not os.path.exists(args.output_path):
-            os.makedirs(args.output_path)
-
-    test_df = pd.read_csv('/home/pmkhoi/source/vinaichestxray/datasets/ken_test_info.csv')
     test_transforms = A.Compose([
-        A.Resize(
-            height = config.image_size[1],
-            width = config.image_size[0]),
+        get_resize_augmentation(config.image_size, keep_ratio=config.keep_ratio),
+        A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),
         ToTensorV2(p=1.0)
     ])
-
-    testset = TestDataset(config, test_df, test_transforms)
-    testloader = DataLoader(testset, batch_size = BATCH_SIZE, collate_fn=testset.collate_fn)
-    idx_classes = {idx:i for idx,i in enumerate(config.obj_list)}
-    idx_classes[15] = 'No Finding'
-    NUM_CLASSES = len(config.obj_list)
 
     if config.tta:
         config.tta = TTA(
@@ -119,14 +98,27 @@ def main(args, config):
     else:
         config.tta = None
 
-    net = get_model(args, config, device)
+    testset = Testset(
+        config, 
+        args.input_path
+        transforms=test_transforms)
+    testloader = DataLoader(
+        testset,
+        batch_size=testset.batch_size,
+        
+    )
+
+    class_mapping = config.obj_list
+    net = get_model(args, config, device, num_classes=len(class_mapping))
 
     model = Detector(model = net, device = device)
     model.eval()
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
     
-    results = []
+    
+
+
     empty_imgs = 0
     with tqdm(total=len(testloader)) as pbar:
         with torch.no_grad():
@@ -209,14 +201,7 @@ def main(args, config):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
-    parser.add_argument('--min_conf', type=float, default= 0.001, help='minimum confidence for an object to be detect')
-    parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
-    parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
-    parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
-    parser.add_argument('--submission', action='store_true', default = False, help='output to submission file')
-
-    args = parser.parse_args() 
+    
     config = Config('./configs/configs.yaml')                   
     main(args, config)
     
