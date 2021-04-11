@@ -166,7 +166,7 @@ class CocoDataset(Dataset):
         for idx, a in enumerate(coco_annotations):
 
             # some annotations have basically no width / height, skip them
-            if a['bbox'][2] < 1 or a['bbox'][3] < 1:
+            if a['bbox'][2] < 2 or a['bbox'][3] < 2:
                 continue
 
             annotation = np.zeros((1, 5))
