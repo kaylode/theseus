@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
+from .custom import CustomCutout
 
 MEAN = [0.485, 0.456, 0.406]
 STD = [0.229, 0.224, 0.225]
@@ -62,17 +63,22 @@ def get_augmentation(config, _type='train'):
         A.ShiftScaleRotate(shift_limit=0.2, scale_limit=0.2, rotate_limit=20, p=0.3),
         A.FromFloat(dtype='uint8', p=1),
         A.CLAHE(clip_limit=2.0, tile_grid_size=(8,8), p=0.5),
+        A.JpegCompression(p=0.3),
         A.ToFloat(p=1),
         A.OneOf([
             A.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit= 0.2, 
                                  val_shift_limit=0.2, p=0.9),
             A.RandomBrightnessContrast(brightness_limit=0.3, 
                                        contrast_limit=0.3, 
-                                       p=0.3),            
-        ], p=0.5),
-        A.JpegCompression(p=0.3),
-        A.RandomRotate90(p=0.3),
-        A.Cutout(num_holes=8, max_h_size=64, max_w_size=64, fill_value=0, p=0.5),
+                                       p=0.3),
+            A.IAASharpen(p=0.5),            
+        ], p=0.8),
+        A.OneOf([
+            A.RandomRotate90(p=0.3),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.3),
+        ])
+        CustomCutout(bbox_removal_threshold=0.50,min_cutout_size=32,max_cutout_size=96,number=12,p=0.8),
         A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),
         ToTensorV2(p=1.0)
     ], bbox_params=A.BboxParams(

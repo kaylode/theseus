@@ -81,6 +81,9 @@ class CocoDataset(Dataset):
             box = resized['bboxes']
             label = resized['class_labels']
 
+        if len(box) == 0:
+            return self.load_image_and_boxes(idx+1)
+            
         box = np.array([np.asarray(i) for i in box])
         label = np.array(label)
         
