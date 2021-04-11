@@ -174,6 +174,11 @@ def postprocessing(
         labels = labels[indexes]
 
         if max_dets is not None:
+            sorted_index = np.argsort(scores)
+            boxes = boxes[sorted_index]
+            scores = scores[sorted_index]
+            labels = labels[sorted_index]
+            
             boxes = boxes[:max_dets]
             scores = scores[:max_dets]
             labels = labels[:max_dets]
