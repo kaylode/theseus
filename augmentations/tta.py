@@ -3,8 +3,8 @@ import torch
 from itertools import product
 # from models import EfficientDetBackbone, Detector
 from configs import Config
-from utils.utils import draw_pred_gt_boxes, change_box_order
-from utils.postprocess import box_fusion
+from utils.utils import draw_pred_gt_boxes
+from utils.postprocess import box_fusion, change_box_order
 from utils.getter import *
 
 class BaseTTA:

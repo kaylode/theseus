@@ -4,7 +4,6 @@ import torch
 import torchvision
 import numpy as np
 from torch import nn
-from utils.utils import get_class_names
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
 from .effdet.efficientdet import HeadNet
 from .frcnn import create_fasterrcnn_fpn
