@@ -218,7 +218,7 @@ if __name__=='__main__':
     state = torch.load('./weights/best.pth')
     model.model.load_state_dict(state['model'])
 
-    val_transforms = get_augmentation(config, _type = 'val')
+    val_transforms = get_augmentation(_type = 'val')
 
     testset = CocoDataset(
         config = config,

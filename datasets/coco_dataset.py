@@ -17,14 +17,17 @@ import cv2
 
 class CocoDataset(Dataset):
     def __init__(self, config, root_dir, ann_path, train=True):
-        self.config = config
         self.root_dir = root_dir
         self.ann_path = ann_path
         self.image_size = config.image_size
         self.mixup = config.mixup
         self.cutmix = config.cutmix
         self.keep_ratio = config.keep_ratio
-        self.transforms = get_augmentation(config, _type="train") if train else get_augmentation(config, _type="val")
+
+        if len(config.progressive_levels) != 0 and train:
+            self.size_ratios = [0.5, 0.75, 1.0]
+           
+        self.transforms = get_augmentation(_type="train") if train else get_augmentation(_type="val")
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
 
         self.box_format = 'yxyx' # Output format of the __getitem__
@@ -41,7 +44,9 @@ class CocoDataset(Dataset):
 
     def set_progressive_level(self, level):
         if self.train:
-            self.transforms = get_augmentation(self.config, _type="train", level=level)
+            new_image_size = [i * self.size_ratios[level] for i in self.image_size]
+            self.resize_transforms = get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True)
+            self.transforms = get_augmentation(_type="train", level=level)
         else:
             print("Warnings: do not use progressive learning while validating")
 
@@ -95,7 +100,7 @@ class CocoDataset(Dataset):
         
         return img, box, label, img_id, img_name, ori_width, ori_height
 
-    def __getitem__(self, idx):
+    def load_sample(self, idx):
         ori_width, ori_height = None, None
         img_id, img_name = None, None
         if not self.train or random.random() > 0.33:
@@ -116,7 +121,12 @@ class CocoDataset(Dataset):
         image = image.astype(np.float32)
         boxes = boxes.astype(np.int32)
         labels = labels.astype(np.int32)
+        return image, boxes, labels, img_id, img_name, ori_width, ori_height
 
+
+    def __getitem__(self, idx):
+        
+        image, boxes, labels, img_id, img_name, ori_width, ori_height = self.load_sample(idx)
         if self.transforms:
             item = self.transforms(image=image, bboxes=boxes, class_labels=labels)
             # Normalize

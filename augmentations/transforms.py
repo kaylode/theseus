@@ -29,13 +29,12 @@ class Denormalize(object):
         img_show = np.clip(img_show,0,1)
         return img_show
 
-def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False, level=None):
+def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False):
     """
     Resize an image, support multi-scaling
-    :param image_size: shape of image to resize, if level is not None, list of widths and heights are required
+    :param image_size: shape of image to resize
     :param keep_ratio: whether to keep image ratio
     :param box_transforms: whether to augment boxes
-    :param level: current level for multi-scaling, if not None, requires image_size to be list of image shapes 
     :return: albumentation Compose
     """
     bbox_params = A.BboxParams(
@@ -43,10 +42,6 @@ def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False
                 min_area=0, 
                 min_visibility=0,
                 label_fields=['class_labels']) if box_transforms else None
-
-    if level is not None:
-        assert level < len(image_size), "Multi-scaling out of level"
-        image_size = image_size[level]
 
     if not keep_ratio:
         return  A.Compose([
@@ -63,7 +58,7 @@ def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False
             bbox_params=bbox_params)
         
 
-def get_augmentation(config, _type='train', level=None):
+def get_augmentation(_type='train', level=None):
 
     transforms_list = [
         A.OneOf([
