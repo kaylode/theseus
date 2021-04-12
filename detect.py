@@ -97,10 +97,13 @@ class Testset():
     def __len__(self):
         return len(self.all_image_paths)
 
+    def __str__(self):
+        return f"Number of found images: {len(self.all_image_paths)}"
 
 def main(args, config):
     os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
     num_gpus = len(config.gpu_devices.split(','))
+    devices_info = get_devices_info(config.gpu_devices)
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
@@ -139,6 +142,14 @@ def main(args, config):
     if os.path.isdir(args.input_path):
         if not os.path.exists(args.output_path):
             os.makedirs(args.output_path)
+
+
+    ## Print info
+    print(config)
+    print(testset)
+    print(f"Nubmer of gpus: {num_gpus}")
+    print(devices_info)
+
 
     empty_imgs = 0
     with tqdm(total=len(testloader)) as pbar:
