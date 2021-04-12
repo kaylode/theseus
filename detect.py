@@ -14,58 +14,68 @@ from tqdm import tqdm
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import get_resize_augmentation
-import pandas as pd 
+from augmentations.transforms import MEAN, STD
+
+parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
+parser.add_argument('--min_conf', type=float, default= 0.1, help='minimum confidence for an object to be detect')
+parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
+parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
+parser.add_argument('--input_path', type=str, help='path to an image to inference')
+parser.add_argument('--output_path', type=str, help='path to save inferenced image')
+args = parser.parse_args() 
 
 
-BATCH_SIZE = 16
+class_mapping = [
+    'background',
+]
 
-class TestDataset(Dataset):
-    def __init__(self, config, transforms=None):
-        self.image_size = config.image_size
-        self.root_dir = os.path.join('datasets', config.project_name, config.test_imgs)
-        self.test_df = test_df
+class Testset():
+    def __init__(self, config, input_path, transforms=None):
+        self.input_path = input_path # path to image folder or a single image
         self.transforms = transforms
-        self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=False)
-        self.load_data()
+        self.image_size = config.image_size
+        self.load_images()
 
-    def load_data(self):
-        self.fns = [
-            annotations for annotations in zip(
-                self.test_df['image_id'], self.test_df['width'], self.test_df['height']
-            )
-        ]
+    def get_batch_size(self):
+        num_samples = len(self.all_image_paths)
+
+        # Temporary
+        return 1
+
+    def load_images(self):
+        self.all_image_paths = []   
+        if os.path.isdir(self.input_path):  # path to image folder
+            paths = sorted(os.listdir(self.input_path))
+            for path in paths:
+                self.all_image_paths.append(os.path.join(self.input_path, path))
+        elif os.path.isfile(self.input_path): # path to single image
+            self.all_image_paths.append(self.input_path)
 
     def __getitem__(self, idx):
-        image_id, image_ori_w, image_ori_h = self.fns[idx]
-        img_path = os.path.join(self.root_dir, image_id+'.png')
-        img = cv2.imread(img_path)
+        image_path = self.all_image_paths[idx]
+        image_name = os.path.basename(image_path)
+        img = cv2.imread(image_path)
+        image_w, image_h = self.image_size
+        ori_height, ori_width, c = image.shape
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
         img /= 255.0
-        label = np.array(0)
-        
-        image_h, image_w, c = img.shape
-
-        if self.resize_transforms is not None:
-            resized = self.resize_transforms(image=img, class_labels=label)
-            img_ = resized['image']
-            
-
+        ori_img = img.copy()
         if self.transforms is not None:
-            img = self.transforms(image=img_)['image']
+            img = self.transforms(image=img)['image']
         return {
-            'ori_image': img_,
-            'image_id': image_id,
             'img': img,
-            'image_ori_w': image_ori_w,
-            'image_ori_h': image_ori_h,
+            'img_name': image_name,
+            'ori_img': ori_img,
+            'image_ori_w': ori_width,
+            'image_ori_h': ori_height,
             'image_w': image_w,
             'image_h': image_h,
         }
 
     def collate_fn(self, batch):
         imgs = torch.stack([s['img'] for s in batch])   
-        img_ids = [s['image_id'] for s in batch]
-        ori_imgs = [s['ori_image'] for s in batch]
+        ori_imgs = [s['ori_img'] for s in batch]
+        img_names = [s['img_name'] for s in batch]
         image_ori_ws = [s['image_ori_w'] for s in batch]
         image_ori_hs = [s['image_ori_h'] for s in batch]
         image_ws = [s['image_w'] for s in batch]
@@ -75,7 +85,7 @@ class TestDataset(Dataset):
         return {
             'imgs': imgs,
             'ori_imgs': ori_imgs,
-            'img_ids': img_ids,
+            'img_names': img_names,
             'image_ori_ws': image_ori_ws,
             'image_ori_hs': image_ori_hs,
             'image_ws': image_ws,
@@ -85,7 +95,8 @@ class TestDataset(Dataset):
         }
 
     def __len__(self):
-      return len(self.fns)
+        return len(self.all_image_paths)
+
 
 def main(args, config):
     os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
@@ -93,23 +104,11 @@ def main(args, config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    if args.output_path is not None:
-        if not os.path.exists(args.output_path):
-            os.makedirs(args.output_path)
-
-    test_df = pd.read_csv('/home/pmkhoi/source/vinaichestxray/datasets/ken_test_info.csv')
     test_transforms = A.Compose([
-        A.Resize(
-            height = config.image_size[1],
-            width = config.image_size[0]),
+        get_resize_augmentation(config.image_size, keep_ratio=config.keep_ratio),
+        A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),
         ToTensorV2(p=1.0)
     ])
-
-    testset = TestDataset(config, test_df, test_transforms)
-    testloader = DataLoader(testset, batch_size = BATCH_SIZE, collate_fn=testset.collate_fn)
-    idx_classes = {idx:i for idx,i in enumerate(config.obj_list)}
-    idx_classes[15] = 'No Finding'
-    NUM_CLASSES = len(config.obj_list)
 
     if config.tta:
         config.tta = TTA(
@@ -119,14 +118,28 @@ def main(args, config):
     else:
         config.tta = None
 
-    net = get_model(args, config, device)
+    testset = Testset(
+        config, 
+        args.input_path,
+        transforms=test_transforms)
+    testloader = DataLoader(
+        testset,
+        batch_size=testset.get_batch_size(),
+        num_workers=2,
+        pin_memory=True  
+    )
+
+    net = get_model(args, config, device, num_classes=len(class_mapping))
 
     model = Detector(model = net, device = device)
     model.eval()
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
-    
-    results = []
+
+    if os.path.isdir(args.input_path):
+        if not os.path.exists(args.output_path):
+            os.makedirs(args.output_path)
+
     empty_imgs = 0
     with tqdm(total=len(testloader)) as pbar:
         with torch.no_grad():
@@ -137,7 +150,7 @@ def main(args, config):
                     preds = model.inference_step(batch)
 
                 for idx, outputs in enumerate(preds):
-                    img_id = batch['img_ids'][idx]
+                    img_name = batch['img_names'][idx]
                     ori_img = batch['ori_imgs'][idx]
                     img_w = batch['image_ws'][idx]
                     img_h = batch['image_hs'][idx]
@@ -147,76 +160,30 @@ def main(args, config):
                     outputs = postprocessing(
                         outputs, 
                         current_img_size=[img_w, img_h],
-                        ori_img_size=[img_w, img_h],
+                        ori_img_size=[img_ori_ws, img_ori_hs],
                         min_iou=config.min_iou_val,
                         min_conf=config.min_conf_val,
-                        max_dets=connfig.max_post_nms,
+                        max_dets=config.max_post_nms,
+                        keep_ratio=config.keep_ratio,
+                        output_format='xywh',
                         mode=config.fusion_mode)
 
                     boxes = outputs['bboxes'] 
                     labels = outputs['classes']  
                     scores = outputs['scores']
 
-                    if USE_FILTER:
-                        boxes, scores, labels = binary_filter(
-                            test_df, 
-                            image_id=img_id, 
-                            boxes=boxes, 
-                            scores=scores, 
-                            labels=labels)
-                        
-
                     if len(boxes) == 0:
                         empty_imgs += 1
                         boxes = None
 
                     if boxes is not None:
-                        if args.output_path is not None:
-                            out_path = os.path.join(args.output_path, f'{img_id}.png')
-                            draw_boxes_v2(out_path, ori_img , boxes, labels, scores, idx_classes)
+                        out_path = os.path.join(args.output_path, f'{img_name}.png')
+                        draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_mapping)
 
-                    if args.submission:
-                        if boxes is not None:
-                            for box, score, cls_id in zip(boxes, scores, labels):
-                                x,y,w,h = box
-                                cls_id = int(cls_id) - 1
-                                if config.keep_ratio:
-                                    # Subtract left padding of image
-                                    if img_w > img_h:
-                                        y -= (img_w-img_h)/2 
-                                    else:
-                                        x -= (img_h-img_w)/2
-
-                                if cls_id != 14:
-                                    x = float(x*1.0/img_w)
-                                    y = float(y*1.0/img_h)
-                                    w = float(w*1.0/img_w)
-                                    h = float(h*1.0/img_h)
-
-                                score = np.round(float(score),3)
-                                results.append([img_id, cls_id, score, x, y, x+w, y+h])
-                        else:
-                            results.append([img_id, 14, 1.0, 0, 0, 1, 1])
-
-                
-                        
                 pbar.update(1)
                 pbar.set_description(f'Empty images: {empty_imgs}')
 
-        if args.submission:
-            submission_df = pd.DataFrame(results, columns=['image_id', 'class_id', 'score', 'x_min', 'y_min' , 'x_max', 'y_max'])
-            submission_df.to_csv('results/folds/test_pred_f4.csv', index=False)
-
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
-    parser.add_argument('--min_conf', type=float, default= 0.001, help='minimum confidence for an object to be detect')
-    parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
-    parser.add_argument('--weight', type=str, default = 'weights/efficientdet-d2.pth',help='version of EfficentDet')
-    parser.add_argument('--output_path', type=str, default = None, help='name of output to .avi file')
-    parser.add_argument('--submission', action='store_true', default = False, help='output to submission file')
-
-    args = parser.parse_args() 
     config = Config('./configs/configs.yaml')                   
     main(args, config)
     
