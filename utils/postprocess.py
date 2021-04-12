@@ -76,18 +76,21 @@ def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
 def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=False):
     """
     Boxes format must be in xyxy
+    if keeping ratio, padding will be calculated then substracted from bboxes
     """
 
     new_boxes = boxes.copy()
     if keep_ratio:
         ori_w, ori_h = ori_img_size
         ratio = float(ori_w*1.0/ori_h)
+        
         # If ratio equals 1.0, skip to scaling
         if ratio != 1.0: 
             if ratio > 1.0: # width > height, width = current_img_size, meaning padding along height
                 true_width = current_img_size[0]
                 true_height = current_img_size[0] / ratio # true height without padding equals (current width / ratio)
                 pad_size = int((true_width-true_height)/2) # Albumentation padding
+                
                 # Subtract padding size from heights
                 new_boxes[:,1] -= pad_size
                 new_boxes[:,3] -= pad_size
@@ -99,12 +102,14 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=Fals
                 # Subtract padding size from widths
                 new_boxes[:,0] -= pad_size
                 new_boxes[:,2] -= pad_size
-
+        # Assign new width, new height
+        current_img_size = [true_width, true_height]
+    
     # Scaling boxes to match original image shape 
-    new_boxes[:,0] = (boxes[:,0] * ori_img_size[0])/ current_img_size[0]
-    new_boxes[:,2] = (boxes[:,2] * ori_img_size[0])/ current_img_size[0]
-    new_boxes[:,1] = (boxes[:,1] * ori_img_size[1])/ current_img_size[1]
-    new_boxes[:,3] = (boxes[:,3] * ori_img_size[1])/ current_img_size[1]
+    new_boxes[:,0] = (new_boxes[:,0] * ori_img_size[0])/ current_img_size[0]
+    new_boxes[:,2] = (new_boxes[:,2] * ori_img_size[0])/ current_img_size[0]
+    new_boxes[:,1] = (new_boxes[:,1] * ori_img_size[1])/ current_img_size[1]
+    new_boxes[:,3] = (new_boxes[:,3] * ori_img_size[1])/ current_img_size[1]
     return new_boxes
 
 def clip_coords(boxes, img_shape):
