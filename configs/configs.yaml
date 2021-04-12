@@ -31,7 +31,8 @@ settings:
 
   cutmix: True
   mixup: True
-
+  progressive_levels: [10, 15, 25]      # progressive learning with 3 levels (fixed), level up when reach at each number of epoch
+                                        # leave blank list to disable 
   # learning rate policy
   lr_policy:
     name: "adam"                         #[adam|sgd]

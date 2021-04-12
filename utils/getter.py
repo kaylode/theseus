@@ -185,22 +185,18 @@ def get_dataset_and_dataloader(config):
             }
 
     CocoDataset.collate_fn = collate_fn
-    train_transforms = get_augmentation(config, _type = 'train')
-    val_transforms = get_augmentation(config, _type = 'val')
     
     trainset = CocoDataset(
         config = config,
         root_dir = os.path.join('data', config.project_name, config.train_imgs),
         ann_path = os.path.join('data', config.project_name, config.train_anns),
-        train=True,
-        transforms=train_transforms)
+        train=True)
     
     valset = CocoDataset(
         config = config,
         root_dir=os.path.join('data', config.project_name, config.val_imgs), 
         ann_path = os.path.join('data', config.project_name, config.val_anns),
-        train=False,
-        transforms=val_transforms)
+        train=False)
 
     trainset.set_box_format(box_format)
     valset.set_box_format(box_format)

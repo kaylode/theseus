@@ -29,13 +29,24 @@ class Denormalize(object):
         img_show = np.clip(img_show,0,1)
         return img_show
 
-def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False):
-
+def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False, level=None):
+    """
+    Resize an image, support multi-scaling
+    :param image_size: shape of image to resize, if level is not None, list of widths and heights are required
+    :param keep_ratio: whether to keep image ratio
+    :param box_transforms: whether to augment boxes
+    :param level: current level for multi-scaling, if not None, requires image_size to be list of image shapes 
+    :return: albumentation Compose
+    """
     bbox_params = A.BboxParams(
                 format='pascal_voc', 
                 min_area=0, 
                 min_visibility=0,
                 label_fields=['class_labels']) if box_transforms else None
+
+    if level is not None:
+        assert level < len(image_size), "Multi-scaling out of level"
+        image_size = image_size[level]
 
     if not keep_ratio:
         return  A.Compose([
@@ -52,21 +63,31 @@ def get_resize_augmentation(image_size, keep_ratio=False, box_transforms = False
             bbox_params=bbox_params)
         
 
-def get_augmentation(config, _type='train'):
-    train_transforms = A.Compose([
+def get_augmentation(config, _type='train', level=None):
+
+    transforms_list = [
         A.OneOf([
             A.MotionBlur(p=.2),
             A.GaussianBlur(),
             A.MedianBlur(blur_limit=3, p=0.3),
             A.Blur(blur_limit=3, p=0.1),
         ], p=0.3),
-        A.ShiftScaleRotate(shift_limit=0.2, scale_limit=0.2, rotate_limit=20, p=0.3),
+
+        A.OneOf([
+            A.RandomRotate90(p=0.3),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.3),
+        ], p=0.8),
+
         A.OneOf([
             A.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit= 0.2, 
                                  val_shift_limit=0.2, p=0.9),
             A.RandomBrightnessContrast(brightness_limit=0.3, 
                                        contrast_limit=0.3, 
-                                       p=0.3),
+                                       p=0.3)
+        ], p=0.7),
+
+        A.OneOf([
             A.IAASharpen(p=0.5), 
             A.Compose([
                 A.FromFloat(dtype='uint8', p=1),
@@ -77,20 +98,25 @@ def get_augmentation(config, _type='train'):
                 A.ToFloat(p=1),
             ])           
         ], p=0.8),
-        A.OneOf([
-            A.RandomRotate90(p=0.3),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.3),
-        ], p=0.8),
+        
+        A.ShiftScaleRotate(shift_limit=0.2, scale_limit=0.2, rotate_limit=20, p=0.3),
         CustomCutout(bbox_removal_threshold=0.50,min_cutout_size=32,max_cutout_size=96,number=12,p=0.8),
+    ]
+
+    if level is not None:
+        num_transforms = int((level+1)*2)
+        transforms_list = transforms_list[:num_transforms]
+        
+    transforms_list += [
         A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),
         ToTensorV2(p=1.0)
-    ], bbox_params=A.BboxParams(
+    ]
+
+    train_transforms = A.Compose(transforms_list, bbox_params=A.BboxParams(
         format='pascal_voc',
         min_area=2, 
         min_visibility=0.2, 
         label_fields=['class_labels']))
-
 
     val_transforms = A.Compose([
         A.Normalize(mean=MEAN, std=STD, max_pixel_value=1.0, p=1.0),

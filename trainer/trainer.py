@@ -180,7 +180,7 @@ class Trainer():
         start_time = time.time()
         with torch.no_grad():
             for batch in tqdm(self.valloader):
-                loss, loss_dict = self.model.evaluate_step(batch)
+                _, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():
                     if key in epoch_loss.keys():
@@ -229,7 +229,6 @@ class Trainer():
             image_names = batch['img_names']
             imgs = batch['imgs']
             img_sizes = batch['img_sizes'].numpy()
-            ori_sizes = batch['ori_sizes']
 
             if self.cfg.tta is not None:
                 outputs = self.cfg.tta.make_tta_predictions(self.model, batch)
@@ -272,7 +271,7 @@ class Trainer():
                 )
                 img = denormalize(img = img)
 
-                pred_gt_imgs = img
+                pred_gt_imgs = img.copy()
                 pred_gt_boxes = [boxes, target_boxes]
                 pred_gt_labels = [labels, target_labels]
                 pred_gt_scores = scores
@@ -280,7 +279,7 @@ class Trainer():
 
                 fig = draw_pred_gt_boxes(
                     image_outname = image_outname, 
-                    img = img, 
+                    img = pred_gt_imgs, 
                     boxes = pred_gt_boxes, 
                     labels = pred_gt_labels, 
                     scores = pred_gt_scores,
@@ -304,6 +303,9 @@ class Trainer():
         self.use_amp = False
         if self.cfg.mixed_precision:
             self.use_amp = True
+
+    # def set_progressive_level(self, level):
+    #     self.
 
     def __str__(self):
         s0 =  "##########   MODEL INFO   ##########"
