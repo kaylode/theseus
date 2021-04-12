@@ -56,7 +56,7 @@ class Testset():
         image_name = os.path.basename(image_path)
         img = cv2.imread(image_path)
         image_w, image_h = self.image_size
-        ori_height, ori_width, c = image.shape
+        ori_height, ori_width, c = img.shape
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
         img /= 255.0
         ori_img = img.copy()
@@ -129,10 +129,11 @@ def main(args, config):
         testset,
         batch_size=testset.get_batch_size(),
         num_workers=2,
-        pin_memory=True  
+        pin_memory=True,
+        collate_fn=testset.collate_fn
     )
 
-    net = get_model(args, config, device, num_classes=len(class_mapping))
+    net = get_model(args, config, device, num_classes=len(class_mapping)-1)
 
     model = Detector(model = net, device = device)
     model.eval()
@@ -188,7 +189,10 @@ def main(args, config):
                         boxes = None
 
                     if boxes is not None:
-                        out_path = os.path.join(args.output_path, f'{img_name}.png')
+                        if os.path.isdir(args.input_path):
+                            out_path = os.path.join(args.output_path, f'{img_name}.png')
+                        else:
+                            out_path = args.output_path
                         draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_mapping)
 
                 pbar.update(1)
