@@ -86,21 +86,8 @@ class CocoDataset(Dataset):
         box = annot[:, :4]
         label = annot[:, -1]
         box = change_box_order(box, order = 'xywh2xyxy')
-        if self.resize_transforms is not None:
-            resized = self.resize_transforms(
-                image=img,
-                bboxes=box,
-                class_labels=label)
-            img = resized['image']
-            box = resized['bboxes']
-            label = resized['class_labels']
-
         if len(box) == 0:
             return self.load_image_and_boxes(idx+1)
-
-        box = np.array([np.asarray(i) for i in box])
-        label = np.array(label)
-        
         return img, box, label, img_id, img_name, ori_width, ori_height
 
     def load_sample(self, idx):
@@ -121,6 +108,21 @@ class CocoDataset(Dataset):
                     image, boxes, labels = self.load_cutmix_image_and_boxes(idx, self.image_size)
                 else:
                     image, boxes, labels, img_id, img_name, ori_width, ori_height = self.load_image_and_boxes(idx)
+
+        if self.resize_transforms is not None:
+            resized = self.resize_transforms(
+                image=image,
+                bboxes=boxes,
+                class_labels=labels)
+            image = resized['image']
+            boxes = resized['bboxes']
+            labels = resized['class_labels']
+
+            boxes = np.array([np.asarray(i) for i in boxes])
+            labels = np.array(labels)
+        if len(boxes) == 0:
+            return self.load_sample(idx+1)
+
         image = image.astype(np.float32)
         boxes = boxes.astype(np.int32)
         labels = labels.astype(np.int32)
