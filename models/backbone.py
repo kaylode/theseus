@@ -4,8 +4,7 @@ import torch
 import torchvision
 import numpy as np
 from torch import nn
-from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain
-from .effdet.efficientdet import HeadNet
+from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint
 from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
@@ -94,6 +93,9 @@ class EfficientDetBackbone(BaseBackbone):
             freeze_backbone=freeze_backbone,
             pretrained_backbone_path=pretrained_backbone_path)
         
+        if load_weights:
+            load_pretrained(net, config.url)
+
         if freeze_batchnorm:
             print("freeze batchnorm")
             freeze_bn(net.backbone)

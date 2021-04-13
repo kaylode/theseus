@@ -1,4 +1,4 @@
-from .efficientdet import EfficientDet
+from .efficientdet import EfficientDet, HeadNet
 from .bench import DetBenchPredict, DetBenchTrain, unwrap_bench
 from .data import create_dataset, create_loader, create_parser, DetectionDatset, SkipSubset
 from .evaluator import CocoEvaluator, PascalEvaluator, OpenImagesEvaluator, create_evaluator
