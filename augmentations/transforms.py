@@ -94,6 +94,7 @@ def get_augmentation(_type='train', level=None):
             ])           
         ], p=0.8),
         
+        # A.RandomSizedCrop(min_max_height=(800, 800), height=1024, width=1024, p=0.5),
         A.ShiftScaleRotate(shift_limit=0.2, scale_limit=0.2, rotate_limit=20, p=0.3),
         CustomCutout(bbox_removal_threshold=0.50,min_cutout_size=32,max_cutout_size=64,number=12,p=0.8),
     ]
