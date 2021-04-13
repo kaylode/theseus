@@ -60,7 +60,9 @@ class Trainer():
                     if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                         self.evaluate_epoch()
                 
-                if self.cfg.progressive_levels 
+                if self.progressive_learning:
+                    if self.epoch == self.cfg.progressive_levels[self.progressive_level]:
+                        self.progressive_level_up()
 
                 if self.scheduler is not None and self.step_per_epoch:
                     self.scheduler.step()
@@ -307,12 +309,17 @@ class Trainer():
             self.use_amp = True
 
     def init_progressive_level(self):
-        self.progressive_level = -1
+        self.progressive_level = 0
         if len(self.cfg.progressive_levels) == 0:
             self.progressive_learning = False
         else:
             self.progressive_learning = True
-            
+            for i, level in enumerate(self.cfg.progressive_levels):
+                if self.epoch >= level:
+                    self.progressive_level_up()
+                else:
+                    break
+                    
     def progressive_level_up(self):
         self.progressive_level += 1
         self.trainloader.dataset.set_progressive_level(self.progressive_level)
