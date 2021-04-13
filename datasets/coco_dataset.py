@@ -49,6 +49,7 @@ class CocoDataset(Dataset):
             self.transforms = get_augmentation(_type="train", level=level)
             self.mixup = True if level >= 1 and self.mixup else False
             self.cutmix = True if level >= 2 and self.cutmix else False
+            print(f"Current progressive learning level: {level} | Image size: {new_image_size}")
         else:
             print("Warnings: do not use progressive learning while validating")
 

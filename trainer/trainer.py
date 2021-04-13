@@ -321,6 +321,7 @@ class Trainer():
                     self.progressive_level_up()
                 else:
                     break
+            print(f"Start progressive training at level {self.progressive_level}")
                     
     def progressive_level_up(self):
         self.progressive_level += 1
@@ -346,11 +347,9 @@ class Trainer():
         self.best_value = 0.0
         self.set_accumulate_step()
         self.set_amp()
-        
+
         for i,j in kwargs.items():
             setattr(self, i, j)
 
         if self.logger is None:
             self.logger = Logger()
-
-        
