@@ -314,7 +314,7 @@ class Trainer():
             self.progressive_learning = False
         else:
             self.progressive_learning = True
-            for i, level in enumerate(self.cfg.progressive_levels):
+            for level in self.cfg.progressive_levels:
                 if self.epoch >= level:
                     self.progressive_level_up()
                 else:

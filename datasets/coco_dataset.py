@@ -47,6 +47,8 @@ class CocoDataset(Dataset):
             new_image_size = [i * self.size_ratios[level] for i in self.image_size]
             self.resize_transforms = get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True)
             self.transforms = get_augmentation(_type="train", level=level)
+            self.mixup = True if level >= 1 and self.mixup else False
+            self.cutmix = True if level >= 2 and self.cutmix else False
         else:
             print("Warnings: do not use progressive learning while validating")
 
