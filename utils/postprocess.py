@@ -106,8 +106,8 @@ def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=Fals
                 # Subtract padding size from widths
                 new_boxes[:,0] -= pad_size
                 new_boxes[:,2] -= pad_size
-        # Assign new width, new height
-        current_img_size = [true_width, true_height]
+            # Assign new width, new height
+            current_img_size = [true_width, true_height]
     
     # Scaling boxes to match original image shape 
     new_boxes[:,0] = (new_boxes[:,0] * ori_img_size[0])/ current_img_size[0]
