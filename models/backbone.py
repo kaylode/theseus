@@ -4,7 +4,7 @@ import torch
 import torchvision
 import numpy as np
 from torch import nn
-from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint
+from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint, HeadNet
 from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
