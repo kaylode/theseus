@@ -63,7 +63,7 @@ class Trainer():
                         self.evaluate_epoch()
                 
                 if self.progressive_learning:
-                    if self.epoch == self.cfg.progressive_levels[self.progressive_level]:
+                    if self.epoch == self.cfg.progressive_steps[self.progressive_level]:
                         self.progressive_level_up()
 
                 if self.scheduler is not None and self.step_per_epoch:
@@ -312,11 +312,11 @@ class Trainer():
 
     def init_progressive_level(self):
         self.progressive_level = 0
-        if len(self.cfg.progressive_levels) == 0:
+        if len(self.cfg.progressive_steps) == 0:
             self.progressive_learning = False
         else:
             self.progressive_learning = True
-            for level in self.cfg.progressive_levels:
+            for level in self.cfg.progressive_steps:
                 if self.epoch >= level:
                     self.progressive_level_up()
                 else:
