@@ -49,7 +49,7 @@ def change_box_order(boxes, order):
             new_boxes[:,3] = boxes[:,3] - boxes[:,1]
             return new_boxes
 
-def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
+def filter_area(boxes, labels, confidence_score=None, min_wh=10, max_wh=4096):
     """
     Boxes in xyxy format
     """
@@ -68,10 +68,14 @@ def filter_area(boxes, confidence_score, labels, min_wh=10, max_wh=4096):
 
     # Picked bounding boxes
     picked_boxes = boxes[picked_index]
-    picked_score = confidence_score[picked_index]
     picked_classes = labels[picked_index]
-
-    return np.array(picked_boxes), np.array(picked_score), np.array(picked_classes)
+    if confidence_score is not None:
+        picked_score = confidence_score[picked_index]
+    
+    if confidence_score is not None:
+        return np.array(picked_boxes), np.array(picked_score), np.array(picked_classes)
+    else:
+        return np.array(picked_boxes), np.array(picked_classes)
 
 def resize_postprocessing(boxes, current_img_size, ori_img_size, keep_ratio=False):
     """
@@ -156,7 +160,7 @@ def postprocessing(
 
     # Filter small area boxes
     boxes, scores, labels = filter_area(
-        boxes, scores, labels, min_wh=10, max_wh=4096
+        boxes, labels, scores, min_wh=2, max_wh=4096
     )
 
     current_img_size = current_img_size if current_img_size is not None else None

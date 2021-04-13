@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from utils.postprocess import change_box_order
+from utils.postprocess import change_box_order, filter_area
 from augmentations.transforms import Denormalize, get_resize_augmentation, get_augmentation
 from torch.utils.data import Dataset, DataLoader
 from pycocotools.coco import COCO
@@ -124,6 +124,10 @@ class CocoDataset(Dataset):
         image = image.astype(np.float32)
         boxes = boxes.astype(np.int32)
         labels = labels.astype(np.int32)
+
+        # Filter small area bboxes
+        boxes, labels = filter_area(boxes, labels, min_wh=2, max_wh=4096)
+
         return image, boxes, labels, img_id, img_name, ori_width, ori_height
 
 
