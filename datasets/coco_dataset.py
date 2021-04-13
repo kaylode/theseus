@@ -24,7 +24,7 @@ class CocoDataset(Dataset):
         self.cutmix = config.cutmix
         self.keep_ratio = config.keep_ratio
 
-        if len(config.progressive_levels) != 0 and train:
+        if len(config.progressive_steps) != 0 and train:
             self.size_ratios = [0.5, 0.75, 1.0]
            
         self.transforms = get_augmentation(_type="train") if train else get_augmentation(_type="val")
