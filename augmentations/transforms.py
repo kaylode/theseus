@@ -63,10 +63,10 @@ def get_augmentation(_type='train', level=None):
     transforms_list = [
         A.OneOf([
             A.MotionBlur(p=.2),
-            A.GaussianBlur(),
-            A.MedianBlur(blur_limit=3, p=0.3),
+            A.GaussianBlur(p=0.2),
+            A.MedianBlur(blur_limit=3, p=0.2),
             A.Blur(blur_limit=3, p=0.1),
-        ], p=0.3),
+        ], p=0.0),
 
         A.OneOf([
             A.RandomRotate90(p=0.3),

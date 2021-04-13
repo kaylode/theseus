@@ -44,7 +44,7 @@ class CocoDataset(Dataset):
 
     def set_progressive_level(self, level):
         if self.train:
-            new_image_size = [i * self.size_ratios[level] for i in self.image_size]
+            new_image_size = [int(i * self.size_ratios[level]) for i in self.image_size]
             self.resize_transforms = get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True)
             self.transforms = get_augmentation(_type="train", level=level)
             self.mixup = True if level >= 1 and self.mixup else False

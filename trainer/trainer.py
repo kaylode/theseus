@@ -50,6 +50,8 @@ class Trainer():
 
         self.start_iter = start_iter % len(self.trainloader)
 
+        self.init_progressive_level()
+
         print(f'===========================START TRAINING=================================')
         for epoch in range(self.epoch, self.num_epochs):
             try:
@@ -344,7 +346,7 @@ class Trainer():
         self.best_value = 0.0
         self.set_accumulate_step()
         self.set_amp()
-        self.init_progressive_level()
+        
         for i,j in kwargs.items():
             setattr(self, i, j)
 
