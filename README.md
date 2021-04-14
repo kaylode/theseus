@@ -2,10 +2,10 @@
 
 ## To-do list:
 - [ ] Autoanchors
-- [ ] Multi-scale training
 - [ ] Gradient checkpointing
 - [ ] Distributed data parallel
 - [ ] Sync BatchNorm
+- [x] Multi-scale training (only works for YOLOv5)
 - [x] Multi-GPU support (nn.DataParallel)
 - [x] Cutmix, Mixup, strong augmentations
 - [x] Test time augmentation
