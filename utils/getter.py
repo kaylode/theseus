@@ -16,7 +16,7 @@ import math
 import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
-from utils.cuda import NativeScaler
+from utils.cuda import NativeScaler, get_devices_info
 
 from .random_seed import seed_everything
 

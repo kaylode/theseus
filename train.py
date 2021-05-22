@@ -12,7 +12,8 @@ def train(args, config):
     num_gpus = len(config.gpu_devices.split(','))
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-
+    devices_info = get_devices_info(config.gpu_devices)
+    
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
     net = BaseTimmModel(
@@ -90,6 +91,7 @@ def train(args, config):
     print()
     print(config)
     print(f'Training with {num_gpus} gpu(s)')
+    print(devices_info)
     print(f"Start training at [{start_epoch}|{start_iter}]")
     print(f"Current best MAP: {best_value}")
     
@@ -99,7 +101,6 @@ def train(args, config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('config' , default='config', type=str, help='project file that contains parameters')
     parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
     parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
     parser.add_argument('--gradcam_visualization', action='store_true', help='whether to visualize box to ./sample when validating (for debug), default=off')
