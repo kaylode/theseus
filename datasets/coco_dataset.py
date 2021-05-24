@@ -145,7 +145,7 @@ class CocoDataset(Dataset):
             labels = np.array(labels)
 
         if len(boxes) == 0:
-            return self.__getitem__(idx+1)
+            return self.__getitem__((idx+1)%len(self.image_ids))
         labels = torch.LongTensor(labels)
         boxes = torch.as_tensor(boxes, dtype=torch.float32) 
 
