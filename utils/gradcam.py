@@ -42,15 +42,15 @@ def show_cam_on_image(img, mask, label):
     heatmap = np.float32(heatmap) / 255
     cam = heatmap + np.float32(img)
     cam = cam / np.max(cam)
-
+    cam = np.uint8(255 * cam)
     cv2.putText(cam, str(label),
-                (10, 500),
+                (10, 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
-                (255, 255, 255),
+                (0, 255, 0),
                 2)
 
-    return np.uint8(255 * cam)
+    return cam
 
 
 class FeatureExtractor():
