@@ -76,8 +76,8 @@ settings:
   train_imgs: images/train
   val_imgs: images/val
   test_imgs: 
-  train_anns: annotations/instances_train2017.json    # class index must start from 1
-  val_anns: annotations/instances_val2017.json        # class index must start from 1
+  train_anns: annotations/instances_train.json    # class index must start from 1
+  val_anns: annotations/instances_val.json        # class index must start from 1
 ```
 
 ## Reference:
