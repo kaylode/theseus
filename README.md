@@ -36,7 +36,7 @@ this repo
 Details can be found in: https://cocodataset.org/#format-data
 ```
 {
-  "image": 
+  "images": 
   [
     {
       "id": int, 
@@ -46,7 +46,7 @@ Details can be found in: https://cocodataset.org/#format-data
     }, ...
   ],
 
-"annotation" : 
+"annotations" : 
   [
     {
       "id": int, 
