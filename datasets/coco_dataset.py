@@ -99,7 +99,7 @@ class CocoDataset(Dataset):
             box = np.array([np.asarray(i) for i in box])
             label = np.array(label)
         if len(box) == 0:
-            return self.load_image_and_boxes(idx+1)
+            return self.load_image_and_boxes((idx+1)%len(self.image_ids))
 
         return img, box, label, img_id, img_name, ori_width, ori_height
 
