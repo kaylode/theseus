@@ -1,5 +1,5 @@
 # Author: Zylo117
-
+import os
 import torch
 import torchvision
 import numpy as np
@@ -7,7 +7,7 @@ from torch import nn
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint, HeadNet
 from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
-from utils import download_pretrained_weights
+from utils.utils import download_pretrained_weights
 
 CACHE_DIR='./.cache'
 
@@ -258,10 +258,14 @@ class YoloBackbone(BaseBackbone):
             ckpt = torch.load(pretrained_backbone_path, map_location='cpu')  # load checkpoint
             self.model.load_state_dict(ckpt, strict=False) 
         else:
-            tmp_path = os.path.join(CACHE_DIR, f'yolo{self.version_name}.pth')
+            tmp_path = os.path.join(CACHE_DIR, f'yolo{version_name}.pth')
             download_pretrained_weights(f'yolov{version_name}', tmp_path)
             ckpt = torch.load(tmp_path, map_location='cpu')  # load checkpoint
-            self.model.load_state_dict(ckpt, strict=False) 
+            try:
+                ret = self.model.load_state_dict(ckpt, strict=False) 
+            except:
+                pass
+            print("Loaded pretrained model")
 
         self.model = nn.DataParallel(self.model).cuda()
         self.loss_fn = YoloLoss(
