@@ -5,6 +5,7 @@ import numpy as np
 import math
 import webcolors
 import cv2
+import gdown
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from torch.nn.init import _calculate_fan_in_and_fan_out, _no_grad_normal_
@@ -163,3 +164,23 @@ def write_to_video(img, boxes, labels, scores, imshow=True,  outvid = None, obj_
 
     if outvid is not None:
         outvid.write(img)
+
+def download_weights(id_or_url, cached=None, md5=None, quiet=False):
+    if id_or_url.startswith('http'):
+        url = id_or_url
+    else:
+        url = 'https://drive.google.com/uc?id={}'.format(id_or_url)
+
+    return gdown.cached_download(url=url, path=cached, md5=md5, quiet=quiet)
+
+
+weight_url = {
+    "yolov5s": "1-4XEt2xLtoTDF0RYEh-WlbQWi-HouJxR" ,
+    "yolov5m": "1-9ra0DEo5AjXmopm2cAkI_eqlD1DVwrF" ,
+    "yolov5l": "1-Bsl9DayZtKx-POlhZM2dN7PBo1dmbHJ",
+    "yolov5x": "1-HTVvUR88cXixngUbtScCSK42hlcNm1g",
+}
+
+def download_pretrained_weights(name, cached=None):
+    return download_weights(weight_url[name], cached)
+    
