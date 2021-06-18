@@ -15,9 +15,7 @@ class Checkpoint():
         # Create folder
         if self.path is None:
             self.path = os.path.join('weights',datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        else:
-            self.path = os.path.join(self.path,datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-
+        
 
     def save(self, model, save_mode='last', **kwargs):
         """

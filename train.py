@@ -1,6 +1,7 @@
 from utils.getter import *
 import argparse
 import os
+from datetime import datetime
 
 
 torch.backends.cudnn.benchmark = True
@@ -17,12 +18,6 @@ def train(args, config):
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
   
     net = get_model(args, config, device, num_classes=trainset.num_classes)
-
-    if args.saved_path is not None:
-        args.saved_path = os.path.join(args.saved_path, config.project_name)
-
-    if args.log_path is not None:
-        args.log_path = os.path.join(args.log_path, config.project_name)
 
     if config.tta:
         config.tta = TTA(
@@ -64,13 +59,18 @@ def train(args, config):
         lr_config=config.lr_scheduler,
         num_epochs=config.num_epochs)
 
+    
+    args.saved_path = os.path.join(
+        args.saved_path, 
+        datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+
     trainer = Trainer(config,
                      model,
                      trainloader, 
                      valloader,
                      checkpoint = Checkpoint(save_per_iter=args.save_interval, path = args.saved_path),
                      best_value=best_value,
-                     logger = Logger(log_dir=args.log_path),
+                     logger = Logger(log_dir=args.saved_path),
                      scheduler = scheduler,
                      evaluate_per_epoch = args.val_interval,
                      visualize_when_val = args.no_visualization,
@@ -99,7 +99,6 @@ if __name__ == '__main__':
     parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
     parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
     parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
-    parser.add_argument('--log_path', type=str, default='loggers/runs')
     parser.add_argument('--resume', type=str, default=None,
                         help='whether to load weights from a checkpoint, set None to initialize')
     parser.add_argument('--saved_path', type=str, default='./weights')
