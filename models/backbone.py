@@ -7,7 +7,9 @@ from torch import nn
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint, HeadNet
 from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
+from utils import download_pretrained_weights
 
+CACHE_DIR='./.cache'
 
 def get_model(args, config, device, num_classes):
     NUM_CLASSES = num_classes
@@ -43,9 +45,9 @@ def get_model(args, config, device, num_classes):
         version_name = config.model_name.split('v')[1]
         net = YoloBackbone(
             version_name=version_name,
-            device=device,
             num_classes=NUM_CLASSES, 
             max_pre_nms=max_pre_nms,
+            max_post_nms=max_post_nms,
             pretrained_backbone_path=config.pretrained_backbone)
   
     # if args.sync_bn:
@@ -219,8 +221,7 @@ class FRCNNBackbone(BaseBackbone):
 
 class YoloBackbone(BaseBackbone):
     def __init__(
-        self, 
-        device,
+        self,
         version_name='5s',
         num_classes=80, 
         pretrained_backbone_path=None, 
@@ -255,10 +256,12 @@ class YoloBackbone(BaseBackbone):
 
         if pretrained_backbone_path is not None:
             ckpt = torch.load(pretrained_backbone_path, map_location='cpu')  # load checkpoint
-            try:
-                self.model.load_state_dict(ckpt, strict=False) 
-            except:
-                pass
+            self.model.load_state_dict(ckpt, strict=False) 
+        else:
+            tmp_path = os.path.join(CACHE_DIR, f'yolo{self.version_name}.pth')
+            download_pretrained_weights(f'yolov{version_name}', tmp_path)
+            ckpt = torch.load(tmp_path, map_location='cpu')  # load checkpoint
+            self.model.load_state_dict(ckpt, strict=False) 
 
         self.model = nn.DataParallel(self.model).cuda()
         self.loss_fn = YoloLoss(
