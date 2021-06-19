@@ -64,8 +64,8 @@ class Trainer():
                     self.scheduler.step()
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
-                    log_dict = {'Learning rate/Epoch': lr}
-                    self.logging(log_dict)
+                    log_dict = {'Training/Learning rate': lr}
+                    self.logging(log_dict, step=self.epoch)
                 
 
             except KeyboardInterrupt:   
@@ -102,8 +102,8 @@ class Trainer():
                         self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
                         lrl = [x['lr'] for x in self.optimizer.param_groups]
                         lr = sum(lrl) / len(lrl)
-                        log_dict = {'Learning rate/Iterations': lr}
-                        self.logging(log_dict)
+                        log_dict = {'Training/Learning rate': lr}
+                        self.logging(log_dict, step=self.iters)
             else:
                 self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
                 self.optimizer.zero_grad()
@@ -112,8 +112,8 @@ class Trainer():
                     self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
-                    log_dict = {'Learning rate/Iterations': lr}
-                    self.logging(log_dict)
+                    log_dict = {'Training/Learning rate': lr}
+                    self.logging(log_dict, step=self.iters)
                 
             torch.cuda.synchronize()
 
@@ -134,7 +134,7 @@ class Trainer():
                     running_loss[key] = np.round(running_loss[key], 5)
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
                 print("[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(self.epoch, self.num_epochs, self.iters, self.num_iters,loss_string, running_time))
-                self.logging({"Training Loss/Batch" : running_loss['T']/ self.print_per_iter,})
+                self.logging({"Training/Batch Loss" : running_loss['T']/ self.print_per_iter,}, step=self.iters)
                 running_loss = {}
                 running_time = 0
 
@@ -181,9 +181,10 @@ class Trainer():
         print()
         print('==========================================================================')
 
-        log_dict = {"Validation Loss/Epoch" : epoch_loss['T'] / len(self.valloader),}
-        log_dict.update(metric_dict)
-        self.logging(log_dict)
+        log_dict = {"Validation/Epoch Loss" : epoch_loss['T'] / len(self.valloader),}
+        metric_log_dict = {f"Validation/{k}":v for k,v in metric_dict.items()}
+        log_dict.update(metric_log_dict)
+        self.logging(log_dict, step=self.epoch)
 
         # Save model gives best mAP score
         if metric_dict['acc'] > self.best_value:
@@ -201,7 +202,6 @@ class Trainer():
         denom = Denormalize()
         batch = next(iter(self.valloader))
         images = batch["imgs"]
-        #targets = batch["targets"]
 
         self.model.eval()
 
@@ -219,11 +219,13 @@ class Trainer():
             img_cam = show_cam_on_image(img_show, grayscale_cam, label)
             cv2.imwrite(image_outname, img_cam)
 
+        img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
+        self.logger.write_image('samples', img_cam, step=self.epoch)
 
-    def logging(self, logs):
+    def logging(self, logs, step):
         tags = [l for l in logs.keys()]
         values = [l for l in logs.values()]
-        self.logger.write(tags= tags, values= values)
+        self.logger.write(tags= tags, values= values, step=step)
 
     def set_accumulate_step(self):
         self.use_accumulate = False
