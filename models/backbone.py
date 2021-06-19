@@ -5,6 +5,7 @@ import torchvision
 import numpy as np
 from torch import nn
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint, HeadNet
+from .effdetv2 import EfficientDetV2, FocalLoss, ClipBoxes, BBoxTransform
 from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 from utils.utils import download_pretrained_weights
@@ -25,15 +26,19 @@ def get_model(args, config, device, num_classes):
     if config.model_name.startswith('efficientdet'):
         compound_coef = config.model_name.split('-')[1]
         assert compound_coef in [f'd{i}' for i in range(8)], f"efficientdet version {i} is not supported"
-        net = EfficientDetBackbone(
-            num_classes=NUM_CLASSES, 
-            compound_coef=compound_coef, 
-            load_weights=load_weights, 
-            freeze_backbone = getattr(args, 'freeze_backbone', False),
-            pretrained_backbone_path=config.pretrained_backbone,
-            freeze_batchnorm = getattr(args, 'freeze_bn', False),
-            max_pre_nms=max_pre_nms,
-            image_size=config.image_size)
+
+        # net = EfficientDetBackbone(
+        #     num_classes=NUM_CLASSES, 
+        #     compound_coef=compound_coef, 
+        #     load_weights=load_weights, 
+        #     freeze_backbone = getattr(args, 'freeze_backbone', False),
+        #     pretrained_backbone_path=config.pretrained_backbone,
+        #     freeze_batchnorm = getattr(args, 'freeze_bn', False),
+        #     max_pre_nms=max_pre_nms,
+        #     image_size=config.image_size)
+
+        net = EfficientDetV2BackBone()
+
     elif config.model_name.startswith('fasterrcnn'):
         backbone_name = config.model_name.split('-')[1]
         net = FRCNNBackbone(
@@ -149,7 +154,66 @@ class EfficientDetBackbone(BaseBackbone):
                 })
 
         return out
+
+class EfficientDetV2Backbone(BaseBackbone):
+    def __init__(
+        self, 
+        num_classes=80, 
+        compound_coef='d0', 
+        load_weights=False, 
+        image_size=[512,512], 
+        pretrained_backbone_path=None, 
+        freeze_backbone=False, 
+        freeze_batchnorm = False,
+        max_pre_nms=None,
+        **kwargs):
+
+        super(EfficientDetV2Backbone, self).__init__(**kwargs)
+        self.name = f'efficientdetv2-{compound_coef}'
+
+        self.regressBoxes = BBoxTransform()
+        self.clipBoxes = ClipBoxes()
+
+        self.model = EfficientDetV2(
+            num_classes=num_classes, 
+            compound_coef=compound_coef, 
+            load_weights=load_weights,
+            ratios=[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)],
+            scales=[2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
+
+        self.loss = FocalLoss()
+        
+    def forward(self, batch, device):
+        self.model.train()
+
+        inputs = batch["imgs"]
+        targets = batch['targets']
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+
+        _, regression, classification, anchors = self.model(inputs)
+        return self.loss(classification, regression, anchors, targets)
     
+    def detect(self, batch, device):
+        self.model.eval()
+
+        inputs = batch["imgs"]
+        inputs = inputs.to(device)
+
+        with torch.no_grad():
+            _, regression, classification, anchors = self.model(inputs)
+        
+        out = self.model.detect(
+            inputs, 
+            anchors, 
+            regression, 
+            classification, 
+            self.regressBoxes, 
+            self.clipBoxes)
+        
+        return out
+        
 class FRCNNBackbone(BaseBackbone):
     def __init__(
         self, 
