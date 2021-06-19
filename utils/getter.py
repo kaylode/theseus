@@ -104,38 +104,7 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
 
 def get_dataset_and_dataloader(config):
 
-    if config.model_name.startswith('efficientdetv2'):
-        box_format = 'xyxy' # Output of __getitem__ method  
-        def collate_fn(self, batch):
-            imgs = torch.stack([s['img'] for s in batch])
-            # annots = [s['target'] for s in batch]
-            annots = [torch.cat([s['target']['boxes'] , s['target']['labels'].unsqueeze(1)], dim=1) for s in batch]
-
-            img_ids = [s['img_id'] for s in batch]
-            img_names = [s['img_name'] for s in batch]
-            img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
-            img_sizes = torch.tensor([imgs[0].shape[-2:]]*len(batch), dtype=torch.float)
-            ori_sizes = [s['ori_size'] for s in batch]
-
-            max_num_annots = max(annot.shape[0] for annot in annots)
-            if max_num_annots > 0:
-                targets = torch.ones((len(annots), max_num_annots, 5)) * -1
-                for idx, annot in enumerate(annots):
-                    if annot.shape[0] > 0:
-                        targets[idx, :annot.shape[0], :] = annot
-            else:
-                targets = torch.ones((len(annots), 1, 5)) * -1
-
-            return {
-                'imgs': imgs, 
-                'targets': targets, 
-                'img_ids': img_ids,
-                'img_names': img_names,
-                'img_sizes': img_sizes, 
-                'img_scales': img_scales,
-                'ori_sizes': ori_sizes}
-
-    elif config.model_name.startswith('efficientdet'):
+    if config.model_name.startswith('efficientdet'):
         box_format = 'yxyx' # Output of __getitem__ method  
         def collate_fn(self, batch):
             imgs = torch.stack([s['img'] for s in batch])
@@ -155,26 +124,6 @@ def get_dataset_and_dataloader(config):
                 'img_scales': img_scales,
                 'ori_sizes': ori_sizes}
 
-    elif config.model_name.startswith('fasterrcnn'):
-        box_format = 'xyxy' # Output of __getitem__ method
-        def collate_fn(self, batch):
-            imgs = torch.stack([s['img'] for s in batch], dim=0)
-            targets = [s['target'] for s in batch]
-            img_ids = [s['img_id'] for s in batch]
-            img_names = [s['img_name'] for s in batch]
-            
-            img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
-            img_sizes = torch.tensor([config.image_size]*len(batch), dtype=torch.float)
-            ori_sizes = [s['ori_size'] for s in batch]
-
-            return {
-                'imgs': imgs, 
-                'targets': targets, 
-                'img_ids': img_ids,
-                'img_names': img_names,
-                'img_sizes': img_sizes, 
-                'img_scales': img_scales,
-                'ori_sizes': ori_sizes}
                 
     elif config.model_name.startswith('yolo'):
         box_format = 'xyxy' # Output of __getitem__ method

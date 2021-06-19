@@ -5,8 +5,6 @@ import torchvision
 import numpy as np
 from torch import nn
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain, load_pretrained, load_checkpoint, HeadNet
-from .effdetv2 import EfficientDetV2, FocalLoss, ClipBoxes, BBoxTransform
-from .frcnn import create_fasterrcnn_fpn
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 from utils.utils import download_pretrained_weights
 
@@ -27,29 +25,16 @@ def get_model(args, config, device, num_classes):
         compound_coef = config.model_name.split('-')[1]
         assert compound_coef in [f'd{i}' for i in range(8)], f"efficientdet version {i} is not supported"
 
-        if config.model_name.startswith('efficientdetv2'):
-            net = EfficientDetV2Backbone(
-                num_classes=NUM_CLASSES, 
-                compound_coef=compound_coef, 
-                load_weights=load_weights)
-        else:
-            net = EfficientDetBackbone(
-                num_classes=NUM_CLASSES, 
-                compound_coef=compound_coef, 
-                load_weights=load_weights, 
-                freeze_backbone = getattr(args, 'freeze_backbone', False),
-                pretrained_backbone_path=config.pretrained_backbone,
-                freeze_batchnorm = getattr(args, 'freeze_bn', False),
-                max_pre_nms=max_pre_nms,
-                image_size=config.image_size)
-
-    elif config.model_name.startswith('fasterrcnn'):
-        backbone_name = config.model_name.split('-')[1]
-        net = FRCNNBackbone(
-            backbone_name=backbone_name,
+        net = EfficientDetBackbone(
             num_classes=NUM_CLASSES, 
-            pretrained=True,
+            compound_coef=compound_coef, 
+            load_weights=load_weights, 
+            freeze_backbone = getattr(args, 'freeze_backbone', False),
+            pretrained_backbone_path=config.pretrained_backbone,
+            freeze_batchnorm = getattr(args, 'freeze_bn', False),
+            max_pre_nms=max_pre_nms,
             image_size=config.image_size)
+
     elif config.model_name.startswith('yolo'):
         version_name = config.model_name.split('v')[1]
         net = YoloBackbone(
@@ -85,6 +70,7 @@ class EfficientDetBackbone(BaseBackbone):
         freeze_backbone=False, 
         freeze_batchnorm = False,
         max_pre_nms=None,
+        max_post_nms=None,
         **kwargs):
 
         super(EfficientDetBackbone, self).__init__(**kwargs)
@@ -95,8 +81,12 @@ class EfficientDetBackbone(BaseBackbone):
 
         if max_pre_nms is None:
             max_pre_nms = 5000
+        
+        if max_post_nms is None:
+            max_post_nms = 100
 
         config.max_detection_points = max_pre_nms 
+        config.max_det_per_image = max_post_nms 
         
         net = EfficientDet(
             config, 
@@ -144,129 +134,6 @@ class EfficientDetBackbone(BaseBackbone):
             labels = output[:, -1]
             scores = output[:,-2]
 
-            if len(boxes) > 0:
-                out.append({
-                    'bboxes': boxes,
-                    'classes': labels,
-                    'scores': scores,
-                })
-            else:
-                out.append({
-                    'bboxes': np.array(()),
-                    'classes': np.array(()),
-                    'scores': np.array(()),
-                })
-
-        return out
-
-class EfficientDetV2Backbone(BaseBackbone):
-    def __init__(
-        self, 
-        num_classes=80, 
-        compound_coef='d0', 
-        load_weights=False, 
-        **kwargs):
-
-        super(EfficientDetV2Backbone, self).__init__(**kwargs)
-        self.name = f'efficientdetv2-{compound_coef}'
-
-        self.regressBoxes = BBoxTransform()
-        self.clipBoxes = ClipBoxes()
-
-        self.model = EfficientDetV2(
-            num_classes=num_classes, 
-            compound_coef=int(compound_coef[-1]), 
-            load_weights=load_weights,
-            ratios=[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)],
-            scales=[2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])
-
-        self.loss = FocalLoss()
-        
-    def forward(self, batch, device):
-        self.model.train()
-
-        inputs = batch["imgs"]
-        targets = batch['targets']
-
-        inputs = inputs.to(device)
-        targets = targets.to(device)
-
-        _, regression, classification, anchors = self.model(inputs)
-        return self.loss(classification, regression, anchors, targets)
-    
-    def detect(self, batch, device):
-        self.model.eval()
-
-        inputs = batch["imgs"]
-        inputs = inputs.to(device)
-
-        with torch.no_grad():
-            _, regression, classification, anchors = self.model(inputs)
-        
-        out = self.model.detect(
-            inputs, 
-            anchors, 
-            regression, 
-            classification, 
-            self.regressBoxes, 
-            self.clipBoxes)
-        
-        return out
-        
-class FRCNNBackbone(BaseBackbone):
-    def __init__(
-        self, 
-        backbone_name,
-        num_classes=80, 
-        image_size=[512,512], 
-        pretrained=False,
-        **kwargs):
-        
-        super(FRCNNBackbone, self).__init__(**kwargs)
-        self.name = f'fasterrcnn-{backbone_name}'
-        self.model = create_fasterrcnn_fpn(
-            backbone_name,
-            pretrained=pretrained, 
-            num_classes=num_classes, 
-            min_size = image_size[0], 
-            max_size = image_size[1])
-        self.num_classes = num_classes
-
-    def forward(self, batch, device):
-        self.model.train()
-
-        # Tensor of images
-        inputs = batch["imgs"]
-
-        # Unwrap tensor into list of images
-        inputs = [i for i in inputs]
-        
-        targets = batch['targets']
-
-        inputs = list(image.to(device) for image in inputs)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
-        loss_dict = self.model(inputs, targets)
-        loss_dict = {k:v.mean() for k,v in loss_dict.items()}
-        loss = sum(loss for loss in loss_dict.values())
-        ret_loss_dict = {
-            'T': loss,
-            'C': loss_dict['loss_classifier'],
-            'B': loss_dict['loss_box_reg'],
-            'O': loss_dict['loss_objectness'],
-            'RPN': loss_dict['loss_rpn_box_reg'],     
-        }
-        return ret_loss_dict
-
-    def detect(self, batch, device):
-        inputs = batch["imgs"]
-        inputs = list(image.to(device) for image in inputs)
-        outputs =  self.model(inputs)
-        out = []
-        for i, output in enumerate(outputs):
-            boxes = output['boxes'].data.cpu().numpy()
-            labels = output['labels'].data.cpu().numpy()
-            scores = output['scores'].data.cpu().numpy()
             if len(boxes) > 0:
                 out.append({
                     'bboxes': boxes,
