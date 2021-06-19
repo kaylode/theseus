@@ -318,7 +318,7 @@ class Trainer():
         else:
             self.progressive_learning = True
             for level in self.cfg.progressive_steps:
-                if self.epoch >= level:
+                if self.epoch > level:
                     self.progressive_level_up()
                 else:
                     break
