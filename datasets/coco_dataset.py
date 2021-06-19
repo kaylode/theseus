@@ -23,16 +23,18 @@ class CocoDataset(Dataset):
         self.mixup = config.mixup
         self.cutmix = config.cutmix
         self.keep_ratio = config.keep_ratio
+        self.multiscale_training = config.multiscale
+        self.box_format = 'yxyx' # Output format of the __getitem__
+        self.train = train
 
         if len(config.progressive_steps) != 0 and train:
             self.size_ratios = [0.5, 0.75, 1.0]
-           
-        self.transforms = get_augmentation(_type="train") if train else get_augmentation(_type="val")
+        
+        if self.multiscale_training and train:
+            self.init_multiscale_training()
+            
         self.resize_transforms = get_resize_augmentation(config.image_size, config.keep_ratio, box_transforms=True)
-
-        self.box_format = 'yxyx' # Output format of the __getitem__
-
-        self.train = train
+        self.transforms = get_augmentation(_type="train") if train else get_augmentation(_type="val")
 
         self.coco = COCO(ann_path)
         self.image_ids = self.coco.getImgIds()
@@ -41,6 +43,19 @@ class CocoDataset(Dataset):
 
     def set_box_format(self, format):
         self.box_format = format
+
+    def init_multiscale_training(self):
+        self.scale_list = [0.25, 0.5, 0.75, 1]
+        self.resize_transforms_list = []
+
+        for i in self.scale_list:
+            new_image_size = [int(i*self.image_size[0]), int(i*self.image_size[1])]
+            self.resize_transforms_list.append(
+                get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True))
+
+    def get_random_scale(self):
+        scale = random.choice(range(len(self.scale_list)-1))
+        return self.resize_transforms_list[scale]
 
     def set_progressive_level(self, level):
         if self.train:
@@ -86,6 +101,13 @@ class CocoDataset(Dataset):
         box = annot[:, :4]
         label = annot[:, -1]
         box = change_box_order(box, order = 'xywh2xyxy')
+
+        if self.train:
+            if self.multiscale_training:
+                if random.random() > 0.75:
+                    self.resize_transforms = self.get_random_scale()
+                else:
+                    self.resize_transforms = self.resize_transforms_list[-1]
 
         if self.resize_transforms is not None:
             resized = self.resize_transforms(
