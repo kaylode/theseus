@@ -147,8 +147,8 @@ class Trainer():
                 running_loss = {}
                 running_time = 0
 
-            if (self.iters % self.checkpoint.save_per_iter == 0 or self.iters == self.num_iters - 1):
-                print(f'Save model at [{self.epoch}|{self.iters}] to last.pth')
+            if (self.iters % self.checkpoint.save_per_iter == 0 or self.num_iters == self.num_iters - 1):
+                print(f'Save model at [{self.iters}|{self.iters}] to last.pth')
                 self.checkpoint.save(
                     self.model, 
                     save_mode = 'last', 
