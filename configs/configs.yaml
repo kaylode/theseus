@@ -41,7 +41,7 @@ settings:
     weight_decay: 0.0005
 
   lr_scheduler:
-    name: "cosine"                      #[plateau | cosine | 1cycle-yolo | 1cycle]
+    name: "1cycle-yolo"                      #[plateau | cosine | 1cycle-yolo | 1cycle]
                                         # if need to specify more scheduler arguments, do it here
 
   # gradient accumulation

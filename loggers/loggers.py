@@ -16,13 +16,13 @@ class Logger():
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
         self.writer = SummaryWriter(log_dir=self.log_dir)
-        self.iters = {}
 
-    def write(self, tags, values):
+    def write(self, tags, values, step):
         """
         Write a log to specified directory
         :param tags: (str) tag for log
         :param values: (number) value for corresponding tag
+        :param step: (int) logging step
         """
         if not isinstance(tags, list):
             tags = list(tags)
@@ -30,18 +30,15 @@ class Logger():
             values = list(values)
 
         for i, (tag, value) in enumerate(zip(tags,values)):
-            if tag not in self.iters.keys():
-                self.iters[tag] = 0
-            self.writer.add_scalar(tag, value, self.iters[tag])
-            self.iters[tag] += 1
+            self.writer.add_scalar(tag, value, step)
 
-    def write_image(self, tag, image):
+    def write_image(self, tag, image, step):
         """
         Write a matplotlib fig to tensorboard
+        :param tags: (str) tag for log
+        :param image: (image) image to log
+        :param step: (int) logging step
         """
-        if tag not in self.iters.keys():
-            self.iters[tag] = 0
 
-        self.writer.add_figure(tag, image, global_step=self.iters[tag])
-        self.iters[tag] += 1
+        self.writer.add_figure(tag, image, global_step=step)
 
