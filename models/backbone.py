@@ -27,17 +27,21 @@ def get_model(args, config, device, num_classes):
         compound_coef = config.model_name.split('-')[1]
         assert compound_coef in [f'd{i}' for i in range(8)], f"efficientdet version {i} is not supported"
 
-        # net = EfficientDetBackbone(
-        #     num_classes=NUM_CLASSES, 
-        #     compound_coef=compound_coef, 
-        #     load_weights=load_weights, 
-        #     freeze_backbone = getattr(args, 'freeze_backbone', False),
-        #     pretrained_backbone_path=config.pretrained_backbone,
-        #     freeze_batchnorm = getattr(args, 'freeze_bn', False),
-        #     max_pre_nms=max_pre_nms,
-        #     image_size=config.image_size)
-
-        net = EfficientDetV2BackBone()
+        if config.model_name.startswith('efficientdetv2'):
+            net = EfficientDetV2Backbone(
+                num_classes=NUM_CLASSES, 
+                compound_coef=compound_coef, 
+                load_weights=load_weights)
+        else:
+            net = EfficientDetBackbone(
+                num_classes=NUM_CLASSES, 
+                compound_coef=compound_coef, 
+                load_weights=load_weights, 
+                freeze_backbone = getattr(args, 'freeze_backbone', False),
+                pretrained_backbone_path=config.pretrained_backbone,
+                freeze_batchnorm = getattr(args, 'freeze_bn', False),
+                max_pre_nms=max_pre_nms,
+                image_size=config.image_size)
 
     elif config.model_name.startswith('fasterrcnn'):
         backbone_name = config.model_name.split('-')[1]
@@ -161,11 +165,6 @@ class EfficientDetV2Backbone(BaseBackbone):
         num_classes=80, 
         compound_coef='d0', 
         load_weights=False, 
-        image_size=[512,512], 
-        pretrained_backbone_path=None, 
-        freeze_backbone=False, 
-        freeze_batchnorm = False,
-        max_pre_nms=None,
         **kwargs):
 
         super(EfficientDetV2Backbone, self).__init__(**kwargs)
@@ -176,7 +175,7 @@ class EfficientDetV2Backbone(BaseBackbone):
 
         self.model = EfficientDetV2(
             num_classes=num_classes, 
-            compound_coef=compound_coef, 
+            compound_coef=int(compound_coef[-1]), 
             load_weights=load_weights,
             ratios=[(1.0, 1.0), (1.4, 0.7), (0.7, 1.4)],
             scales=[2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)])

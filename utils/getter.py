@@ -108,7 +108,9 @@ def get_dataset_and_dataloader(config):
         box_format = 'xyxy' # Output of __getitem__ method  
         def collate_fn(self, batch):
             imgs = torch.stack([s['img'] for s in batch])
-            annots = [s['target'] for s in batch]
+            # annots = [s['target'] for s in batch]
+            annots = [torch.cat([s['target']['boxes'] , s['target']['labels'].unsqueeze(1)], dim=1) for s in batch]
+
             img_ids = [s['img_id'] for s in batch]
             img_names = [s['img_name'] for s in batch]
             img_scales = torch.tensor([1.0]*len(batch), dtype=torch.float)
