@@ -5,22 +5,18 @@ settings:
   train_imgs: train
   val_imgs: val
   test_imgs: test
-
-  obj_list: [
-      "No Finding",
-      "Finding"
-  ]
   
   #################   TRAINING CONFIG   ###################
   
   model_name: 'efficientnet_b6' #[]
+  loss_fn: 'ce' #[ce | focal]
 
-  pretrained_backbone: ''                  # Pretrained backbone
+  # pretrained_backbone: ''                  # Pretrained backbone
   
-  gpu_devices: '0,1'                     # supports multi-gpus
+  gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 100
-  batch_size: 8
-  num_workers: 4
+  batch_size: 32
+  num_workers: 2
   
   image_size: [512,512]               # should be square to prevent bugs [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
   keep_ratio: False                     # whether to use resize padding
