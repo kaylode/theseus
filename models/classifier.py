@@ -32,11 +32,16 @@ class Classifier(BaseModel):
         loss_dict = {'T': loss.item()}
         return loss, loss_dict
 
-    def inference_step(self, batch):
+    def inference_step(self, batch, return_probs=False):
         outputs = self.model(batch, self.device)
         preds = torch.argmax(outputs, dim=1)
         preds = preds.detach()
-        return preds.numpy()
+        if return_probs:
+            probs = torch.max(outputs, dim=1)
+            probs = probs.detach()
+            return preds.numpy(), probs.numpy()
+        else:
+            return preds.numpy()
 
     def evaluate_step(self, batch):
         outputs = self.model(batch, self.device)
