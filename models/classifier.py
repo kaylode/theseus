@@ -37,9 +37,9 @@ class Classifier(BaseModel):
         preds = torch.argmax(outputs, dim=1)
         preds = preds.detach()
         if return_probs:
-            probs = torch.max(outputs, dim=1)
-            probs = probs.detach()
-            return preds.numpy(), probs.numpy()
+            probs = torch.nn.functional.softmax(outputs, dim=1)
+            probs, _ = torch.max(probs, dim=1)
+            return preds.cpu().numpy(), probs.cpu().numpy()
         else:
             return preds.numpy()
 

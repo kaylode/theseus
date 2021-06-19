@@ -17,7 +17,6 @@ parser = argparse.ArgumentParser(description='Classify an image / folder of imag
 parser.add_argument('--weight', type=str ,help='trained weight')
 parser.add_argument('--input_path', type=str, help='path to an image to inference')
 parser.add_argument('--output_path', type=str, help='path to save csv result file')
-args = parser.parse_args() 
   
 class_mapping = [
     "No Finding",
@@ -60,8 +59,7 @@ class Testset():
         }
 
     def collate_fn(self, batch):
-        imgs = torch.stack([s['img'] for s in batch])   
-        ori_imgs = [s['ori_img'] for s in batch]
+        imgs = torch.stack([s['img'] for s in batch])  
         img_names = [s['img_name'] for s in batch]
         return {
             'imgs': imgs,
@@ -151,6 +149,11 @@ def main(args, config):
     })
 
 
-    result_df.to_csv(args.output_path)
+    result_df.to_csv(args.output_path, index=False)
 
     print(f"Result file is saved to {args.output_path}")
+
+if __name__ == '__main__':
+    config = Config(os.path.join('configs','configs.yaml'))
+    args = parser.parse_args()
+    main(args,config)
