@@ -220,7 +220,7 @@ class Trainer():
             cv2.imwrite(image_outname, img_cam)
 
         img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
-        self.logger.write_image('samples', img_cam, step=self.epoch)
+        self.logger.write_image(f'samples/{self.epoch}_{self.iters}_{idx}', img_cam, step=self.epoch)
 
     def logging(self, logs, step):
         tags = [l for l in logs.keys()]
