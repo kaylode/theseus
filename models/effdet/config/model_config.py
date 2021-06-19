@@ -1,7 +1,5 @@
 """EfficientDet Configurations
-
 Adapted from official impl at https://github.com/google/automl/tree/master/efficientdet
-
 TODO use a different config system (OmegaConfig -> Hydra?), separate model from train specific hparams
 """
 
@@ -18,6 +16,7 @@ def default_detection_model_configs():
 
     h.backbone_name = 'tf_efficientnet_b1'
     h.backbone_args = None  # FIXME sort out kwargs vs config for backbone creation
+    h.backbone_indices = None
 
     # model specific, input preprocessing parameters
     h.image_size = (640, 640)
@@ -62,7 +61,7 @@ def default_detection_model_configs():
     # classification loss (used by train bench)
     h.alpha = 0.25
     h.gamma = 1.5
-    h.label_smoothing = 0.0  # only supported if legacy_focal == False, haven't produced great results
+    h.label_smoothing = 0.  # only supported if legacy_focal == False, haven't produced great results
     h.legacy_focal = False  # use legacy focal loss (less stable, lower memory use in some cases)
     h.jit_loss = False  # torchscript jit for loss fn speed improvement, can impact stability and/or increase mem usage
 
@@ -167,7 +166,7 @@ efficientdet_model_param_dict = dict(
     cspresdet50=dict(
         name='cspresdet50',
         backbone_name='cspresnet50',
-        image_size=(640, 640),
+        image_size=(768, 768),
         aspect_ratios=[1.0, 2.0, 0.5],
         fpn_channels=88,
         fpn_cell_repeats=4,
@@ -175,13 +174,13 @@ efficientdet_model_param_dict = dict(
         pad_type='',
         act_type='leaky_relu',
         head_act_type='silu',
-        downsample_type='max',
+        downsample_type='bilinear',
         upsample_type='bilinear',
         redundant_bias=False,
         separable_conv=False,
         head_bn_level_first=True,
         backbone_args=dict(drop_path_rate=0.2),
-        url='',
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/cspresdet50b-386da277.pth',
     ),
     cspresdext50=dict(
         name='cspresdext50',
@@ -230,7 +229,29 @@ efficientdet_model_param_dict = dict(
         separable_conv=False,
         head_bn_level_first=True,
         backbone_args=dict(drop_path_rate=0.2),
+        backbone_indices=(3, 4, 5),
         url='',
+    ),
+    cspdarkdet53m=dict(
+        name='cspdarkdet53m',
+        backbone_name='cspdarknet53',
+        image_size=(768, 768),
+        aspect_ratios=[1.0, 2.0, 0.5],
+        fpn_channels=96,
+        fpn_cell_repeats=4,
+        box_class_repeats=3,
+        pad_type='',
+        fpn_name='qufpn_fa',
+        act_type='leaky_relu',
+        head_act_type='mish',
+        downsample_type='bilinear',
+        upsample_type='bilinear',
+        redundant_bias=False,
+        separable_conv=False,
+        head_bn_level_first=True,
+        backbone_args=dict(drop_path_rate=0.2),
+        backbone_indices=(3, 4, 5),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/cspdarkdet53m-79062b2d.pth',
     ),
     mixdet_m=dict(
         name='mixdet_m',
@@ -328,10 +349,12 @@ efficientdet_model_param_dict = dict(
         box_class_repeats=3,
         pad_type='',
         fpn_name='qufpn_fa',  # quad-fpn + fast attn experiment
+        downsample_type='bilinear',
+        upsample_type='bilinear',
         redundant_bias=False,
         head_bn_level_first=True,
         backbone_args=dict(drop_path_rate=0.2),
-        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/efficientdet_q1-b238aba5.pth',
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/efficientdet_q1b-d0612140.pth',
     ),
     efficientdet_q2=dict(
         name='efficientdet_q2',
@@ -505,6 +528,87 @@ efficientdet_model_param_dict = dict(
         fpn_name='bifpn_sum',  # Use unweighted sum for training stability.
         backbone_args=dict(drop_path_rate=0.2),
         url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d7x-f390b87c.pth'
+    ),
+
+    #  Models ported from Tensorflow AdvProp+AA weights
+    #  https://github.com/google/automl/blob/master/efficientdet/Det-AdvProp.md
+    tf_efficientdet_d0_ap=dict(
+        name='tf_efficientdet_d0_ap',
+        backbone_name='tf_efficientnet_b0',
+        image_size=(512, 512),
+        fpn_channels=64,
+        fpn_cell_repeats=3,
+        box_class_repeats=3,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d0_ap-d0cdbd0a.pth',
+    ),
+    tf_efficientdet_d1_ap=dict(
+        name='tf_efficientdet_d1_ap',
+        backbone_name='tf_efficientnet_b1',
+        image_size=(640, 640),
+        fpn_channels=88,
+        fpn_cell_repeats=4,
+        box_class_repeats=3,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d1_ap-7721d075.pth'
+    ),
+    tf_efficientdet_d2_ap=dict(
+        name='tf_efficientdet_d2_ap',
+        backbone_name='tf_efficientnet_b2',
+        image_size=(768, 768),
+        fpn_channels=112,
+        fpn_cell_repeats=5,
+        box_class_repeats=3,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d2_ap-a2995c19.pth',
+    ),
+    tf_efficientdet_d3_ap=dict(
+        name='tf_efficientdet_d3_ap',
+        backbone_name='tf_efficientnet_b3',
+        image_size=(896, 896),
+        fpn_channels=160,
+        fpn_cell_repeats=6,
+        box_class_repeats=4,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d3_ap-e4a2feab.pth',
+    ),
+    tf_efficientdet_d4_ap=dict(
+        name='tf_efficientdet_d4_ap',
+        backbone_name='tf_efficientnet_b4',
+        image_size=(1024, 1024),
+        fpn_channels=224,
+        fpn_cell_repeats=7,
+        box_class_repeats=4,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d4_ap-f601a5fc.pth',
+    ),
+    tf_efficientdet_d5_ap=dict(
+        name='tf_efficientdet_d5_ap',
+        backbone_name='tf_efficientnet_b5',
+        image_size=(1280, 1280),
+        fpn_channels=288,
+        fpn_cell_repeats=7,
+        box_class_repeats=4,
+        mean=(0.5, 0.5, 0.5),
+        std=(0.5, 0.5, 0.5),
+        fill_color=0,
+        backbone_args=dict(drop_path_rate=0.2),
+        url='https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d5_ap-3673ae5d.pth',
     ),
 
     # The lite configs are in TF automl repository but no weights yet and listed as 'not final'

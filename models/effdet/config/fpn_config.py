@@ -40,10 +40,8 @@ def bifpn_config(min_level, max_level, weight_method=None):
 
 def panfpn_config(min_level, max_level, weight_method=None):
     """PAN FPN config.
-
     This defines FPN layout from Path Aggregation Networks as an alternate to
     BiFPN, it does not implement the full PAN spec.
-
     Paper: https://arxiv.org/abs/1803.01534
     """
     p = OmegaConf.create()
@@ -80,10 +78,8 @@ def panfpn_config(min_level, max_level, weight_method=None):
 
 def qufpn_config(min_level, max_level, weight_method=None):
     """A dynamic quad fpn config that can adapt to different min/max levels.
-
     It extends the idea of BiFPN, and has four paths:
         (up_down -> bottom_up) + (bottom_up -> up_down).
-
     Paper: https://ieeexplore.ieee.org/document/9225379
     Ref code: From contribution to TF EfficientDet
     https://github.com/google/automl/blob/eb74c6739382e9444817d2ad97c4582dbe9a9020/efficientdet/keras/fpn_configs.py

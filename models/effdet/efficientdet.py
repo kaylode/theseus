@@ -543,26 +543,16 @@ def get_feature_info(backbone):
         feature_info = backbone.feature_info.get_dicts(keys=['num_chs', 'reduction'])
     return feature_info
 
-class EfficientDet(nn.Module):
 
-    def __init__(self, config, pretrained_backbone=True, alternate_init=False, pretrained_backbone_path=None, freeze_backbone=False):
+class EfficientDet(nn.Module):
+    def __init__(self, config, pretrained_backbone=True, alternate_init=False):
         super(EfficientDet, self).__init__()
         self.config = config
         set_config_readonly(self.config)
         self.backbone = create_model(
-            config.backbone_name, features_only=True, out_indices=(2, 3, 4),
+            config.backbone_name, features_only=True,
+            out_indices=self.config.backbone_indices or (2, 3, 4),
             pretrained=pretrained_backbone, **config.backbone_args)
-
-        if pretrained_backbone_path is not None:
-            print("load pretrained")
-            state = self.get_pretrained(pretrained_backbone_path)
-            self.backbone.load_state_dict(state, strict=False)
-
-        if freeze_backbone and pretrained_backbone_path is not None:
-            print("freeze backbone")
-            for param in self.backbone.parameters():
-                param.requires_grad = False
-
         feature_info = get_feature_info(self.backbone)
         self.fpn = BiFpn(self.config, feature_info)
         self.class_net = HeadNet(self.config, num_outputs=self.config.num_classes)
@@ -608,20 +598,6 @@ class EfficientDet(nn.Module):
                     _init_weight(m, n)
 
     @torch.jit.ignore()
-    def get_pretrained(self, path):
-        from collections import OrderedDict
-
-        # Unwrap .model phrase
-        new_state = OrderedDict()
-        state = torch.load(path, map_location="cpu")['model']
-        for k,v in state.items():
-            name = k[6:]
-            new_state[name]=v
-
-        return new_state
-        
-
-    @torch.jit.ignore()
     def toggle_head_bn_level_first(self):
         """ Toggle the head batchnorm layers between being access with feature_level first vs repeat
         """
@@ -634,4 +610,3 @@ class EfficientDet(nn.Module):
         x_class = self.class_net(x)
         x_box = self.box_net(x)
         return x_class, x_box
-
