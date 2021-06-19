@@ -53,10 +53,13 @@ class CocoDataset(Dataset):
             self.resize_transforms_list.append(
                 get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True))
 
-    def get_random_scale(self):
-        scale = random.choice(range(len(self.scale_list)-1))
-        return self.resize_transforms_list[scale]
-
+    def set_random_scale(self, random=False):
+        if random:
+            scale = random.choice(range(len(self.scale_list)-1))
+            self.resize_transforms = self.resize_transforms_list[scale]
+        else:
+            self.resize_transforms = self.resize_transforms_list[-1]
+            
     def set_progressive_level(self, level):
         if self.train:
             new_image_size = [int(i * self.size_ratios[level]) for i in self.image_size]
@@ -101,13 +104,6 @@ class CocoDataset(Dataset):
         box = annot[:, :4]
         label = annot[:, -1]
         box = change_box_order(box, order = 'xywh2xyxy')
-
-        if self.train:
-            if self.multiscale_training:
-                if random.random() > 0.75:
-                    self.resize_transforms = self.get_random_scale()
-                else:
-                    self.resize_transforms = self.resize_transforms_list[-1]
 
         if self.resize_transforms is not None:
             resized = self.resize_transforms(

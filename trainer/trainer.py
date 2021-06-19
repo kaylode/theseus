@@ -8,7 +8,7 @@ from loggers.loggers import Logger
 import time
 from utils.utils import draw_pred_gt_boxes
 from utils.postprocess import change_box_order, box_fusion, postprocessing
-
+import random
 from torch.cuda import amp
 from utils.cuda import NativeScaler
 
@@ -29,6 +29,7 @@ class Trainer():
         self.trainloader = trainloader
         self.valloader = valloader
         self.metrics = model.metrics #list of metrics
+        self.multiscale_training = config.multiscale
         self.set_attribute(kwargs)
         
     def fit(self, start_epoch = 0, start_iter = 0, num_epochs = 10 ,print_per_iter = None):
@@ -154,6 +155,9 @@ class Trainer():
                     epoch = self.epoch, 
                     iters = self.iters, 
                     best_value=self.best_value)
+
+            if self.multiscale_training:
+                self.set_random_scale()
                 
 
     def inference_batch(self, testloader):
@@ -328,6 +332,9 @@ class Trainer():
     def progressive_level_up(self):
         self.progressive_level += 1
         self.trainloader.dataset.set_progressive_level(self.progressive_level)
+
+    def set_random_scale(self):
+        self.trainloader.dataset.set_random_scale(random.random() > 0.75)
         
     def __str__(self):
         s0 =  "##########   MODEL INFO   ##########"
