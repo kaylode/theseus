@@ -13,7 +13,7 @@ class Logger():
         
         if self.log_dir is None:
             self.log_dir = os.path.join('./loggers/runs',datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        self.datetime = os.path.dirname(self.log_dir)
+        self.datetime = os.path.basename(self.log_dir)
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
         self.writer = SummaryWriter(log_dir=self.log_dir)
