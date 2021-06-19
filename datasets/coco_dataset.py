@@ -53,8 +53,8 @@ class CocoDataset(Dataset):
             self.resize_transforms_list.append(
                 get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True))
 
-    def set_random_scale(self, random=False):
-        if random:
+    def set_random_scale(self, random_=False):
+        if random_:
             scale = random.choice(range(len(self.scale_list)-1))
             self.resize_transforms = self.resize_transforms_list[scale]
         else:
