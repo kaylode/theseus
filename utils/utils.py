@@ -86,6 +86,7 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=figsize)
     if image_name is not None:
         fig.suptitle(image_name)
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     if isinstance(img, torch.Tensor):
         img = img.numpy().squeeze().transpose((1,2,0))
     # Display the image
