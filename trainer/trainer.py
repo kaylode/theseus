@@ -294,7 +294,7 @@ class Trainer():
                     image_name = pred_gt_name,
                     figsize=(10,10))
 
-                self.logger.write_image('samples', fig)
+                self.logger.write_image('samples', fig, step=self.epoch)
 
     def logging(self, logs, step):
         tags = [l for l in logs.keys()]
