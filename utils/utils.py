@@ -126,6 +126,14 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
         ax2.add_patch(rect)
 
     plt.axis('off')
+    fig = ax1.get_figure()
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.95)
+
+    fig = ax2.get_figure()
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.95)
+
     plt.savefig(image_outname,bbox_inches='tight')
     return fig
 
