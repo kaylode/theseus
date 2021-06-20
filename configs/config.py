@@ -27,13 +27,10 @@ class Config():
         for k,v in self._attr.items():
             if v is not None:
                 out_dict[k] = v
-        for k,v in self.__dict__.items():
-            if v is not None:
-                out_dict[k] = v
         return out_dict
     
 
-def config_from_dict(self, _dict):
+def config_from_dict(_dict):
     config = Config('./configs/configs.yaml')
     for k,v in _dict.items():
         config[k] = v
