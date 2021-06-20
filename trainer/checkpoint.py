@@ -30,12 +30,14 @@ class Checkpoint():
         epoch = int(kwargs['epoch']) if 'epoch' in kwargs else 0
         iters = int(kwargs['iters']) if 'iters' in kwargs else 0
         best_value = float(kwargs['best_value']) if 'best_value' in kwargs else 0
+        class_names = kwargs['class_names'] if 'class_names' in kwargs else None
         weights = {
             'model': model.model.state_dict(),
             'optimizer': model.optimizer.state_dict(),
             'epoch': epoch,
             'iters': iters,
-            'best_value': best_value
+            'best_value': best_value,
+            'class_names': class_names
         }
 
         if model.scaler is not None:
@@ -87,3 +89,9 @@ def get_epoch_iters(path):
     best_value = float(state['best_value']) if 'best_value' in state.keys() else 0.0
 
     return epoch_idx, iter_idx, best_value
+
+def get_class_names(path):
+    state = torch.load(path)
+    class_names = state['class_names'] if 'class_names' in state.keys() else None
+    num_classes = len(class_names) if class_names is not None else 1
+    return class_names, num_classes

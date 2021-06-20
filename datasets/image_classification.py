@@ -18,18 +18,20 @@ class ImageClassificationDataset(data.Dataset):
         self.dir = img_dir
         self.classes = os.listdir(img_dir)
         self.transforms = transforms
-        self.classes_idx = self.labels_to_idx()
+        self.mapping_classes()
         self.fns = self.load_images()
         
 
-    def labels_to_idx(self):
-        indexes = {}
+    def mapping_classes(self):
+        self.classes_idx = {}
+        self.idx_classes = {}
         idx = 0
         for cl in self.classes:
-            indexes[cl] = idx
+            self.classes_idx[cl] = idx
+            self.idx_classes[idx] = cl
             idx += 1
         self.num_classes = len(self.classes)
-        return indexes
+        
     
     def load_images(self):
         data_list = []

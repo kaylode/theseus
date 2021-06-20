@@ -17,11 +17,6 @@ parser = argparse.ArgumentParser(description='Classify an image / folder of imag
 parser.add_argument('--weight', type=str ,help='trained weight')
 parser.add_argument('--input_path', type=str, help='path to an image to inference')
 parser.add_argument('--output_path', type=str, help='path to save csv result file')
-  
-class_mapping = [
-    "No Finding",
-    "Finding"
-]
 
 class Testset():
     def __init__(self, config, input_path, transforms=None):
@@ -40,6 +35,7 @@ class Testset():
         self.all_image_paths = []   
         if os.path.isdir(self.input_path):  # path to image folder
             paths = sorted(os.listdir(self.input_path))
+            print(paths)
             for path in paths:
                 self.all_image_paths.append(os.path.join(self.input_path, path))
         elif os.path.isfile(self.input_path): # path to single image
@@ -106,9 +102,13 @@ def main(args, config):
         collate_fn=testset.collate_fn
     )
 
+    if args.weight is not None:
+        class_names, num_classes = get_class_names(args.weight)
+
+
     net = BaseTimmModel(
         name=config.model_name, 
-        num_classes=len(class_mapping))
+        num_classes=num_classes)
 
     model = Classifier( model = net,  device = device)
 
@@ -131,16 +131,14 @@ def main(args, config):
     with tqdm(total=len(testloader)) as pbar:
         with torch.no_grad():
             for idx, batch in enumerate(testloader):
-                if config.tta is not None:
-                    preds = config.tta.make_tta_predictions(model, batch)
-                else:
-                    preds, probs = model.inference_step(batch, return_probs=True)
+                
+                preds, probs = model.inference_step(batch, return_probs=True)
 
-            for idx, (pred, prob) in enumerate(zip(preds, probs)):
-                img_name = batch['img_names'][idx]
-                image_names.append(img_name)
-                pred_list.append(pred)
-                prob_list.append(prob)
+                for idx, (pred, prob) in enumerate(zip(preds, probs)):
+                    img_name = batch['img_names'][idx]
+                    image_names.append(img_name)
+                    pred_list.append(class_names[pred])
+                    prob_list.append(prob)
 
     result_df = pd.DataFrame({
         'image_names':image_names,
