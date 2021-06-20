@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import os
 from datetime import datetime
+from configs import config_from_dict
 
 class Checkpoint():
     """
@@ -32,6 +33,7 @@ class Checkpoint():
         best_value = float(kwargs['best_value']) if 'best_value' in kwargs else 0
         class_names = kwargs['class_names'] if 'class_names' in kwargs else None
         config = kwargs['config'] if 'config' in kwargs else None
+        config_dict = config.to_dict()
         weights = {
             'model': model.model.state_dict(),
             'optimizer': model.optimizer.state_dict(),
@@ -39,7 +41,7 @@ class Checkpoint():
             'iters': iters,
             'best_value': best_value,
             'class_names': class_names,
-            'config': config,
+            'config': config_dict,
         }
 
         if model.scaler is not None:
@@ -100,5 +102,6 @@ def get_class_names(path):
 
 def get_config(path):
     state = torch.load(path)
-    config = state['config'] if 'config' in state.keys() else None
+    config_dict = state['config'] if 'config' in state.keys() else None
+    config = config_from_dict(config_dict)
     return config

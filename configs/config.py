@@ -21,6 +21,23 @@ class Config():
         print("##########   CONFIGURATION INFO   ##########")
         pretty(self._attr)
         return '\n'
+    
+    def to_dict(self):
+        out_dict = {}
+        for k,v in self._attr.items():
+            if v is not None:
+                out_dict[k] = v
+        for k,v in self.__dict__.items():
+            if v is not None:
+                out_dict[k] = v
+        return out_dict
+    
+
+def config_from_dict(self, _dict):
+    config = Config('./configs/configs.yaml')
+    for k,v in _dict.items():
+        config[k] = v
+    return config
         
 def pretty(d, indent=0):
   for key, value in d.items():

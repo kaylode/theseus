@@ -155,5 +155,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config = get_config(args.weight)
     if config is None:
+        print("Config not found. Load configs from configs/configs.yaml")
         config = Config(os.path.join('configs','configs.yaml'))
+    else:
+        print("Load configs from weight")
     main(args,config)
