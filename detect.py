@@ -152,6 +152,8 @@ def main(args, config):
     print(f"Result file is saved to {args.output_path}")
 
 if __name__ == '__main__':
-    config = Config(os.path.join('configs','configs.yaml'))
     args = parser.parse_args()
+    config = get_config(args.weight)
+    if config is None:
+        config = Config(os.path.join('configs','configs.yaml'))
     main(args,config)

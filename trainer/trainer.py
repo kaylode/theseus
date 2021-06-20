@@ -75,7 +75,8 @@ class Trainer():
                     epoch = self.epoch, 
                     iters = self.iters, 
                     best_value=self.best_value,
-                    class_names=self.trainloader.dataset.classes)
+                    class_names=self.trainloader.dataset.classes,
+                    config=self.cfg)
                 print("Stop training, checkpoint saved...")
                 break
 
@@ -152,7 +153,8 @@ class Trainer():
                     epoch = self.epoch, 
                     iters = self.iters, 
                     best_value=self.best_value,
-                    class_names=self.trainloader.dataset.classes)
+                    class_names=self.trainloader.dataset.classes,
+                    config=self.cfg)
 
     def evaluate_epoch(self):
         self.model.eval()
@@ -202,7 +204,8 @@ class Trainer():
                 epoch = self.epoch, 
                 iters = self.iters, 
                 best_value=self.best_value,
-                class_names=self.trainloader.dataset.classes)
+                class_names=self.trainloader.dataset.classes,
+                config=self.cfg)
 
         if self.visualize_when_val:
             self.visualize_batch()
