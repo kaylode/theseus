@@ -22,12 +22,7 @@ parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou thre
 parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
 parser.add_argument('--input_path', type=str, help='path to an image to inference')
 parser.add_argument('--output_path', type=str, help='path to save inferenced image')
-args = parser.parse_args() 
 
-
-class_mapping = [
-    'background',
-]
 
 class Testset():
     def __init__(self, config, input_path, transforms=None):
@@ -132,8 +127,11 @@ def main(args, config):
         pin_memory=True,
         collate_fn=testset.collate_fn
     )
+    
+    if args.weight is not None:
+        class_names, num_classes = get_class_names(args.weight)
 
-    net = get_model(args, config, device, num_classes=len(class_mapping)-1)
+    net = get_model(args, config, device, num_classes=num_classes-1)
 
     model = Detector(model = net, device = device)
     model.eval()
@@ -193,12 +191,18 @@ def main(args, config):
                             out_path = os.path.join(args.output_path, f'{img_name}.png')
                         else:
                             out_path = args.output_path
-                        draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_mapping)
+                        draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_names)
 
                 pbar.update(1)
                 pbar.set_description(f'Empty images: {empty_imgs}')
 
 if __name__ == '__main__':
-    config = Config('./configs/configs.yaml')                   
+    args = parser.parse_args() 
+    config = get_config(args.weight)
+    if config is None:
+        print("Config not found. Load configs from configs/configs.yaml")
+        config = Config(os.path.join('configs','configs.yaml'))
+    else:
+        print("Load configs from weight")                 
     main(args, config)
     

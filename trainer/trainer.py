@@ -77,7 +77,14 @@ class Trainer():
                 
 
             except KeyboardInterrupt:   
-                self.checkpoint.save(self.model, save_mode = 'last', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
+                self.checkpoint.save(
+                    self.model, 
+                    save_mode = 'last', 
+                    epoch = self.epoch, 
+                    iters = self.iters, 
+                    best_value=self.best_value,
+                    class_names=self.trainloader.dataset.class_names,
+                    config=self.cfg)
                 print("Stop training, checkpoint saved...")
                 break
 
@@ -154,7 +161,9 @@ class Trainer():
                     save_mode = 'last', 
                     epoch = self.epoch, 
                     iters = self.iters, 
-                    best_value=self.best_value)
+                    best_value=self.best_value,
+                    class_names=self.trainloader.dataset.class_names,
+                    config=self.cfg)
 
             if self.multiscale_training:
                 self.set_random_scale()
@@ -224,7 +233,14 @@ class Trainer():
         # Save model gives best mAP score
         if metric_dict['MAP'] > self.best_value:
             self.best_value = metric_dict['MAP']
-            self.checkpoint.save(self.model, save_mode = 'best', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
+            self.checkpoint.save(
+                self.model, 
+                save_mode = 'best', 
+                epoch = self.epoch, 
+                iters = self.iters, 
+                best_value=self.best_value,
+                class_names=self.trainloader.dataset.class_names,
+                config=self.cfg)
 
         if self.visualize_when_val:
             self.visualize_batch()

@@ -79,10 +79,12 @@ class CocoDataset(Dataset):
 
         self.classes = {}
         self.idx_mapping = {}
+        self.class_names = []
         for c in categories:
             idx = len(self.classes) + 1
             self.classes[c['name']] = idx
             self.idx_mapping[c['id']] = idx
+            self.class_names.append(c['name'])
 
         # also load the reverse (label -> name)
         self.labels = {}

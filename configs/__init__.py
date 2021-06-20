@@ -1,1 +1,1 @@
-from .configs import Config
+from .configs import Config, config_from_dict
