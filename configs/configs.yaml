@@ -31,7 +31,7 @@ settings:
 
   cutmix: True
   mixup: True
-  multiscale: True
+  multiscale: False
   progressive_steps: []        # progressive learning with 2 levels (fixed), level up when reach at each number of epoch
                                         # leave blank list to disable, ONLY WORKS WITH YOLOv5
   # learning rate policy
