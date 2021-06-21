@@ -135,7 +135,7 @@ def main(args, config):
     
     if args.weight is not None:
         class_names, num_classes = get_class_names(args.weight)
-
+    class_names.insert(0, 'Background')
     net = get_model(args, config, device, num_classes=num_classes)
 
     model = Detector(model = net, device = device)
