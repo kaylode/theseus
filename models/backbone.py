@@ -26,7 +26,7 @@ def get_model(args, config, device, num_classes):
         assert compound_coef in [f'd{i}' for i in range(8)], f"efficientdet version {i} is not supported"
 
         net = EfficientDetBackbone(
-            num_classes=NUM_CLASSES, 
+            num_classes=NUM_CLASSES+1, 
             compound_coef=compound_coef, 
             load_weights=load_weights, 
             freeze_backbone = getattr(args, 'freeze_backbone', False),
