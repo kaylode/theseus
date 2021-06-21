@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description='Perfom Objet Detection')
 parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
 parser.add_argument('--input_path', type=str, help='path to an image to inference')
 parser.add_argument('--output_path', type=str, help='path to save inferenced image')
+parser.add_argument('--gpus', type=str, default='0', help='path to save inferenced image')
 parser.add_argument('--min_conf', type=float, default= 0.15, help='minimum confidence for an object to be detect')
 parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
 parser.add_argument('--tta', action='store_true', help='whether to use test time augmentation')
@@ -100,9 +101,9 @@ class Testset():
         return f"Number of found images: {len(self.all_image_paths)}"
 
 def main(args, config):
-    os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
-    num_gpus = len(config.gpu_devices.split(','))
-    devices_info = get_devices_info(config.gpu_devices)
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    num_gpus = len(args.gpus.split(','))
+    devices_info = get_devices_info(args.gpus)
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
@@ -207,6 +208,7 @@ if __name__ == '__main__':
         'min_iou_val',
         'min_conf_val',
         'tta',
+        'gpu_devices',
         'tta_ensemble_mode',
         'tta_conf_threshold',
         'tta_iou_threshold',

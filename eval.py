@@ -30,6 +30,7 @@ def _eval(coco_gt, image_ids, pred_json_path):
 def main(args, config):
     os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu_devices
     num_gpus = len(config.gpu_devices.split(','))
+    devices_info = get_devices_info(config.gpu_devices)
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     _, valset, _, _ = get_dataset_and_dataloader(config)
@@ -57,6 +58,12 @@ def main(args, config):
 
     model = Detector(model = net, device = device)
     model.eval()
+
+    ## Print info
+    print(config)
+    print(valset)
+    print(f"Nubmer of gpus: {num_gpus}")
+    print(devices_info)
 
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
