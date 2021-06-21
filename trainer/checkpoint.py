@@ -100,8 +100,8 @@ def get_class_names(path):
     num_classes = len(class_names) if class_names is not None else 1
     return class_names, num_classes
 
-def get_config(path):
+def get_config(path, ignore_keys=[]):
     state = torch.load(path)
     config_dict = state['config'] if 'config' in state.keys() else None
-    config = config_from_dict(config_dict)
+    config = config_from_dict(config_dict, ignore_keys)
     return config

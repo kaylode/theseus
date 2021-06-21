@@ -9,6 +9,10 @@ from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+parser = argparse.ArgumentParser('Training EfficientDet')
+parser.add_argument('--max_images' , type=int, help='max number of images', default=10000)
+parser.add_argument('--weight' , type=str, help='project file that contains parameters')
+
 seed_everything()
 
 def _eval(coco_gt, image_ids, pred_json_path):
@@ -63,10 +67,11 @@ def main(args, config):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('--max_images' , type=int, help='max number of images', default=10000)
-    parser.add_argument('--weight' , type=str, help='project file that contains parameters')
-
     args = parser.parse_args()
-    config = Config('./configs/configs.yaml')
+    config = get_config(args.weight)
+    if config is None:
+        print("Config not found. Load configs from configs/configs.yaml")
+        config = Config(os.path.join('configs','configs.yaml'))
+    else:
+        print("Load configs from weight")   
     main(args, config)

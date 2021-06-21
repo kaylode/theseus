@@ -16,12 +16,16 @@ from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import get_resize_augmentation
 from augmentations.transforms import MEAN, STD
 
-parser = argparse.ArgumentParser(description='Inference AIC Challenge Dataset')
-parser.add_argument('--min_conf', type=float, default= 0.1, help='minimum confidence for an object to be detect')
-parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
+parser = argparse.ArgumentParser(description='Perfom Objet Detection')
 parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
 parser.add_argument('--input_path', type=str, help='path to an image to inference')
 parser.add_argument('--output_path', type=str, help='path to save inferenced image')
+parser.add_argument('--min_conf', type=float, default= 0.15, help='minimum confidence for an object to be detect')
+parser.add_argument('--min_iou', type=float, default=0.5, help='minimum iou threshold for non max suppression')
+parser.add_argument('--tta', action='store_true', help='whether to use test time augmentation')
+parser.add_argument('--tta_ensemble_mode', type=str, default='wbf', help='tta ensemble mode')
+parser.add_argument('--tta_conf_threshold', type=float, default=0.01, help='tta confidence score threshold')
+parser.add_argument('--tta_iou_threshold', type=float, default=0.9, help='tta iou threshold')
 
 
 class Testset():
@@ -108,13 +112,13 @@ def main(args, config):
         ToTensorV2(p=1.0)
     ])
 
-    if config.tta:
-        config.tta = TTA(
-            min_conf=config.tta_conf_threshold, 
-            min_iou=config.tta_iou_threshold, 
-            postprocess_mode=config.tta_ensemble_mode)
+    if args.tta:
+        args.tta = TTA(
+            min_conf=args.tta_conf_threshold, 
+            min_iou=args.tta_iou_threshold, 
+            postprocess_mode=args.tta_ensemble_mode)
     else:
-        config.tta = None
+        args.tta = None
 
     testset = Testset(
         config, 
@@ -154,8 +158,8 @@ def main(args, config):
     with tqdm(total=len(testloader)) as pbar:
         with torch.no_grad():
             for idx, batch in enumerate(testloader):
-                if config.tta is not None:
-                    preds = config.tta.make_tta_predictions(model, batch)
+                if args.tta is not None:
+                    preds = args.tta.make_tta_predictions(model, batch)
                 else:
                     preds = model.inference_step(batch)
 
@@ -171,8 +175,8 @@ def main(args, config):
                         outputs, 
                         current_img_size=[img_w, img_h],
                         ori_img_size=[img_ori_ws, img_ori_hs],
-                        min_iou=config.min_iou_val,
-                        min_conf=config.min_conf_val,
+                        min_iou=args.min_iou,
+                        min_conf=args.min_conf,
                         max_dets=config.max_post_nms,
                         keep_ratio=config.keep_ratio,
                         output_format='xywh',
@@ -198,7 +202,16 @@ def main(args, config):
 
 if __name__ == '__main__':
     args = parser.parse_args() 
-    config = get_config(args.weight)
+
+    ignore_keys = [
+        'min_iou_val',
+        'min_conf_val',
+        'tta',
+        'tta_ensemble_mode',
+        'tta_conf_threshold',
+        'tta_iou_threshold',
+    ]
+    config = get_config(args.weight, ignore_keys)
     if config is None:
         print("Config not found. Load configs from configs/configs.yaml")
         config = Config(os.path.join('configs','configs.yaml'))
