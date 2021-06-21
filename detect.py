@@ -136,7 +136,7 @@ def main(args, config):
     if args.weight is not None:
         class_names, num_classes = get_class_names(args.weight)
 
-    net = get_model(args, config, device, num_classes=num_classes-1)
+    net = get_model(args, config, device, num_classes=num_classes)
 
     model = Detector(model = net, device = device)
     model.eval()
@@ -193,7 +193,7 @@ def main(args, config):
 
                     if boxes is not None:
                         if os.path.isdir(args.input_path):
-                            out_path = os.path.join(args.output_path, f'{img_name}.png')
+                            out_path = os.path.join(args.output_path, img_name)
                         else:
                             out_path = args.output_path
                         draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_names)
