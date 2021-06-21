@@ -72,11 +72,11 @@ class mAPScores(TemplateMetric):
         self.dataloader = torch.utils.data.DataLoader(
                 dataset, 
                 batch_size=16, 
-                num_workers=4, 
+                num_workers=2, 
                 pin_memory = True,
                 drop_last= True,
                 shuffle=True, 
-                collate_fn=dataset.collate_fn) # requires batch size = 1
+                collate_fn=dataset.collate_fn)
         
         self.keep_ratio = keep_ratio
         self.tta = tta
