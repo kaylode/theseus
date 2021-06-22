@@ -338,7 +338,7 @@ class Trainer():
             self.use_amp = True
 
     def set_random_scale(self):
-        self.trainloader.dataset.set_random_scale(random.random() > 0.75)
+        self.trainloader.dataset.set_random_scale(random_=True)
         
     def __str__(self):
         s0 =  "##########   MODEL INFO   ##########"
