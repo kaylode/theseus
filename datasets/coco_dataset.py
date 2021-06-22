@@ -20,6 +20,7 @@ class CocoDataset(Dataset):
         self.root_dir = root_dir
         self.ann_path = ann_path
         self.image_size = config.image_size
+        self.ori_image_size = config.image_size
         self.mixup = config.mixup
         self.cutmix = config.cutmix
         self.keep_ratio = config.keep_ratio
@@ -42,12 +43,12 @@ class CocoDataset(Dataset):
         self.box_format = format
 
     def init_multiscale_training(self):
-        self.scale_list = [0.25, 0.5, 0.75, 1]
+        self.scale_list = [0.5, 0.75, 1.25, 1]
         self.resize_transforms_list = []
         self.image_size_list = []
 
         for i in self.scale_list:
-            new_image_size = [int(i*self.image_size[0]), int(i*self.image_size[1])]
+            new_image_size = [int(i*self.ori_image_size[0]), int(i*self.ori_image_size[1])]
             self.image_size_list.append(new_image_size)
             self.resize_transforms_list.append(
                 get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True))
