@@ -51,8 +51,6 @@ class Trainer():
 
         self.start_iter = start_iter % len(self.trainloader)
 
-        self.init_progressive_level()
-
         print(f'===========================START TRAINING=================================')
         for epoch in range(self.epoch, self.num_epochs):
             try:
@@ -62,11 +60,6 @@ class Trainer():
                 if self.evaluate_per_epoch != 0:
                     if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                         self.evaluate_epoch()
-                
-                if self.progressive_learning:
-                    if self.progressive_level < len(self.cfg.progressive_steps):
-                        if self.epoch == self.cfg.progressive_steps[self.progressive_level]:
-                            self.progressive_level_up()
 
                 if self.scheduler is not None and self.step_per_epoch:
                     self.scheduler.step()
@@ -343,23 +336,6 @@ class Trainer():
         self.use_amp = False
         if self.cfg.mixed_precision:
             self.use_amp = True
-
-    def init_progressive_level(self):
-        self.progressive_level = 0
-        if len(self.cfg.progressive_steps) == 0:
-            self.progressive_learning = False
-        else:
-            self.progressive_learning = True
-            for level in self.cfg.progressive_steps:
-                if self.epoch > level:
-                    self.progressive_level_up()
-                else:
-                    break
-            print(f"Start progressive training at level {self.progressive_level}")
-                    
-    def progressive_level_up(self):
-        self.progressive_level += 1
-        self.trainloader.dataset.set_progressive_level(self.progressive_level)
 
     def set_random_scale(self):
         self.trainloader.dataset.set_random_scale(random.random() > 0.75)

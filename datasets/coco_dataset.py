@@ -26,9 +26,6 @@ class CocoDataset(Dataset):
         self.multiscale_training = config.multiscale
         self.box_format = 'yxyx' # Output format of the __getitem__
         self.train = train
-
-        if len(config.progressive_steps) != 0 and train:
-            self.size_ratios = [0.5, 0.75, 1.0]
         
         if self.multiscale_training and train:
             self.init_multiscale_training()
@@ -63,18 +60,6 @@ class CocoDataset(Dataset):
         else:
             self.resize_transforms = self.resize_transforms_list[-1]
             self.image_size = self.image_size_list[-1]
-
-            
-    def set_progressive_level(self, level):
-        if self.train:
-            new_image_size = [int(i * self.size_ratios[level]) for i in self.image_size]
-            self.resize_transforms = get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True)
-            self.transforms = get_augmentation(_type="train", level=level)
-            self.mixup = True if level >= 1 and self.mixup else False
-            self.cutmix = True if level >= 2 and self.cutmix else False
-            print(f"Current progressive learning level: {level} | Image size: {new_image_size}")
-        else:
-            print("Warnings: do not use progressive learning while validating")
 
     def load_classes(self):
 
@@ -270,6 +255,9 @@ class CocoDataset(Dataset):
         result_boxes = []
         result_labels = np.array([], dtype=np.int)
         
+        current_resize_transforms = self.resize_transforms
+        self.resize_transforms = get_resize_augmentation(imsize, keep_ratio=False, box_transforms=True)
+
         for i,index in enumerate(indexes):
             image, boxes, labels, _, _, _, _ = self.load_image_and_boxes(index)
             if i == 0:
@@ -304,6 +292,9 @@ class CocoDataset(Dataset):
         result_boxes = result_boxes[index_to_use]
         result_labels = result_labels[index_to_use]
         
+        self.resize_transforms = current_resize_transforms
+
+
         return result_image, result_boxes, result_labels
 
     def visualize_item(self, index = None, figsize=(15,15)):
