@@ -47,9 +47,11 @@ class CocoDataset(Dataset):
     def init_multiscale_training(self):
         self.scale_list = [0.25, 0.5, 0.75, 1]
         self.resize_transforms_list = []
+        self.image_size_list = []
 
         for i in self.scale_list:
             new_image_size = [int(i*self.image_size[0]), int(i*self.image_size[1])]
+            self.image_size_list.append(new_image_size)
             self.resize_transforms_list.append(
                 get_resize_augmentation(new_image_size, self.keep_ratio, box_transforms=True))
 
@@ -57,8 +59,11 @@ class CocoDataset(Dataset):
         if random_:
             scale = random.choice(range(len(self.scale_list)-1))
             self.resize_transforms = self.resize_transforms_list[scale]
+            self.image_size = self.image_size_list[scale]
         else:
             self.resize_transforms = self.resize_transforms_list[-1]
+            self.image_size = self.image_size_list[-1]
+
             
     def set_progressive_level(self, level):
         if self.train:
