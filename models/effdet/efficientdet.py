@@ -545,7 +545,7 @@ def get_feature_info(backbone):
 
 
 class EfficientDet(nn.Module):
-    def __init__(self, config, pretrained_backbone=True, alternate_init=False):
+    def __init__(self, config, pretrained_backbone=True, freeze_backbone=False, alternate_init=False):
         super(EfficientDet, self).__init__()
         self.config = config
         set_config_readonly(self.config)
@@ -564,6 +564,13 @@ class EfficientDet(nn.Module):
                     _init_weight_alt(m, n)
                 else:
                     _init_weight(m, n)
+
+        if freeze_backbone:
+            self.freeze_bb()
+
+    def freeze_bb(self):
+        for param in self.backbone.parameters():
+            param.requires_grad = False
 
     @torch.jit.ignore()
     def reset_head(self, num_classes=None, aspect_ratios=None, num_scales=None, alternate_init=False):

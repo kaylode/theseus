@@ -11,8 +11,6 @@ settings:
   #################   TRAINING CONFIG   ###################
   
   model_name: 'yolov5m' #[efficientdet-d{i} (0-7) | fasterrcnn-{backbone} | yolov4-p{i} (5,7) | yolov5{i} (s,m,l,x)]
-
-  #pretrained_backbone: './weights/pretrained/pretrained_fold0_d4.pth'                  # Pretrained backbone, uncomment to use
   
   gpu_devices: '0'                     # supports multi-gpus
   num_epochs: 300
@@ -21,7 +19,7 @@ settings:
 
   fusion_mode: 'nms'                    # Post-process method [nms | wbf | None]
   min_iou_val:  0.5                     # IOU threshold for validation
-  min_conf_val: 0.1                    # Confidence score threshold for validation
+  min_conf_val: 0.01                    # Confidence score threshold for validation
   max_images_val: 10000                 # max number of images for validation
   max_pre_nms: -1                     # max detections for post process, input to NMS, set <0 for default [effdet: 5000; frcnn: 1000; yolo: 30000]
   max_post_nms: -1                     # max detections per image limit, output of NMS, set <0 for default [effdet: 100; frcnn: 100; yolo: 300]
@@ -31,9 +29,8 @@ settings:
 
   cutmix: True
   mixup: True
-  multiscale: True
-  progressive_steps: []        # progressive learning with 2 levels (fixed), level up when reach at each number of epoch
-                                        # leave blank list to disable, ONLY WORKS WITH YOLOv5
+  multiscale: True                 # multiscale training
+  
   # learning rate policy
   lr_policy:
     name: "adam"                         #[adam|sgd]
