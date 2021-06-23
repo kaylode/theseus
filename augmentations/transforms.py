@@ -5,10 +5,14 @@ from albumentations.pytorch.transforms import ToTensorV2
 from .custom import CustomCutout
 from configs import Config
 
-MEAN = [0.485, 0.456, 0.406]
-STD = [0.229, 0.224, 0.225]
-# MEAN = [0.0, 0.0, 0.0]
-# STD = [1.0, 1.0, 1.0]
+# FOR BEST RESULTS, CHOOSE THE APPRORIATE NUMBERS
+# If use EfficientDet, use these numbers
+# MEAN = [0.485, 0.456, 0.406]
+# STD = [0.229, 0.224, 0.225]
+
+# If use YOLO, use these numbers
+MEAN = [0.0, 0.0, 0.0]
+STD = [1.0, 1.0, 1.0]
 
 class Denormalize(object):
     """
