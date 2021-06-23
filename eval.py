@@ -1,17 +1,11 @@
 from utils.getter import *
-
-import json
-import os
-
 import argparse
-import torch
-from tqdm import tqdm
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-parser = argparse.ArgumentParser('Training EfficientDet')
+parser = argparse.ArgumentParser('Evaluate model on COCO Format')
 parser.add_argument('--max_images' , type=int, help='max number of images', default=10000)
-parser.add_argument('--weight' , type=str, help='project file that contains parameters')
+parser.add_argument('--weight' , type=str, help='checkpoint')
 
 seed_everything()
 
@@ -53,9 +47,8 @@ def main(args, config):
         max_dets=config.max_post_nms,
         mode=config.fusion_mode)
 
-    net = get_model(args, config, device, num_classes=valset.num_classes)
-
-
+    net = get_model(args, config, num_classes=valset.num_classes)
+    net.eval()
     model = Detector(model = net, device = device)
     model.eval()
 

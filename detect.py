@@ -1,20 +1,5 @@
 from utils.getter import *
 import argparse
-import os
-import cv2
-import matplotlib.pyplot as plt 
-import json
-import torch
-from torch import nn
-from torch.utils.data import Dataset, DataLoader
-from utils.utils import draw_boxes_v2
-from utils.postprocess import box_fusion, postprocessing, change_box_order
-import pandas as pd
-from tqdm import tqdm
-import albumentations as A
-from albumentations.pytorch.transforms import ToTensorV2
-from augmentations.transforms import get_resize_augmentation
-from augmentations.transforms import MEAN, STD
 
 parser = argparse.ArgumentParser(description='Perfom Objet Detection')
 parser.add_argument('--weight', type=str, default = None,help='version of EfficentDet')
@@ -132,14 +117,15 @@ def main(args, config):
         pin_memory=True,
         collate_fn=testset.collate_fn
     )
-    
+
     if args.weight is not None:
         class_names, num_classes = get_class_names(args.weight)
     class_names.insert(0, 'Background')
-    net = get_model(args, config, device, num_classes=num_classes)
+    net = get_model(args, config, num_classes=num_classes)
 
     model = Detector(model = net, device = device)
     model.eval()
+
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
 

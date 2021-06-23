@@ -1,8 +1,18 @@
 from utils.getter import *
 import argparse
-import os
-from datetime import datetime
 
+
+parser = argparse.ArgumentParser('Training Object Detection')
+parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
+parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
+parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
+parser.add_argument('--resume', type=str, default=None,
+                    help='whether to load weights from a checkpoint, set None to initialize')
+parser.add_argument('--saved_path', type=str, default='./weights')
+parser.add_argument('--no_visualization', action='store_false', help='whether to visualize box to ./sample when validating (for debug), default=on')
+parser.add_argument('--freeze_backbone', action='store_true', help='whether to freeze the backbone')
+parser.add_argument('--freeze-bn', action='store_true', help='whether to freeze the backbone')
+    
 
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.fastest = True
@@ -15,9 +25,10 @@ def train(args, config):
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
     devices_info = get_devices_info(config.gpu_devices)
     
+    
     trainset, valset, trainloader, valloader = get_dataset_and_dataloader(config)
+    net = get_model(args, config, num_classes=trainset.num_classes)
   
-    net = get_model(args, config, device, num_classes=trainset.num_classes)
 
     if config.tta:
         config.tta = TTA(
@@ -95,16 +106,6 @@ def train(args, config):
     
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('Training EfficientDet')
-    parser.add_argument('--print_per_iter', type=int, default=300, help='Number of iteration to print')
-    parser.add_argument('--val_interval', type=int, default=2, help='Number of epoches between valing phases')
-    parser.add_argument('--save_interval', type=int, default=1000, help='Number of steps between saving')
-    parser.add_argument('--resume', type=str, default=None,
-                        help='whether to load weights from a checkpoint, set None to initialize')
-    parser.add_argument('--saved_path', type=str, default='./weights')
-    parser.add_argument('--no_visualization', action='store_false', help='whether to visualize box to ./sample when validating (for debug), default=on')
-    parser.add_argument('--freeze_backbone', action='store_true', help='whether to freeze the backbone')
-    parser.add_argument('--freeze-bn', action='store_true', help='whether to freeze the backbone')
     
     args = parser.parse_args()
     config = Config(os.path.join('configs','configs.yaml'))
