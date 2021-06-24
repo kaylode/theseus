@@ -77,8 +77,8 @@ def get_augmentation(_type='train'):
         A.OneOf([
             A.MotionBlur(p=blur_config['motion']),
             A.GaussianBlur(p=blur_config['gaussian']),
-            A.MedianBlur(blur_limit=1, p=blur_config['median']),
-            A.Blur(blur_limit=1, p=blur_config['default']),
+            A.MedianBlur(blur_limit=3, p=blur_config['median']),
+            A.Blur(blur_limit=3, p=blur_config['default']),
         ], p=blur_config['prob']),
 
         A.OneOf([
