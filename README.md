@@ -49,12 +49,19 @@ settings:
   train_imgs: train
   val_imgs: val
   test_imgs: test
-
-  obj_list: [
-      <class 0's name>,
-      <class 1's name>,
-      ...
-  ]
 ```
+
+## Training:
+```
+python train.py 
+```
+See [train.py](https://github.com/kaylode/custom-template/blob/classification/train.py) for more extra parameters
+
+## Inference:
+```
+python detect.py --weight=<weight path>
+```
+See [detect.py](https://github.com/kaylode/custom-template/blob/classification/detect.py) for more extra parameters
+
 ## Reference:
 - timm models from https://github.com/rwightman/pytorch-image-models
