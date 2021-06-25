@@ -5,6 +5,8 @@
 - [ ] Gradient checkpointing
 - [ ] Distributed data parallel
 - [ ] Sync BatchNorm
+- [ ] Two-staged inference
+- [ ] Pseudo Labeling
 - [x] Multi-scale training (only works for YOLOv5)
 - [x] Multi-GPU support (nn.DataParallel)
 - [x] Cutmix, Mixup, strong augmentations
@@ -60,13 +62,15 @@ Details can be found in: https://cocodataset.org/#format-data
   "categories": 
   [
     {
-      "id": int, 
+      "id": int,      #Must start from 1
       "name": str, 
       "supercategory": str,
     }, ...
   ]
 }
 ```
+
+If encounter issues, see [Issues](https://github.com/kaylode/custom-template/issues/3) section
 
 ## Configuration for custom dataset:
 Open file configs/configs.yaml, and edit
@@ -80,9 +84,21 @@ settings:
   val_anns: annotations/instances_val.json        # class index must start from 1
 ```
 
+## Training:
+```
+python train.py 
+```
+See [train.py](https://github.com/kaylode/custom-template/blob/detection/train.py) for more extra parameters
+
+## Inference:
+```
+python detect.py --weight=<weight path>
+```
+See [detect.py](https://github.com/kaylode/custom-template/blob/detection/detect.py) for more extra parameters
+
+
 ## Reference:
 - Efficientdet from https://github.com/rwightman/efficientdet-pytorch
-- FasterRCNN from torchvision
 - Scaled YOLOv4 from https://github.com/WongKinYiu/ScaledYOLOv4
 - YOLOv5 from https://github.com/ultralytics/yolov5
 - Box fusion ensemble from https://github.com/ZFTurbo/Weighted-Boxes-Fusion
