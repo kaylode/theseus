@@ -70,6 +70,7 @@ def get_augmentation(_type='train'):
     flip_config = config.flip
     ssr_config = flip_config['shift_scale_crop']
     color_config = config.color
+    quality_config = config.quality
     removal_config = config.removal
     cutout_config = removal_config['cutout']
 
@@ -97,25 +98,27 @@ def get_augmentation(_type='train'):
                 brightness_limit=color_config['brightness'], 
                 contrast_limit=color_config['contrast'], 
                 p=0.5)
-        ], p=0.7),
+        ], p=color_config['prob']),
 
         A.OneOf([
-            A.IAASharpen(p=color_config['sharpen']), 
+            A.IAASharpen(p=quality_config['sharpen']), 
             A.Compose([
                 A.FromFloat(dtype='uint8', p=1),
                 A.OneOf([
-                    A.CLAHE(clip_limit=2.0, tile_grid_size=(8,8), p=color_config['clahe']),
-                    A.JpegCompression(p=color_config['compression']),
+                    A.CLAHE(clip_limit=2.0, tile_grid_size=(8,8), p=quality_config['clahe']),
+                    A.JpegCompression(p=quality_config['compression']),
                 ], p=0.7),
                 A.ToFloat(p=1),
             ])           
-        ], p=color_config['prob']),
+        ], p=quality_config['prob']),
         
         # A.RandomSizedCrop(min_max_height=(800, 800), height=1024, width=1024, p=0.5),
         A.ShiftScaleRotate(
             shift_limit=ssr_config['shift_limit'], 
             scale_limit=ssr_config['scale_limit'], 
             rotate_limit=ssr_config['rotate_limit'], 
+            border_mode=cv2.BORDER_CONSTANT,
+            value=0,
             p=ssr_config['prob']),
 
         CustomCutout(
