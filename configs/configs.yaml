@@ -24,7 +24,7 @@ settings:
   max_pre_nms: -1                     # max detections for post process, input to NMS, set <0 for default [effdet: 5000; frcnn: 1000; yolo: 30000]
   max_post_nms: -1                     # max detections per image limit, output of NMS, set <0 for default [effdet: 100; frcnn: 100; yolo: 300]
 
-  image_size: [512,512]               # should be square to prevent bugs [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
+  image_size: [640,640]               # should be square to prevent bugs [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
   keep_ratio: True                     # whether to use resize padding
 
   cutmix: True
