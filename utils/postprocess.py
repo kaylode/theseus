@@ -49,7 +49,9 @@ def change_box_order(boxes, order):
             new_boxes[:,3] = boxes[:,3] - boxes[:,1]
             return new_boxes
 
-def filter_area(boxes, labels, confidence_score=None, min_wh=10, max_wh=4096):
+def filter_area(
+    boxes, labels, confidence_score=None, 
+    min_wh=10, max_wh=4096, min_area_pct=None, image_size=None):
     """
     Boxes in xyxy format
     """
@@ -65,6 +67,14 @@ def filter_area(boxes, labels, confidence_score=None, min_wh=10, max_wh=4096):
     picked_index_max = (width <= max_wh) & (height <= max_wh)
 
     picked_index = picked_index_min & picked_index_max
+    
+    if min_area_pct is not None:
+        assert image_size is not None, "Need to input image size"
+        boxes_areas = width * height
+        image_areas = image_size[0] * image_size[1]
+        pct = (boxes_areas*1.0 / image_areas) * 100
+        picked_index_pct = pct > min_area_pct
+        picked_index &= picked_index_pct
 
     # Picked bounding boxes
     picked_boxes = boxes[picked_index]
