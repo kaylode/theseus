@@ -83,6 +83,7 @@ class YoloLoss():
                 num_classes,
                 model,
                 autobalance=False,
+                image_size=640,
                 gr = 1.0,
                 anchor_t= 4.0, 
                 giou=0.05, 
@@ -127,7 +128,7 @@ class YoloLoss():
         
         self.giou *= 3. / self.nl  # scale to layers
         self.cls_w *= self.nc / 80. * 3. / self.nl  # scale to classes and layers
-        self.obj_w *= (1280 / 640) ** 2 * 3. / self.nl
+        self.obj_w *= (image_size / 640) ** 2 * 3. / self.nl
 
 
     def __call__(self, outputs, targets):

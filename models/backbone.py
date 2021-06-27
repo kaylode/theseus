@@ -35,6 +35,7 @@ def get_model(args, config, num_classes):
         version_name = config.model_name.split('v')[1]
         net = YoloBackbone(
             version_name=version_name,
+            image_size=config.image_size[0],
             load_weights=load_weights, 
             num_classes=NUM_CLASSES, 
             max_pre_nms=max_pre_nms,
@@ -152,6 +153,7 @@ class YoloBackbone(BaseBackbone):
         max_pre_nms=None,
         load_weights=True, 
         max_post_nms=None,
+        image_size=640,
         **kwargs):
 
         super(YoloBackbone, self).__init__(**kwargs)
@@ -192,6 +194,7 @@ class YoloBackbone(BaseBackbone):
         self.model = nn.DataParallel(self.model).cuda()
         self.loss_fn = YoloLoss(
             num_classes=num_classes,
+            image_size=image_size,
             model=self.model)
 
         self.num_classes = num_classes
