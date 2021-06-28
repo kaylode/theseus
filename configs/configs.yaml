@@ -22,7 +22,7 @@ settings:
   min_conf_val: 0.01                    # Confidence score threshold for validation
   max_images_val: 10000                 # max number of images for validation
   max_pre_nms: -1                     # max detections for post process, input to NMS, set <0 for default [effdet: 5000; frcnn: 1000; yolo: 30000]
-  max_post_nms: -1                     # max detections per image limit, output of NMS, set <0 for default [effdet: 100; frcnn: 100; yolo: 300]
+  max_post_nms: -1                     # max detections per image limit, output of NMS, set <0 for default [effdet: 100; frcnn: 100; yolo: 1000]
 
   image_size: [640,640]               # should be square and multiple of 32 to prevent bugs [512, 640, 768, 896, 1024, 1280, 1280, 1536, 1536]
   keep_ratio: True                     # whether to use resize padding

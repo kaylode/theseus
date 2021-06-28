@@ -163,7 +163,7 @@ class YoloBackbone(BaseBackbone):
         self.max_pre_nms = max_pre_nms
 
         if max_post_nms is None:
-            max_post_nms = 300
+            max_post_nms = 1000
         self.max_post_nms = max_post_nms
 
         version = version_name[0]
