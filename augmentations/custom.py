@@ -198,9 +198,9 @@ class MixUp:
         :param areas: The list of area of all the bboxes
         :param alpha: Required to generate image wieghts (lambda) using beta distribution. In this case we'll use alpha=1, which is same as uniform distribution
         """
-        
-        # Generate image weight (minimum 0.4 and maximum 0.6)
-        lam = np.clip(np.random.beta(self.alpha, self.alpha), 0.4, 0.6)
+
+        # Generate image weight
+        lam = np.random.beta(self.alpha, self.alpha)
         
         # Weighted Mixup
         mixedup_images = lam*image + (1 - lam)*r_image
