@@ -140,39 +140,59 @@ def draw_pred_gt_boxes(image_outname, img, boxes, labels, scores, image_name=Non
 
     # plt.close()
 
-def write_to_video(img, boxes, labels, scores, imshow=True,  outvid = None, obj_list=None):
-    
-    def plot_one_box(img, coord, label=None, score=None, color=None, line_thickness=None):
+def draw_image(img, boxes, labels, scores=None, tracks=None, image_name=None, imshow=False,  outvid = None, obj_list=None):
+    """
+    Write image to file or to stream
+    Image is CV2 RGB
+    Box is xywh format
+    """
+    def plot_one_box(img, box, key=None, value=None, color=None, line_thickness=None):
         tl = line_thickness or int(round(0.001 * max(img.shape[0:2])))  # line thickness
-        color = color
+
+        coord = [box[0], box[1], box[0]+box[2], box[1]+box[3]]
         c1, c2 = (int(coord[0]), int(coord[1])), (int(coord[2]), int(coord[3]))
-        cv2.rectangle(img, c1, c2, color, thickness=tl)
-        if label:
+        cv2.rectangle(img, c1, c2, color, thickness=tl*2)
+        if key is not None and value is not None:
+            header = f'{key} || {value}'
             tf = max(tl - 2, 1)  # font thickness
-            s_size = cv2.getTextSize(str('{:.0%}'.format(score)), 0, fontScale=float(tl) / 3, thickness=tf)[0]
-            t_size = cv2.getTextSize(label, 0, fontScale=float(tl) / 3, thickness=tf)[0]
+            s_size = cv2.getTextSize(f'| {value}', 0, fontScale=float(tl) / 3, thickness=tf)[0]
+            t_size = cv2.getTextSize(f'{key} |', 0, fontScale=float(tl) / 3, thickness=tf)[0]
             c2 = c1[0] + t_size[0] + s_size[0] + 15, c1[1] - t_size[1] - 3
             cv2.rectangle(img, c1, c2, color, -1)  # filled
-            cv2.putText(img, '{}: {:.0%}'.format(label, score), (c1[0], c1[1] - 2), 0, float(tl) / 3, [0, 0, 0],
+            cv2.putText(img, header, (c1[0], c1[1] - 2), 0, float(tl) / 3, [0, 0, 0],
                         thickness=tf, lineType=cv2.FONT_HERSHEY_SIMPLEX)
 
+    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     boxes = boxes.astype(np.int)
-    for idx, (box, label, score) in enumerate(zip(boxes, labels, scores)):
-        plot_one_box(
-            img, 
-            box, 
-            label=obj_list[int(label)],
-            score=float(score),
-            color=color_list[int(label)])
+
+    if scores is not None:
+        for idx, (box, label, score) in enumerate(zip(boxes, labels, scores)):
+            plot_one_box(
+                img_bgr, 
+                box, 
+                key = obj_list[int(label)],
+                value =  '{:.0%}'.format(float(score)),
+                color=color_list[int(label)])
+    if tracks is not None:
+        for idx, (box, track, label) in enumerate(zip(boxes, tracks, labels)):
+            plot_one_box(
+                img_bgr, 
+                box, 
+                key=f'id: {track}',
+                value=f'cls: {label}',
+                color=color_list[int(label)])
 
     if imshow:
-        cv2.namedWindow('img',cv2.WINDOW_NORMAL)
+        cv2.namedWindow('img_bgr',cv2.WINDOW_NORMAL)
         cv2.resizeWindow('image', 600,600)
-        cv2.imshow('img', img)
+        cv2.imshow('img_bgr', img_bgr)
         cv2.waitKey(1)
 
     if outvid is not None:
-        outvid.write(img)
+        outvid.write(img_bgr)
+
+    if image_name is not None:
+        cv2.imwrite(image_name, img_bgr)
 
 def download_weights(id_or_url, cached=None, md5=None, quiet=False):
     if id_or_url.startswith('http'):

@@ -1,3 +1,4 @@
+from utils.utils import draw_image
 from utils.getter import *
 import argparse
 
@@ -182,7 +183,11 @@ def main(args, config):
                             out_path = os.path.join(args.output_path, img_name)
                         else:
                             out_path = args.output_path
-                        draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_names)
+                        # draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_names)
+                        draw_image(
+                            ori_img,boxes,labels,scores,
+                            image_name=out_path,
+                            obj_list=class_names)
 
                 pbar.update(1)
                 pbar.set_description(f'Empty images: {empty_imgs}')
