@@ -43,9 +43,10 @@ class Testset():
         img = cv2.imread(image_path)
         image_w, image_h = self.image_size
         ori_height, ori_width, c = img.shape
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
-        img /= 255.0
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         ori_img = img.copy()
+        img = img.astype(np.float32)
+        img /= 255.0
         if self.transforms is not None:
             img = self.transforms(image=img)['image']
         return {
