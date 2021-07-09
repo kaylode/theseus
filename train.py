@@ -64,6 +64,11 @@ def train(args, config):
         lr_config=config.lr_scheduler,
         num_epochs=config.num_epochs)
 
+    if args.resume is not None:                 
+        old_log = find_old_log(args.resume)
+    else:
+        old_log = None
+
     args.saved_path = os.path.join(
         args.saved_path, 
         datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
@@ -74,7 +79,7 @@ def train(args, config):
                      valloader,
                      checkpoint = Checkpoint(save_per_iter=args.save_interval, path = args.saved_path),
                      best_value=best_value,
-                     logger = Logger(log_dir=args.saved_path),
+                     logger = Logger(log_dir=args.saved_path, resume=old_log),
                      scheduler = scheduler,
                      visualize_when_val = args.gradcam_visualization,
                      evaluate_per_epoch = args.val_interval,
