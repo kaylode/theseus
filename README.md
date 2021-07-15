@@ -1,5 +1,9 @@
 # Pytorch Custom Template for Object Detection
 
+## Projects based on this repo:
+- [Meal Analysis System using YOLOv5](https://github.com/lannguyen0910/food-analysis-webapp-yolov5.git)
+- [Counting vehicle from city camera](https://github.com/kaylode/vehicle-counting)
+
 ## To-do list:
 - [ ] Autoanchors
 - [ ] Gradient checkpointing
