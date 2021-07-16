@@ -1,5 +1,8 @@
 # Pytorch Custom Template for Image Classification
 
+## Notebook:
+Demo using this template:  [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Zk87VMlG4DyguhYsXo_NYVvqUypUaKj4?usp=sharing)
+
 ## To-do list:
 - [ ] Improved Progressive Learning ([EfficientNetV2](https://arxiv.org/abs/2104.00298v1))
 - [ ] Test time augmentation
