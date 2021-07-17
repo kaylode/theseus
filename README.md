@@ -1,5 +1,12 @@
 # Pytorch Custom Template for Object Detection
 
+## Notebook:
+- Demo using this template [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/16sbDkKurFIeYQLaT1HkzGoGfoXhDdOCU?usp=sharing)
+
+## Projects based on this repo:
+- [Meal Analysis System using YOLOv5](https://github.com/lannguyen0910/food-analysis-webapp-yolov5.git)
+- [Counting vehicle from city camera](https://github.com/kaylode/vehicle-counting)
+
 ## To-do list:
 - [ ] Autoanchors
 - [ ] Gradient checkpointing
