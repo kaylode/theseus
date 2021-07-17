@@ -103,5 +103,7 @@ def get_class_names(path):
 def get_config(path):
     state = torch.load(path)
     config_dict = state['config'] if 'config' in state.keys() else None
+    if config_dict is None:
+        return None
     config = config_from_dict(config_dict)
     return config
