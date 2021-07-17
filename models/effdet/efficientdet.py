@@ -545,7 +545,7 @@ def get_feature_info(backbone):
 
 
 class EfficientDet(nn.Module):
-    def __init__(self, config, pretrained_backbone=True, freeze_backbone=False, alternate_init=False):
+    def __init__(self, config, pretrained_backbone=False, freeze_backbone=False, alternate_init=False):
         super(EfficientDet, self).__init__()
         self.config = config
         set_config_readonly(self.config)
