@@ -122,7 +122,7 @@ class EfficientDetBackbone(BaseBackbone):
             if len(boxes) > 0:
                 out.append({
                     'bboxes': boxes,
-                    'classes': labels,
+                    'classes': labels - 1, #Start from 0
                     'scores': scores,
                 })
             else:
@@ -205,7 +205,7 @@ class YoloBackbone(BaseBackbone):
         outputs = non_max_suppression(
             outputs, 
             conf_thres=0.0001, 
-            iou_thres=0.8, 
+            iou_thres=0.9, 
             max_nms=self.max_pre_nms,
             max_det=self.max_post_nms) #[bs, max_det, 6]
     
@@ -229,7 +229,7 @@ class YoloBackbone(BaseBackbone):
             if len(boxes) > 0:
                 out.append({
                     'bboxes': boxes,
-                    'classes': labels,
+                    'classes': labels-1,
                     'scores': scores,
                 })
             else:

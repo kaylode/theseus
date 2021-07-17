@@ -140,9 +140,9 @@ def main(args, config):
     for param in model.parameters():
         param.requires_grad = False
 
-    if os.path.isdir(args.input_path):
-        if not os.path.exists(args.output_path):
-            os.makedirs(args.output_path)
+    
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path)
 
 
     ## Print info
@@ -189,11 +189,8 @@ def main(args, config):
                         boxes = None
 
                     if boxes is not None:
-                        if os.path.isdir(args.input_path):
-                            out_path = os.path.join(args.output_path, img_name)
-                        else:
-                            out_path = args.output_path
-                        # draw_boxes_v2(out_path, ori_img , boxes, labels, scores, class_names)
+                        out_path = os.path.join(args.output_path, img_name)
+                        
                         draw_image(
                             ori_img,boxes,labels,scores,
                             image_name=out_path,
