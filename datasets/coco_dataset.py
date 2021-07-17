@@ -151,13 +151,13 @@ class CocoDataset(Dataset):
             # Normalize
             image = item['image']
             boxes = item['bboxes']
-            labels = item['class_labels']
+            labels = item['class_labels'] 
             boxes = np.array([np.asarray(i) for i in boxes])
             labels = np.array(labels)
 
         if len(boxes) == 0:
             return self.__getitem__((idx+1)%len(self.image_ids))
-        labels = torch.LongTensor(labels)
+        labels = torch.LongTensor(labels) # starts from 1
         boxes = torch.as_tensor(boxes, dtype=torch.float32) 
 
         target = {}
