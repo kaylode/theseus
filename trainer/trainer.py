@@ -144,12 +144,7 @@ class Trainer():
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
                 print("[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(self.epoch, self.num_epochs, self.iters, self.num_iters,loss_string, running_time))
                 
-                log_dict = {
-                    "Training/Batch Loss" : running_loss['T']/ self.print_per_iter,
-                    "Training/IOU Loss" : running_loss['IOU'] / self.print_per_iter,
-                    "Training/OBJ Loss" : running_loss['OBJ'] / self.print_per_iter,
-                    "Training/CLS Loss" : running_loss['CLS'] / self.print_per_iter,
-                }
+                log_dict = {f"Training/{k} Loss": v/self.print_per_iter for k,v in running_loss.items()}
                 self.logging(log_dict, step=self.iters)
                 running_loss = {}
                 running_time = 0
@@ -225,12 +220,8 @@ class Trainer():
         print()
         print('==========================================================================')
 
-        log_dict = {
-            "Validation/Epoch Loss" : epoch_loss['T'] / len(self.valloader),
-            "Validation/IOU Loss" : epoch_loss['IOU'] / len(self.valloader),
-            "Validation/OBJ Loss" : epoch_loss['OBJ'] / len(self.valloader),
-            "Validation/CLS Loss" : epoch_loss['CLS'] / len(self.valloader),
-        }
+        log_dict = {f"Validation/{k} Loss": v/len(self.valloader) for k,v in epoch_loss.items()}
+
         metric_log_dict = {f"Validation/{k}":v for k,v in metric_dict.items()}
         log_dict.update(metric_log_dict)
         self.logging(log_dict, step=self.epoch)
