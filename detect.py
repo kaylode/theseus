@@ -1,4 +1,5 @@
-from utils.utils import draw_image
+from utils.utils import draw_image, download_pretrained_weights
+from models import CACHE_DIR
 from utils.getter import *
 import argparse
 
@@ -120,16 +121,24 @@ def main(args, config):
         collate_fn=testset.collate_fn
     )
 
-    if args.weight is not None:
-        class_names, num_classes = get_class_names(args.weight)
-    class_names.insert(0, 'Background')
-    net = get_model(args, config, num_classes=num_classes)
+    if args.weight is None:
+        args.weight = os.path.join(CACHE_DIR, f'{config.model_name}.pth')
+        download_pretrained_weights(f'{config.model_name}', args.weight)
+
+    class_names, num_classes = get_class_names(args.weight)
+    
+    net = get_model(
+        args, config,
+        num_classes=num_classes)
 
     model = Detector(model = net, device = device)
     model.eval()
-
+    
     if args.weight is not None:                
         load_checkpoint(model, args.weight)
+
+    for param in model.parameters():
+        param.requires_grad = False
 
     if os.path.isdir(args.input_path):
         if not os.path.exists(args.output_path):
