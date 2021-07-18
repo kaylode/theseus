@@ -126,7 +126,7 @@ def main(args, config):
         download_pretrained_weights(f'{config.model_name}', args.weight)
 
     class_names, num_classes = get_class_names(args.weight)
-    
+    class_names.insert(0, 'Background') # COCO format, 0 is background
     net = get_model(
         args, config,
         num_classes=num_classes)

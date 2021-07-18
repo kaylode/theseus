@@ -122,7 +122,7 @@ class EfficientDetBackbone(BaseBackbone):
             if len(boxes) > 0:
                 out.append({
                     'bboxes': boxes,
-                    'classes': labels - 1, #Start from 0
+                    'classes': labels , #Start from 1, COCO Format
                     'scores': scores,
                 })
             else:
@@ -229,7 +229,7 @@ class YoloBackbone(BaseBackbone):
             if len(boxes) > 0:
                 out.append({
                     'bboxes': boxes,
-                    'classes': labels-1,
+                    'classes': labels,
                     'scores': scores,
                 })
             else:
