@@ -69,16 +69,12 @@ def load_checkpoint(model, path):
             model.optimizer.load_state_dict(state["optimizer"])
         if model.scaler is not None:
             model.scaler.load_state_dict(state[model.scaler.state_dict_key])
-    except KeyError:
+    except RuntimeError as e:
         try:
-            ret = model.model.load_state_dict(state, strict=False)
+            ret = model.model.load_state_dict(state["model"], strict=False)
         except RuntimeError as e:
             print(f'[Warning] Ignoring {e}')
-    except torch.nn.modules.module.ModuleAttributeError:
-        try:
-            ret = model.load_state_dict(state["model"])
-        except RuntimeError as e:
-            print(f'[Warning] Ignoring {e}')
+            print('Load pretrained weights')
 
     if current_lr is not None and model.optimizer is not None:
         for param_group in model.optimizer.param_groups:
