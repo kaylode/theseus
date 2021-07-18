@@ -62,7 +62,10 @@ def train(args, config):
         load_checkpoint(model, args.resume)
         start_epoch, start_iter, best_value = get_epoch_iters(args.resume)
     else:
-        print('Not resume. Initialize weights')
+        print('Not resume. Load pretrained weights...')
+        args.resume = os.path.join(CACHE_DIR, f'{config.model_name}.pth')
+        download_pretrained_weights(f'{config.model_name}', args.resume)
+        load_checkpoint(model, args.resume)
         start_epoch, start_iter, best_value = 0, 0, 0.0
         
     scheduler, step_per_epoch = get_lr_scheduler(

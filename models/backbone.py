@@ -7,8 +7,6 @@ from torch import nn
 from .effdet import get_efficientdet_config, EfficientDet, DetBenchTrain,  HeadNet
 from .yolo import YoloLoss, Yolov4, non_max_suppression, Yolov5
 
-CACHE_DIR='./.cache'
-
 def get_model(args, config, num_classes):
     
     max_post_nms = config.max_post_nms if config.max_post_nms > 0 else None

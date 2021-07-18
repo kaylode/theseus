@@ -50,6 +50,7 @@ class Trainer():
             self.scheduler.last_epoch = start_epoch - 1
 
         self.start_iter = start_iter % len(self.trainloader)
+        self.iters = self.start_iter + len(self.trainloader)*self.epoch + 1
 
         print(f'===========================START TRAINING=================================')
         for epoch in range(self.epoch, self.num_epochs):
