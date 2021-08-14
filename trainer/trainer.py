@@ -1,17 +1,13 @@
 import os
-import torch.nn as nn
-import torch
-from tqdm import tqdm
-from .checkpoint import Checkpoint
-import numpy as np
-from loggers.loggers import Logger
-from utils.utils import clip_gradient
 import time
-from utils.utils import change_box_order, draw_pred_gt_boxes
-from utils.postprocess import box_fusion, postprocessing
+import numpy as np
+from tqdm import tqdm
 
+import torch
 from torch.cuda import amp
-from utils.cuda import NativeScaler
+
+from .checkpoint import Checkpoint
+from loggers.loggers import Logger
 
 
 class Trainer():
@@ -49,6 +45,7 @@ class Trainer():
             self.scheduler.last_epoch = start_epoch - 1
 
         self.start_iter = start_iter % len(self.trainloader)
+        self.iters = self.start_iter + len(self.trainloader)*self.epoch + 1
 
         print(f'===========================START TRAINING=================================')
         for epoch in range(self.epoch, self.num_epochs):
@@ -59,17 +56,24 @@ class Trainer():
                 if self.evaluate_per_epoch != 0:
                     if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
                         self.evaluate_epoch()
-                        
+
                 if self.scheduler is not None and self.step_per_epoch:
                     self.scheduler.step()
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
-                    log_dict = {'Learning rate/Epoch': lr}
-                    self.logging(log_dict)
+                    log_dict = {'Training/Learning rate': lr}
+                    self.logging(log_dict, step=self.epoch)
                 
 
             except KeyboardInterrupt:   
-                self.checkpoint.save(self.model, save_mode = 'last', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
+                self.checkpoint.save(
+                    self.model, 
+                    save_mode = 'last', 
+                    epoch = self.epoch, 
+                    iters = self.iters, 
+                    best_value=self.best_value,
+                    class_names=None,
+                    config=self.cfg)
                 print("Stop training, checkpoint saved...")
                 break
 
@@ -102,8 +106,8 @@ class Trainer():
                         self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
                         lrl = [x['lr'] for x in self.optimizer.param_groups]
                         lr = sum(lrl) / len(lrl)
-                        log_dict = {'Learning rate/Iterations': lr}
-                        self.logging(log_dict)
+                        log_dict = {'Training/Learning rate': lr}
+                        self.logging(log_dict, step=self.iters)
             else:
                 self.model.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
                 self.optimizer.zero_grad()
@@ -112,8 +116,8 @@ class Trainer():
                     self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
-                    log_dict = {'Learning rate/Iterations': lr}
-                    self.logging(log_dict)
+                    log_dict = {'Training/Learning rate': lr}
+                    self.logging(log_dict, step=self.iters)
                 
 
             torch.cuda.synchronize()
@@ -135,20 +139,23 @@ class Trainer():
                     running_loss[key] = np.round(running_loss[key], 5)
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
                 print("[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(self.epoch, self.num_epochs, self.iters, self.num_iters,loss_string, running_time))
-                self.logging({"Training Loss/Batch" : running_loss['T']/ self.print_per_iter,})
+                
+                log_dict = {f"Training/{k} Loss": v/self.print_per_iter for k,v in running_loss.items()}
+                self.logging(log_dict, step=self.iters)
                 running_loss = {}
                 running_time = 0
 
-            if (self.iters % self.checkpoint.save_per_iter == 0 or self.iters == self.num_iters - 1):
-                print(f'Save model at [{self.epoch}|{self.iters}] to last.pth')
+            if (self.iters % self.checkpoint.save_per_iter == 0 or self.num_iters == self.num_iters - 1):
+                print(f'Save model at [{self.iters}|{self.num_iters}] to last.pth')
                 self.checkpoint.save(
                     self.model, 
                     save_mode = 'last', 
                     epoch = self.epoch, 
                     iters = self.iters, 
-                    best_value=self.best_value)
+                    best_value=self.best_value,
+                    class_names=self.trainloader.dataset.class_names,
+                    config=self.cfg)
                 
-
     def inference_batch(self, testloader):
         self.model.eval()
         results = []
@@ -180,7 +187,7 @@ class Trainer():
         start_time = time.time()
         with torch.no_grad():
             for batch in tqdm(self.valloader):
-                loss, loss_dict = self.model.evaluate_step(batch)
+                _, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():
                     if key in epoch_loss.keys():
@@ -205,14 +212,11 @@ class Trainer():
         print()
         print('==========================================================================')
 
-        log_dict = {"Validation Loss/Epoch" : epoch_loss['T'] / len(self.valloader),}
-        log_dict.update(metric_dict)
-        self.logging(log_dict)
+        log_dict = {f"Validation/{k} Loss": v/len(self.valloader) for k,v in epoch_loss.items()}
 
-        # Save model gives best mAP score
-        if metric_dict['MAP'] > self.best_value:
-            self.best_value = metric_dict['MAP']
-            self.checkpoint.save(self.model, save_mode = 'best', epoch = self.epoch, iters = self.iters, best_value=self.best_value)
+        metric_log_dict = {f"Validation/{k}":v for k,v in metric_dict.items()}
+        log_dict.update(metric_log_dict)
+        self.logging(log_dict, step=self.epoch)
 
         if self.visualize_when_val:
             self.visualize_batch()
@@ -222,68 +226,11 @@ class Trainer():
             os.mkdir('./samples')
 
         self.model.eval()
-        with torch.no_grad():
-            batch = next(iter(self.valloader))
-            targets = batch['targets']
-
-            image_names = batch['img_names']
-            imgs = batch['imgs']
-            img_sizes = batch['img_sizes']
-
-            if self.cfg.tta is not None:
-                outputs = self.cfg.tta.make_tta_predictions(self.model, batch)
-            else:
-                outputs = self.model.inference_step(batch)
-
-            for idx in range(len(outputs)):
-                img = imgs[idx]
-                img_size = img_sizes[idx]
-                image_name = image_names[idx]
-                image_outname = os.path.join('samples', f'{self.epoch}_{self.iters}_{idx}.jpg')
-
-                pred = postprocessing(
-                        outputs[idx], 
-                        current_img_size=self.cfg.image_size,
-                        ori_img_size=self.cfg.image_size,
-                        min_iou=self.cfg.min_iou_val,
-                        min_conf=self.cfg.min_conf_val,
-                        mode=self.cfg.fusion_mode)
-
-                boxes = pred['bboxes']
-                labels = pred['classes']
-                scores = pred['scores']
-
-                target = targets[idx]
-                target_boxes = target['boxes']
-                target_labels = target['labels']
-                
-                if len(boxes) == 0 or boxes is None:
-                    continue
-                
-                if self.cfg.box_format == 'yxyx':
-                    target_boxes = change_box_order(target_boxes, 'yxyx2xyxy')
-                target_boxes = change_box_order(target_boxes, order='xyxy2xywh')
-
-                pred_gt_imgs = img
-                pred_gt_boxes = [boxes, target_boxes]
-                pred_gt_labels = [labels, target_labels]
-                pred_gt_scores = scores
-                pred_gt_name = image_name
-
-                draw_pred_gt_boxes(
-                    image_outname = image_outname, 
-                    img = img, 
-                    boxes = pred_gt_boxes, 
-                    labels = pred_gt_labels, 
-                    scores = pred_gt_scores,
-                    image_name = pred_gt_name,
-                    figsize=(15,15))
-
-
-    def logging(self, logs):
+       
+    def logging(self, logs, step):
         tags = [l for l in logs.keys()]
         values = [l for l in logs.values()]
-        self.logger.write(tags= tags, values= values)
+        self.logger.write(tags= tags, values= values, step=step)
 
     def set_accumulate_step(self):
         self.use_accumulate = False
@@ -295,7 +242,7 @@ class Trainer():
         self.use_amp = False
         if self.cfg.mixed_precision:
             self.use_amp = True
-
+  
     def __str__(self):
         s0 =  "##########   MODEL INFO   ##########"
         s1 = "Model name: " + self.model.model_name
@@ -316,6 +263,7 @@ class Trainer():
         self.best_value = 0.0
         self.set_accumulate_step()
         self.set_amp()
+
         for i,j in kwargs.items():
             setattr(self, i, j)
 

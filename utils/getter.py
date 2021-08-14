@@ -1,25 +1,35 @@
 from metrics import *
-from datasets import *
 from models import *
 from trainer import *
 from augmentations import *
 from loggers import *
 from configs import *
 
+import os
+import cv2
+import math
+import json
+from tqdm import tqdm
+from datetime import datetime
 
 import torch
-from tqdm import tqdm
-import math
 import torch.nn as nn
 import torch.utils.data as data
 from torch.utils.data import DataLoader
 import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
-from utils.cuda import NativeScaler
+
+from utils.utils import download_pretrained_weights
+from utils.cuda import NativeScaler, get_devices_info
+
+import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
+from augmentations.transforms import MEAN, STD, get_resize_augmentation
 
 from .random_seed import seed_everything
 
+CACHE_DIR='./.cache'
 
 def get_instance(config, **kwargs):
     # Inherited from https://github.com/vltanh/pytorch-template
@@ -57,7 +67,7 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
             # lambda function for sinusoidal ramp from y1 to y2
             return lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
 
-        lf = one_cycle(1, 0.158, kwargs['num_epochs'])  # cosine 1->hyp['lrf']
+        lf = one_cycle(1, 0.2, kwargs['num_epochs'])  # cosine 1->hyp['lrf']
         scheduler = LambdaLR(optimizer, lr_lambda=lf)
         step_per_epoch = True
         
@@ -65,7 +75,7 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
         scheduler = OneCycleLR(
             optimizer,
             max_lr=0.001,
-            epochs=n_epochs,
+            epochs=kwargs['num_epochs'],
             steps_per_epoch=int(len(kwargs["trainset"]) / kwargs["batch_size"]),
             pct_start=0.1,
             anneal_strategy='cos', 
