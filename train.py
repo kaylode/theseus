@@ -29,8 +29,12 @@ def train(args, config):
 
     optimizer, optimizer_params = get_lr_policy(config.lr_policy)
 
+    criterion = nn.CrossEntropyLoss(
+            ignore_index=trainset.tgt_tokenizer.pad_token_id)
+
     model = Translator(
             model = net,
+            criterion=criterion,
             metrics=None,
             scaler=NativeScaler(),
             optimizer= optimizer,
@@ -93,6 +97,6 @@ def train(args, config):
 if __name__ == '__main__':
     
     args = parser.parse_args()
-    config = Config(os.path.join('configs','configs.yaml'))
+    config = Config(os.path.join('configs','config.yaml'))
 
     train(args, config)

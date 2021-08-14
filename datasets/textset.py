@@ -136,7 +136,7 @@ class TextLoader(BucketIterator):
             self.dataset,
             batch_size=batch_size,
             device=device, 
-            sort_key=lambda x: len(x['src_inputs']),
+            sort_key=lambda x: len(x['src_text']),
             repeat=True, # Repeat the iterator for multiple epochs.
             sort=False,  # Sort all examples in data using `sort_key`.
             shuffle=True, # Shuffle data on each epoch run.

@@ -87,10 +87,10 @@ class Trainer():
 
         self.optimizer.zero_grad()
         self.trainloader.create_batches()
-        for i, batch in enumerate(self.trainloader.batches):
+        for i, raw_batch in enumerate(self.trainloader.batches):
             
             start_time = time.time()
-        
+            batch = self.trainloader.collate_fn(raw_batch)
             with amp.autocast(enabled=self.use_amp):
                 loss, loss_dict = self.model.training_step(batch)
                 if self.use_accumulate:
@@ -188,7 +188,8 @@ class Trainer():
         start_time = time.time()
         with torch.no_grad():
             self.valloader.create_batches()
-            for batch in tqdm(self.valloader.batches):
+            for raw_batch in tqdm(self.valloader.batches):
+                batch = self.trainloader.collate_fn(raw_batch)
                 _, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():

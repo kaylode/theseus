@@ -37,7 +37,7 @@ class Translator(BaseModel):
                 outputs.contiguous().view(-1, outputs.size(-1)), 
                 tgt_targets.contiguous().view(-1))
 
-        loss_dict = {'T': loss.items()}
+        loss_dict = {'T': loss.item()}
         return loss, loss_dict
 
     def inference_step(self, batch, tgt_tokenizer):
@@ -69,7 +69,7 @@ class Translator(BaseModel):
                 outputs.contiguous().view(-1, outputs.size(-1)), 
                 tgt_targets.contiguous().view(-1))
 
-        loss_dict = {'T': loss.items()}
+        loss_dict = {'T': loss.item()}
 
         # self.update_metrics(model=self)
         return loss, loss_dict
