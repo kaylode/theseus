@@ -1,4 +1,5 @@
 from metrics import *
+from datasets import *
 from models import *
 from trainer import *
 from augmentations import *
@@ -26,6 +27,7 @@ from utils.cuda import NativeScaler, get_devices_info
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import MEAN, STD, get_resize_augmentation
+from transformers import AutoTokenizer
 
 from .random_seed import seed_everything
 
@@ -112,22 +114,21 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
 
 
 def get_dataset_and_dataloader(config):
-    raise NotImplementedError
-    trainloader = DataLoader(
-        trainset, 
-        batch_size=config.batch_size, 
-        shuffle = True, 
-        collate_fn=trainset.collate_fn, 
-        num_workers= config.num_workers, 
-        pin_memory=True)
 
-    valloader = DataLoader(
-        valset, 
-        batch_size=config.batch_size, 
-        shuffle = False,
-        collate_fn=valset.collate_fn, 
-        num_workers= config.num_workers, 
-        pin_memory=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    return  trainset, valset, trainloader, valloader
+    trainloader = TextLoader(
+        csv_file=config.train_csv,
+        src_tokenizer=AutoTokenizer.from_pretrained(config.source_language),
+        tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language), 
+        batch_size=config.batch_size, device=device)
+
+    valloader = TextLoader(
+        csv_file=config.val_csv,
+        src_tokenizer=AutoTokenizer.from_pretrained(config.source_language),
+        tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language), 
+        batch_size=config.batch_size, device=device)
+
+
+    return  trainloader.dataset, valloader.dataset, trainloader, valloader
 

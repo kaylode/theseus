@@ -1,0 +1,76 @@
+from .base_model import BaseModel
+from utils.search import greedy_decode
+
+import sys
+sys.path.append('..')
+
+class Translator(BaseModel):
+    def __init__(self, model, **kwargs):
+        super(Translator, self).__init__(**kwargs)
+        self.model = model
+        self.model_name = self.model.name
+        if self.optimizer is not None:
+            self.optimizer = self.optimizer(self.parameters(), lr= self.lr)
+            self.set_optimizer_params()
+
+        if self.freeze:
+            for params in self.model.parameters():
+                params.requires_grad = False
+
+        if self.device:
+            self.model.to(self.device)
+        
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch):
+
+        src_inputs = batch['src_inputs'].to(self.device)
+        src_masks = batch['src_masks'].unsqueeze(-2).to(self.device)
+        tgt_inputs = batch['tgt_inputs'].to(self.device)
+        tgt_targets = batch['tgt_targets'].to(self.device)
+        tgt_masks = batch['tgt_masks'].to(self.device)
+
+        outputs = self.model(src_inputs, tgt_inputs, src_masks, tgt_masks)
+
+        loss = self.criterion(
+                outputs.contiguous().view(-1, outputs.size(-1)), 
+                tgt_targets.contiguous().view(-1))
+
+        loss_dict = {'T': loss.items()}
+        return loss, loss_dict
+
+    def inference_step(self, batch, tgt_tokenizer):
+
+        src_inputs = batch['src_inputs'].to(self.device)
+        src_masks = batch['src_masks'].unsqueeze(-2).to(self.device)
+
+        outputs = greedy_decode(
+            self.model, 
+            src=src_inputs, 
+            src_mask=src_masks, 
+            max_len=src_inputs.shape[-1]+32, 
+            start_symbol=tgt_tokenizer.cls_token_id, 
+            tokenizer=tgt_tokenizer, 
+            device=self.device)
+
+        return outputs  
+
+    def evaluate_step(self, batch):
+        src_inputs = batch['src_inputs'].to(self.device)
+        src_masks = batch['src_masks'].unsqueeze(-2).to(self.device)
+        tgt_inputs = batch['tgt_inputs'].to(self.device)
+        tgt_targets = batch['tgt_targets'].to(self.device)
+        tgt_masks = batch['tgt_masks'].to(self.device)
+
+        outputs = self.model(src_inputs, tgt_inputs, src_masks, tgt_masks)
+
+        loss = self.criterion(
+                outputs.contiguous().view(-1, outputs.size(-1)), 
+                tgt_targets.contiguous().view(-1))
+
+        loss_dict = {'T': loss.items()}
+
+        # self.update_metrics(model=self)
+        return loss, loss_dict
+

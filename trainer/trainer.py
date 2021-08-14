@@ -86,7 +86,8 @@ class Trainer():
         running_time = 0
 
         self.optimizer.zero_grad()
-        for i, batch in enumerate(self.trainloader):
+        self.trainloader.create_batches()
+        for i, batch in enumerate(self.trainloader.batches):
             
             start_time = time.time()
         
@@ -186,7 +187,8 @@ class Trainer():
         print('=============================EVALUATION===================================')
         start_time = time.time()
         with torch.no_grad():
-            for batch in tqdm(self.valloader):
+            self.valloader.create_batches()
+            for batch in tqdm(self.valloader.batches):
                 _, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():
