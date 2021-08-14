@@ -154,7 +154,7 @@ class Trainer():
                     epoch = self.epoch, 
                     iters = self.iters, 
                     best_value=self.best_value,
-                    class_names=self.trainloader.dataset.class_names,
+                    class_names=None,
                     config=self.cfg)
                 
     def inference_batch(self, testloader):
