@@ -22,7 +22,7 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
     # If mask, use masking attetion
     if mask is not None:
         mask = mask.unsqueeze(1)
-        scores = scores.masked_fill(mask == 0, -1e9)
+        scores = scores.masked_fill(mask == 0, -1e4)
     
     # Softmax for scaling in range [0,1]
     scores = F.softmax(scores, dim=-1)
