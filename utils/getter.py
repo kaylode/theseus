@@ -19,9 +19,9 @@ import torch.utils.data as data
 from torch.utils.data import DataLoader
 import torchvision.models as models
 from torch.optim import SGD, AdamW
-from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau, OneCycleLR, CosineAnnealingWarmRestarts
 
-from utils.utils import download_pretrained_weights, CosineWithRestarts
+from utils.utils import download_pretrained_weights
 from utils.cuda import NativeScaler, get_devices_info
 
 import albumentations as A
@@ -110,12 +110,6 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
             last_epoch=-1,
             verbose=False
         )
-        step_per_epoch = False
-
-    elif scheduler_name == 'cosine2':
-        scheduler = CosineWithRestarts(
-            optimizer, 
-            T_max=kwargs["train_len"])
         step_per_epoch = False
 
     return scheduler, step_per_epoch
