@@ -50,9 +50,7 @@ class Translator(BaseModel):
             src=src_inputs, 
             src_mask=src_masks, 
             max_len=src_inputs.shape[-1]+32, 
-            start_symbol=tgt_tokenizer.cls_token_id, 
-            tokenizer=tgt_tokenizer, 
-            device=self.device)
+            tokenizer=tgt_tokenizer)
 
         return outputs  
 
