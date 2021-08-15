@@ -39,8 +39,8 @@ def greedy_decode(model, src, src_mask, tokenizer, max_len=None):
     
     model.eval()
     batch_size = src.shape[0]
-    start_symbol = tokenizer.sos_token_id
-    device = model.device
+    start_symbol = tokenizer.bos_token_id
+    device = next(model.parameters()).device
     if max_len is None:
         max_len = src.shape[-1]
 
@@ -75,4 +75,4 @@ def greedy_decode(model, src, src_mask, tokenizer, max_len=None):
 
     token_ids = ys.detach().cpu().numpy()
     results = convert_ids_to_toks(token_ids, tokenizer)
-    return token_ids
+    return results

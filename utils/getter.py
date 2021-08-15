@@ -21,7 +21,7 @@ import torchvision.models as models
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
 
-from utils.utils import download_pretrained_weights
+from utils.utils import download_pretrained_weights, CosineWithRestarts
 from utils.cuda import NativeScaler, get_devices_info
 
 import albumentations as A
@@ -55,8 +55,9 @@ def get_lr_policy(opt_config):
         optimizer = AdamW
         optimizer_params = {
             'lr': lr, 
+            'eps': 1e-9,
             'weight_decay': opt_config['weight_decay'],
-            'betas': (opt_config['momentum'], 0.999)}
+            'betas': (opt_config['momentum'], 0.98)}
     return optimizer, optimizer_params
 
 def get_lr_scheduler(optimizer, lr_config, **kwargs):
@@ -110,6 +111,13 @@ def get_lr_scheduler(optimizer, lr_config, **kwargs):
             verbose=False
         )
         step_per_epoch = False
+
+    elif scheduler_name == 'cosine2':
+        scheduler = CosineWithRestarts(
+            optimizer, 
+            T_max=kwargs["train_len"])
+        step_per_epoch = False
+
     return scheduler, step_per_epoch
 
 
