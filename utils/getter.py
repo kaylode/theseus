@@ -119,17 +119,17 @@ def get_dataset_and_dataloader(config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-    trainloader = TextLoader(
+    trainloader = EqualLengthTextLoader(
         csv_file=config.train_csv,
         src_tokenizer=AutoTokenizer.from_pretrained(config.source_language),
         tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language), 
         batch_size=config.batch_size, device=device)
 
-    valloader = TextLoader(
+    valloader = RawTextLoader(
+        batch_size=1,
         csv_file=config.val_csv,
         src_tokenizer=AutoTokenizer.from_pretrained(config.source_language),
-        tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language), 
-        batch_size=config.batch_size*4, device=device)
+        tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language))
 
 
     return  trainloader.dataset, valloader.dataset, trainloader, valloader

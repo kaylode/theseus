@@ -1,1 +1,1 @@
-from .textset import TextLoader
+from .textloader import EqualLengthTextLoader, RawTextLoader

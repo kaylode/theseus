@@ -1,8 +1,6 @@
 import torch
-from torch.utils.data import DataLoader
 import numpy as np
 import pandas as pd
-from torchtext.legacy.data import BucketIterator
 
 class TextSet:
     """
@@ -109,37 +107,4 @@ def create_masks(features, pad_token=0, is_tgt_masking=False):
         nopeak_mask = torch.from_numpy(nopeak_mask) == 0
         masks = masks.unsqueeze(1) & nopeak_mask
     
-    return masks
-
-class TextLoader(BucketIterator):
-    """
-    Use BucketIterator to make texts of same length into batch
-    """
-    def __init__(self, 
-                batch_size,
-                csv_file,
-                src_tokenizer,
-                tgt_tokenizer, 
-                device,
-                **kwargs):
-       
-        self.dataset = TextSet(
-                csv_file,
-                src_tokenizer,
-                tgt_tokenizer)
-
-        self.src_tokenizer = self.dataset.src_tokenizer
-        self.tgt_tokenizer = self.dataset.tgt_tokenizer
-        self.collate_fn = self.dataset.collate_fn
-        
-        super(TextLoader, self).__init__(
-            self.dataset,
-            batch_size=batch_size,
-            device=device, 
-            sort_key=lambda x: len(x['src_text']),
-            repeat=True, # Repeat the iterator for multiple epochs.
-            sort=False,  # Sort all examples in data using `sort_key`.
-            shuffle=True, # Shuffle data on each epoch run.
-            sort_within_batch=True) # Use `sort_key` to sort examples in each batch.
-    
-    
+    return masks    
