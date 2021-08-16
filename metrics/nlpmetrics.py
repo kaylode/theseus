@@ -99,15 +99,13 @@ class NLPMetrics(TemplateMetric):
 
         image_id = 0
         with torch.no_grad():
-            self.dataloader.create_batches()
             total_iter = min(len(self.dataloader)-1, int(self.max_samples/self.dataloader.batch_size))
             with tqdm(total=total_iter) as pbar:
-                for idx, raw_batch in enumerate(self.dataloader.batches):
+                for idx, batch in enumerate(self.dataloader):
                     if idx > total_iter:
                         break
 
-                    raw_targets = [s['tgt_text'] for s in raw_batch]
-                    batch = self.dataloader.collate_fn(raw_batch)
+                    raw_targets = [s['tgt_texts_raw'] for s in batch]
                     preds = self.model.inference_step(batch, self.dataloader.tgt_tokenizer)
 
                     for raw_target, pred in zip(raw_targets, preds):

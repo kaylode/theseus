@@ -186,9 +186,7 @@ class Trainer():
         print('=============================EVALUATION===================================')
         start_time = time.time()
         with torch.no_grad():
-            self.valloader.create_batches()
-            for raw_batch in tqdm(self.valloader.batches):
-                batch = self.trainloader.collate_fn(raw_batch)
+            for batch in tqdm(self.valloader):
                 _, loss_dict = self.model.evaluate_step(batch)
                 
                 for (key,value) in loss_dict.items():

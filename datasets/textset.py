@@ -29,12 +29,12 @@ class TextSet:
 
     def collate_fn(self, batch):
             
-        src_texts = [s['src_text'] for s in batch]
-        tgt_texts = [s['tgt_text'] for s in batch]
+        src_texts_raw = [s['src_text'] for s in batch]
+        tgt_texts_raw = [s['tgt_text'] for s in batch]
 
         
-        src_tokens = self.src_tokenizer(src_texts, add_special_tokens=False, truncation=True)
-        tgt_tokens = self.tgt_tokenizer(tgt_texts, truncation=True)
+        src_tokens = self.src_tokenizer(src_texts_raw, add_special_tokens=False, truncation=True)
+        tgt_tokens = self.tgt_tokenizer(tgt_texts_raw, truncation=True)
 
         src_tokens = [np.array(i) for i in src_tokens['input_ids']]
         tgt_tokens = [np.array(i) for i in tgt_tokens['input_ids']]
@@ -66,6 +66,7 @@ class TextSet:
             'tgt_targets': tgt_texts_res.long(),
             'src_masks': src_masks.long(),
             'tgt_masks': tgt_masks.long(),
+            'tgt_texts_raw': tgt_texts_raw
         }
 
 
