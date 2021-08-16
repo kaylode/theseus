@@ -9,9 +9,11 @@ def convert_ids_to_toks(token_ids, tokenizer):
         token_ids:   tokens id
         tokenizer:   tokenizer from Huggingface
     """
+    special_tokens = tokenizer.special_tokens_map_extended.values()
     results = []
     for tok_ids in token_ids:
-        results.append(tokenizer.convert_ids_to_tokens(tok_ids))
+        tok_words = tokenizer.convert_ids_to_tokens(tok_ids)
+        results.append(' '.join([word for word in tok_words if word not in special_tokens]))
     return results
 
 def subsequent_mask(batch_size, size):
