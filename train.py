@@ -35,7 +35,7 @@ def train(args, config):
     model = Translator(
             model = net,
             criterion=criterion,
-            metrics=None,
+            metrics=NLPMetrics(valloader, metrics_list=['bleu', "meteor"]),
             scaler=NativeScaler(),
             optimizer= optimizer,
             optim_params = optimizer_params,     
