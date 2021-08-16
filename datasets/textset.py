@@ -66,7 +66,8 @@ class TextSet:
             'tgt_targets': tgt_texts_res.long(),
             'src_masks': src_masks.long(),
             'tgt_masks': tgt_masks.long(),
-            'tgt_texts_raw': tgt_texts_raw
+            'tgt_texts_raw': tgt_texts_raw,
+            'src_texts_raw': src_texts_raw
         }
 
 

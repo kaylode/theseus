@@ -50,6 +50,16 @@ class Logger():
 
         self.writer.add_figure(tag, image, global_step=step)
 
+    def write_text(self, tag, text, step):
+        """
+        Write a text to tensorboard
+        :param tags: (str) tag for log
+        :param text: (str) text to log
+        :param step: (int) logging step
+        """
+
+        self.writer.add_text(tag, text, global_step=step)
+
     def load(self, old_log):
         """
         Load tensorboard from log
