@@ -3,6 +3,7 @@ import torch.nn as nn
 from .embedding import Embeddings, PositionalEncoding
 from .layers import EncoderLayer, DecoderLayer
 from .norm import LayerNorm
+from .utils import draw_attention_map
 
 def get_clones(module, N):
     """

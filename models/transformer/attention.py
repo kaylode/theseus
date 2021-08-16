@@ -33,7 +33,7 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
 
     # Score, Value matrix multiplication
     output = torch.matmul(scores, v)
-    return output
+    return output, scores
 
 class MultiHeadAttention(nn.Module):
     """
@@ -57,6 +57,9 @@ class MultiHeadAttention(nn.Module):
         
         self.dropout = nn.Dropout(dropout)
         self.out = nn.Linear(d_model, d_model)
+
+        # For visualization
+        self.attn = None
     
     def forward(self, q, k, v, mask=None):
         
@@ -74,7 +77,7 @@ class MultiHeadAttention(nn.Module):
         
 
         # calculate attention 
-        scores = attention(q, k, v, self.d_k, mask, self.dropout)
+        scores, self.attn = attention(q, k, v, self.d_k, mask, self.dropout)
         # concatenate heads and put through final linear layer
         concat = scores.transpose(1,2).contiguous()\
         .view(bs, -1, self.d_model)
