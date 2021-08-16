@@ -23,31 +23,6 @@ Result format
 }]
 """
 
-def test():
-    annFile = 'coco-caption/annotations/captions_val2014.json'
-
-    coco = COCO(annFile)
-    valids = coco.getImgIds()
-
-    cocoRes = coco.loadRes(cache_path)
-    cocoEval = COCOEvalCap(coco, cocoRes)
-    cocoEval.params['image_id'] = cocoRes.getImgIds()
-    cocoEval.evaluate()
-
-    # create output dictionary
-    out = {}
-    for metric, score in cocoEval.eval.items():
-        out[metric] = score
-
-    imgToEval = cocoEval.imgToEval
-    for p in preds_filt:
-        image_id, caption = p['image_id'], p['caption']
-        imgToEval[image_id]['caption'] = caption
-    with open(cache_path, 'w') as outfile:
-        json.dump({'overall': out, 'imgToEval': imgToEval}, outfile)
-    return out 
-
-
 def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
     # load results in COCO evaluation tool
     coco_pred = coco_gt.loadRes(pred_json_path)
@@ -116,12 +91,11 @@ class NLPEval(TemplateMetric):
 
     def value(self):
         result = self.compute()
+        valid_imgs = self.coco_gt.getImgIds()
+
+        stats = _eval(self.coco_gt, valid_imgs, self.filepath)
         
-        return {
-            "MAP" : 0.0,
-            "MAPsmall" : 0.0,
-            "MAPmedium" : 0.0,
-            "MAPlarge" : 0.0,}
+        return stats
 
     def __str__(self):
         return f'Mean Average Precision: {self.value()}'
