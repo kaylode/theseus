@@ -129,7 +129,7 @@ def get_dataset_and_dataloader(config):
         csv_file=config.val_csv,
         src_tokenizer=AutoTokenizer.from_pretrained(config.source_language),
         tgt_tokenizer=AutoTokenizer.from_pretrained(config.target_language), 
-        batch_size=config.batch_size, device=device)
+        batch_size=config.batch_size*4, device=device)
 
 
     return  trainloader.dataset, valloader.dataset, trainloader, valloader
