@@ -21,18 +21,18 @@ class COCOEvalCap:
         self.scorers = []
 
         if 'bleu' in metrics_list:
-            self.scorers.append((Bleu(4), ["Bleu_1", "Bleu_2", "Bleu_3", "Bleu_4"]))
+            self.scorers.append((Bleu(4, verbose=False), ["Bleu_1", "Bleu_2", "Bleu_3", "Bleu_4"]))
 
         if "meteor" in metrics_list:
             self.scorers.append((Meteor(),"METEOR"))
 
-        if 'rouge' in self.metrics_list:
+        if 'rouge' in metrics_list:
             self.scorers.append((Rouge(), "ROUGE_L"))
 
-        if 'cider' in self.metrics_list:
+        if 'cider' in metrics_list:
             self.scorers.append((Cider(), "CIDEr"))
 
-        if 'spice' in self.metrics_list:
+        if 'spice' in metrics_list:
             self.scorers.append((Spice(), "SPICE"))
 
 
@@ -48,7 +48,7 @@ class COCOEvalCap:
         # =================================================
         # Set up scorers
         # =================================================
-        tokenizer = PTBTokenizer()
+        tokenizer = PTBTokenizer(verbose=False)
         gts  = tokenizer.tokenize(gts)
         res = tokenizer.tokenize(res)
 
