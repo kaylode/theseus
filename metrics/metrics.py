@@ -23,7 +23,11 @@ Result format
 }]
 """
 
-def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
+def _eval(gt_json_path, pred_json_path):
+
+    coco_gt = COCO(gt_json_path)
+    image_ids = coco_gt.getImgIds()
+
     # load results in COCO evaluation tool
     coco_pred = coco_gt.loadRes(pred_json_path)
 
@@ -40,6 +44,7 @@ def _eval(coco_gt, image_ids, pred_json_path, **kwargs):
 
     return stats
 
+
 class NLPEval(TemplateMetric):
     def __init__(
             self,
@@ -47,11 +52,11 @@ class NLPEval(TemplateMetric):
             max_samples = 10000,
             decimals = 4):
 
-        self.coco_gt = COCO(dataloader.dataset.ann_path)
         self.dataloader = dataloader
         self.max_samples = max_samples
         self.decimals = decimals
         self.filepath = f'results/text_results.json'
+        self.gt_filepath = f'results/text_gt.json'
         self.image_ids = []
         self.reset()
 
@@ -67,16 +72,20 @@ class NLPEval(TemplateMetric):
         self.model.eval()
 
     def compute(self):
+        gt = []
         results = []
         with torch.no_grad():
 
             with tqdm(total=min(len(self.dataloader), self.max_samples)) as pbar:
-                for idx, batch in enumerate(self.dataloader):
+                for idx, raw_batch in enumerate(self.dataloader):
                     if idx > self.max_samples:
                         break
-                    
+
+                    raw_targets = [s['tgt_text'] for s in raw_batch]
+                    batch = self.trainloader.collate_fn(raw_batch)
                     preds = self.model.inference_step(batch, self.dataloader.tgt_tokenizer)
 
+                    gt += raw_targets
                     results += preds
                     pbar.update(1)
 
@@ -87,14 +96,17 @@ class NLPEval(TemplateMetric):
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
         json.dump(results, open(self.filepath, 'w'), indent=4)
+
+        # Write gt
+        if os.path.exists(self.gt_filepath):
+            os.remove(self.gt_filepath)
+        json.dump(gt, open(self.gt_filepath, 'w'), indent=4)
+        
         return True
 
     def value(self):
-        result = self.compute()
-        valid_imgs = self.coco_gt.getImgIds()
-
-        stats = _eval(self.coco_gt, valid_imgs, self.filepath)
-        
+        self.compute()
+        stats = _eval(self.gt_filepath, self.filepath)
         return stats
 
     def __str__(self):
