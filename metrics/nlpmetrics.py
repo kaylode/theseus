@@ -49,6 +49,16 @@ def _eval(gt_json_path, pred_json_path, image_ids=None, metrics_list=['bleu', "m
     for metric, score in coco_eval.eval.items():
         stats[metric] = score
 
+    # Get average metric score
+    if 'bleu' in metrics_list:
+        bleu_count = 0
+        bleu_score = 0
+        for metric in stats.keys():
+            if 'Bleu' in metric:
+                bleu_count += 1
+                bleu_score += stats[metric]
+        stats['BLEU'] = bleu_score/bleu_count
+
     return stats
 
 
