@@ -68,7 +68,7 @@ class NLPMetrics(TemplateMetric):
             dataloader, 
             max_samples = 10000,
             metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice'],
-            decimals = 4):
+            decimals = 5):
 
         self.dataloader = dataloader
         self.max_samples = max_samples
@@ -148,6 +148,11 @@ class NLPMetrics(TemplateMetric):
         self.compute()
         stats = _eval(
             self.gt_filepath, self.filepath, self.image_ids, self.metrics_list)
+
+        # Round up
+        for key, value in stats.items():
+            stats[key] = np.round(value, float(self.decimals))
+        
         return stats
 
     def __str__(self):
