@@ -5,8 +5,11 @@ import numpy as np
 from tqdm import tqdm
 from .metrictemplate import TemplateMetric
 from pycocotools.coco import COCO
-from pycocoevalcap.eval import COCOEvalCap
+from .pycocoevalcap.eval import COCOEvalCap
 
+"""
+https://github.com/salaniz/pycocoevalcap
+"""
 
 """
 GT format
@@ -35,7 +38,7 @@ def _eval(gt_json_path, pred_json_path, image_ids=None):
 
     # run COCO evaluation
     coco_eval = COCOEvalCap(coco_gt, coco_pred)
-    coco_eval.params.imgIds = image_ids
+    coco_eval.params['image_id'] = image_ids
 
     coco_eval.evaluate()
 
@@ -75,6 +78,7 @@ class NLPEval(TemplateMetric):
 
     def compute(self):
         gt_dict = {
+            'images': [],
             'annotations': []
         }
         result_dict = []
@@ -82,9 +86,10 @@ class NLPEval(TemplateMetric):
         image_id = 0
         with torch.no_grad():
             self.dataloader.create_batches()
-            with tqdm(total=min(len(self.dataloader), int(self.max_samples/self.dataloader.batch_size))) as pbar:
+            total_iter = min(len(self.dataloader)-1, int(self.max_samples/self.dataloader.batch_size))
+            with tqdm(total=total_iter) as pbar:
                 for idx, raw_batch in enumerate(self.dataloader.batches):
-                    if idx > self.max_samples:
+                    if idx > total_iter:
                         break
 
                     raw_targets = [s['tgt_text'] for s in raw_batch]
@@ -92,6 +97,11 @@ class NLPEval(TemplateMetric):
                     preds = self.model.inference_step(batch, self.dataloader.tgt_tokenizer)
 
                     for raw_target, pred in zip(raw_targets, preds):
+
+                        gt_dict["images"].append({
+                            'id': image_id
+                        })
+
                         gt_dict['annotations'].append({
                             'id': image_id,
                             'image_id': image_id,
@@ -99,7 +109,7 @@ class NLPEval(TemplateMetric):
                         })
                             
                         result_dict.append({
-                            'id': image_id,
+                            'image_id': image_id,
                             'caption': pred
                         })
 
@@ -124,6 +134,7 @@ class NLPEval(TemplateMetric):
     def value(self):
         self.compute()
         stats = _eval(self.gt_filepath, self.filepath)
+        print(stats)
         return stats
 
     def __str__(self):
