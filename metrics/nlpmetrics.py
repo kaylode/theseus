@@ -26,7 +26,7 @@ Result format
 }]
 """
 
-def _eval(gt_json_path, pred_json_path, image_ids=None):
+def _eval(gt_json_path, pred_json_path, image_ids=None, metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice']):
 
     coco_gt = COCO(gt_json_path)
     
@@ -40,6 +40,8 @@ def _eval(gt_json_path, pred_json_path, image_ids=None):
     coco_eval = COCOEvalCap(coco_gt, coco_pred)
     coco_eval.params['image_id'] = image_ids
 
+    # Set evaluation metrics
+    coco_eval.setMetrics(metrics_list)
     coco_eval.evaluate()
 
     # create output dictionary
@@ -50,11 +52,12 @@ def _eval(gt_json_path, pred_json_path, image_ids=None):
     return stats
 
 
-class NLPEval(TemplateMetric):
+class NLPMetrics(TemplateMetric):
     def __init__(
             self,
             dataloader, 
             max_samples = 10000,
+            metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice'],
             decimals = 4):
 
         self.dataloader = dataloader
@@ -63,6 +66,7 @@ class NLPEval(TemplateMetric):
         self.filepath = f'results/text_results.json'
         self.gt_filepath = f'results/text_gt.json'
         self.image_ids = []
+        self.metrics_list = metrics_list
         self.reset()
 
         if not os.path.exists('results'):
@@ -113,6 +117,7 @@ class NLPEval(TemplateMetric):
                             'caption': pred
                         })
 
+                        self.image_ids.append(image_id)
                         image_id += 1
                     pbar.update(1)
 
@@ -133,12 +138,12 @@ class NLPEval(TemplateMetric):
 
     def value(self):
         self.compute()
-        stats = _eval(self.gt_filepath, self.filepath)
-        print(stats)
+        stats = _eval(
+            self.gt_filepath, self.filepath, self.image_ids, self.metrics_list)
         return stats
 
     def __str__(self):
-        return f'Mean Average Precision: {self.value()}'
+        return f'{self.value()}'
 
     def __len__(self):
         return len(self.dataloader)
