@@ -23,10 +23,12 @@ Result format
 }]
 """
 
-def _eval(gt_json_path, pred_json_path):
+def _eval(gt_json_path, pred_json_path, image_ids=None):
 
     coco_gt = COCO(gt_json_path)
-    image_ids = coco_gt.getImgIds()
+    
+    if image_ids is None:
+        image_ids = coco_gt.getImgIds()
 
     # load results in COCO evaluation tool
     coco_pred = coco_gt.loadRes(pred_json_path)
@@ -72,35 +74,50 @@ class NLPEval(TemplateMetric):
         self.model.eval()
 
     def compute(self):
-        gt = []
-        results = []
-        with torch.no_grad():
+        gt_dict = {
+            'annotations': []
+        }
+        result_dict = []
 
-            with tqdm(total=min(len(self.dataloader), self.max_samples)) as pbar:
-                for idx, raw_batch in enumerate(self.dataloader):
+        image_id = 0
+        with torch.no_grad():
+            self.dataloader.create_batches()
+            with tqdm(total=min(len(self.dataloader), int(self.max_samples/self.dataloader.batch_size))) as pbar:
+                for idx, raw_batch in enumerate(self.dataloader.batches):
                     if idx > self.max_samples:
                         break
 
                     raw_targets = [s['tgt_text'] for s in raw_batch]
-                    batch = self.trainloader.collate_fn(raw_batch)
+                    batch = self.dataloader.collate_fn(raw_batch)
                     preds = self.model.inference_step(batch, self.dataloader.tgt_tokenizer)
 
-                    gt += raw_targets
-                    results += preds
+                    for raw_target, pred in zip(raw_targets, preds):
+                        gt_dict['annotations'].append({
+                            'id': image_id,
+                            'image_id': image_id,
+                            'caption': raw_target
+                        })
+                            
+                        result_dict.append({
+                            'id': image_id,
+                            'caption': pred
+                        })
+
+                        image_id += 1
                     pbar.update(1)
 
-        if not len(results):
+        if not len(result_dict):
             return False
 
         # write output
         if os.path.exists(self.filepath):
             os.remove(self.filepath)
-        json.dump(results, open(self.filepath, 'w'), indent=4)
+        json.dump(result_dict, open(self.filepath, 'w'), indent=4)
 
         # Write gt
         if os.path.exists(self.gt_filepath):
             os.remove(self.gt_filepath)
-        json.dump(gt, open(self.gt_filepath, 'w'), indent=4)
+        json.dump(gt_dict, open(self.gt_filepath, 'w'), indent=4)
         
         return True
 
