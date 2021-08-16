@@ -10,3 +10,4 @@ pycocotools
 gdown==3.13.0
 transformers
 emoji
+pycocoevalcap
