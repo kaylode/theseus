@@ -1,7 +1,9 @@
 import os
 import time
+from matplotlib.pyplot import show
 import numpy as np
 from tqdm import tqdm
+import pandas as pd
 
 import torch
 from torch.cuda import amp
@@ -234,10 +236,37 @@ class Trainer():
             self.visualize_batch()
         
     def visualize_batch(self):
+        from models.transformer import draw_attention_map
+
         if not os.path.exists('./samples'):
             os.mkdir('./samples')
 
+        result = {
+            'gt': [],
+            'pred': []
+        }
         self.model.eval()
+        for idx, batch in enumerate(self.valloader):
+            if idx > 8:
+                break
+
+            raw_targets = batch['tgt_texts_raw']
+            raw_sources = batch['src_texts_raw']
+            preds = self.model.inference_step(batch, self.valloader.tgt_tokenizer)
+            for raw_source, raw_target, pred in zip(raw_sources, raw_targets, preds):
+                result['gt'].append(raw_target)
+                result['pred'].append(pred)
+
+                self.logger.write_text(f"GT: {raw_target}", f"Pred: {pred}", self.epoch)
+
+
+                figs = draw_attention_map(raw_source, pred, self.model, show_fig=False, return_figs=True)
+                for tag, fig in figs:
+                    tag = f"{idx}/{tag}"
+                    self.logger.write_image(tag, fig, self.epoch)
+            
+        pd.DataFrame(result).to_csv('./samples/sample.csv', index=False)
+        
        
     def logging(self, logs, step):
         tags = [l for l in logs.keys()]
