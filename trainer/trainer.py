@@ -220,6 +220,18 @@ class Trainer():
         log_dict.update(metric_log_dict)
         self.logging(log_dict, step=self.epoch)
 
+        # Save model gives best average BLEU score
+        if metric_dict['BLEU'] > self.best_value:
+            self.best_value = metric_dict['BLEU']
+            self.checkpoint.save(
+                self.model, 
+                save_mode = 'best', 
+                epoch = self.epoch, 
+                iters = self.iters, 
+                best_value=self.best_value,
+                class_names=None,
+                config=self.cfg)
+
         if self.visualize_when_val:
             self.visualize_batch()
         
