@@ -69,6 +69,6 @@ class Translator(BaseModel):
 
         loss_dict = {'T': loss.item()}
 
-        # self.update_metrics(model=self)
+        self.update_metrics(model=self)
         return loss, loss_dict
 
