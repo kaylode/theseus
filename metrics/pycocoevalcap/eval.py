@@ -5,7 +5,8 @@ from .meteor.meteor import Meteor
 from .rouge.rouge import Rouge
 from .cider.cider import Cider
 from .spice.spice import Spice
-
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class COCOEvalCap:
     def __init__(self, coco, cocoRes):
