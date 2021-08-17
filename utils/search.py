@@ -53,27 +53,26 @@ def greedy_decode(model, src, src_mask, tokenizer, max_len=None):
     memory = model.encoder(src, src_mask)
     
     with torch.no_grad():
-        for batch_idx in range(batch_size):
-            for i in range(max_len-1):
+        for i in range(max_len-1):
 
-                # Target masks
-                ys_mask = subsequent_mask(batch_size, ys.size(1)).type_as(src_mask.data)
+            # Target masks
+            ys_mask = subsequent_mask(batch_size, ys.size(1)).type_as(src_mask.data)
 
-                # Decoder output
-                out = model.decoder(Variable(ys).to(device), 
-                                    memory, src_mask, 
-                                  Variable(ys_mask).to(device))
+            # Decoder output
+            out = model.decoder(Variable(ys).to(device), 
+                                memory, src_mask, 
+                                Variable(ys_mask).to(device))
 
-                # Generator
-                prob = model.out(out[:, -1])
+            # Generator
+            prob = model.out(out[:, -1])
 
-                # Get highest probability word
-                _, next_word = torch.max(prob, dim = 1)
+            # Get highest probability word
+            _, next_word = torch.max(prob, dim = 1)
 
-                # Append result for next prediction
-                next_word = next_word.cpu()
-                next_word = next_word.reshape(batch_size, -1)
-                ys = torch.cat([ys, next_word], dim=1)
+            # Append result for next prediction
+            next_word = next_word.cpu()
+            next_word = next_word.reshape(batch_size, -1)
+            ys = torch.cat([ys, next_word], dim=1)
 
     token_ids = ys.detach().cpu().numpy()
     results = convert_ids_to_toks(token_ids, tokenizer)
