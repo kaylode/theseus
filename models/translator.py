@@ -1,5 +1,5 @@
 from .base_model import BaseModel
-from utils.search import sampling_search
+from models.transformer.search import sampling_search
 
 import sys
 sys.path.append('..')
@@ -45,14 +45,8 @@ class Translator(BaseModel):
         src_inputs = batch['src_inputs'].to(self.device)
         src_masks = batch['src_masks'].unsqueeze(-2).to(self.device)
 
-        outputs = sampling_search(
-            self.model, 
-            src=src_inputs, 
-            src_mask=src_masks, 
-            max_len=src_inputs.shape[-1]+32, 
-            top_k = 100, top_p=0.9, 
-            temperature = 0.9,
-            tokenizer=tgt_tokenizer)
+        outputs = self.model.predict(
+            src_inputs, src_masks, tgt_tokenizer)
 
         return outputs  
 
