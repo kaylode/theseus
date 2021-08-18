@@ -237,8 +237,7 @@ class Trainer():
 
                 self.logger.write_text(f"GT: {raw_target}", f"Pred: {pred}", self.epoch)
 
-
-                figs = draw_attention_map(raw_source, pred, self.model, show_fig=False, return_figs=True)
+                figs = draw_attention_map(raw_source, pred, self.model.model, show_fig=False, return_figs=True)
                 for tag, fig in figs:
                     tag = f"{idx}/{tag}"
                     self.logger.write_image(tag, fig, self.epoch)

@@ -163,7 +163,7 @@ class NLPMetrics(TemplateMetric):
 
         # Round up
         for key, value in stats.items():
-            stats[key] = np.round(value, float(self.decimals))
+            stats[key] = np.round(float(value), self.decimals)
         
         return stats
 
