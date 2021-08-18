@@ -4,6 +4,7 @@ from .embedding import Embeddings, PositionalEncoding
 from .layers import EncoderLayer, DecoderLayer
 from .norm import LayerNorm
 from .utils import draw_attention_map
+from .search import sampling_search, beam_search
 
 def get_clones(module, N):
     """
@@ -97,3 +98,27 @@ class Transformer(nn.Module):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
+
+    def predict(
+        self, src_inputs, src_masks, 
+        tokenizer, max_len=None, 
+        top_k = 100, top_p=0.9, temperature = 0.9):
+
+        """
+        Inference step
+        """
+
+        if max_len is None:
+            max_len = src_inputs.shape[-1]+32
+
+        # sampling_search, beam_search
+        outputs = sampling_search(
+            self, 
+            src=src_inputs, 
+            src_mask=src_masks, 
+            max_len=max_len, 
+            top_k = top_k, top_p=top_p, 
+            temperature = temperature,
+            tokenizer=tokenizer)
+
+        return outputs
