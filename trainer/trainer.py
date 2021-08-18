@@ -158,28 +158,6 @@ class Trainer():
                     class_names=None,
                     config=self.cfg)
                 
-    def inference_batch(self, testloader):
-        self.model.eval()
-        results = []
-        with torch.no_grad():
-            for batch in testloader:
-                outputs = self.model.inference_step(batch)
-                if isinstance(outputs, (list, tuple)):
-                    for i in outputs:
-                        results.append(i)
-                else:
-                    results = outputs
-                break      
-        return results
-
-    def inference_item(self, img):
-        self.model.eval()
-
-        with torch.no_grad():
-            outputs = self.model.inference_step({"imgs": img.unsqueeze(0)})      
-        return outputs
-
-
     def evaluate_epoch(self):
         self.model.eval()
         epoch_loss = {}

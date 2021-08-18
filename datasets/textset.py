@@ -4,7 +4,7 @@ import pandas as pd
 
 class TextSet:
     """
-    Input path to folder contains image features as numpy
+    Input path to csv file contains texts
     """
     def __init__(self, csv_file, src_tokenizer, tgt_tokenizer):
         self.csv_file = csv_file

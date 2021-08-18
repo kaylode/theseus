@@ -66,7 +66,7 @@ class NLPMetrics(TemplateMetric):
     def __init__(
             self,
             dataloader, 
-            max_samples = 10000,
+            max_samples = None,
             metrics_list=['bleu', "meteor", 'rouge', 'cider', 'spice'],
             decimals = 5):
 
@@ -75,7 +75,10 @@ class NLPMetrics(TemplateMetric):
         self.decimals = decimals
         self.filepath = f'results/text_results.json'
         self.gt_filepath = f'results/text_gt.json'
-        self.image_ids = []
+        if self.max_samples is not None:
+            self.image_ids = []
+        else:
+            self.image_ids = None
         self.metrics_list = metrics_list
         self.reset()
 
@@ -84,7 +87,10 @@ class NLPMetrics(TemplateMetric):
             
     def reset(self):
         self.model = None
-        self.image_ids = []
+        if self.max_samples is not None:
+            self.image_ids = []
+        else:
+            self.image_ids = None
 
     def update(self, model):
         self.model = model
@@ -99,7 +105,11 @@ class NLPMetrics(TemplateMetric):
 
         image_id = 0
         with torch.no_grad():
-            total_iter = min(len(self.dataloader)-1, int(self.max_samples/self.dataloader.batch_size))
+            if self.max_samples is not None:
+                total_iter = min(len(self.dataloader)-1, int(self.max_samples/self.dataloader.batch_size))
+            else:
+                total_iter = len(self.dataloader)-1
+
             with tqdm(total=total_iter) as pbar:
                 for idx, batch in enumerate(self.dataloader):
                     if idx > total_iter:
@@ -124,8 +134,10 @@ class NLPMetrics(TemplateMetric):
                             'image_id': image_id,
                             'caption': pred
                         })
-
-                        self.image_ids.append(image_id)
+                        
+                        if self.image_ids is not None:
+                            self.image_ids.append(image_id)
+                            
                         image_id += 1
                     pbar.update(1)
 

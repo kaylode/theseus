@@ -37,7 +37,7 @@ class EqualLengthTextLoader(BucketIterator):
 
 class RawTextLoader(DataLoader):
     """
-    Use DataLoader to make texts of same length into batch
+    Use DataLoader to make texts into batch
     """
     def __init__(self, 
                 batch_size,
