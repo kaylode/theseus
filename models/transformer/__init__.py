@@ -88,7 +88,7 @@ class Transformer(nn.Module):
         self.out = nn.Linear(d_model, trg_vocab)
         self.init_params()
 
-    def forward(self, src, trg, src_mask, trg_mask):
+    def forward(self, src, trg, src_mask, trg_mask, *args, **kwargs):
         e_outputs = self.encoder(src, src_mask)
         d_output = self.decoder(trg, e_outputs, src_mask, trg_mask)
         output = self.out(d_output)
@@ -102,7 +102,8 @@ class Transformer(nn.Module):
     def predict(
         self, src_inputs, src_masks, 
         tokenizer, max_len=None, 
-        top_k = 100, top_p=0.9, temperature = 0.9):
+        top_k = 100, top_p=0.9, temperature = 0.9,
+        *args, **kwargs):
 
         """
         Inference step

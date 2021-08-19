@@ -31,7 +31,11 @@ class Translator(BaseModel):
         tgt_targets = batch['tgt_targets'].to(self.device)
         tgt_masks = batch['tgt_masks'].to(self.device)
 
-        outputs = self.model(src_inputs, tgt_inputs, src_masks, tgt_masks)
+        outputs = self.model(
+            src_inputs = src_inputs, 
+            tgt_inputs = tgt_inputs, 
+            src_masks = src_masks, 
+            tgt_masks = tgt_masks)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
@@ -46,7 +50,9 @@ class Translator(BaseModel):
         src_masks = batch['src_masks'].unsqueeze(-2).to(self.device)
 
         outputs = self.model.predict(
-            src_inputs, src_masks, tgt_tokenizer)
+            src_inputs = src_inputs,
+            src_masks = src_masks, 
+            tokenizer = tgt_tokenizer)
 
         return outputs  
 
@@ -57,7 +63,11 @@ class Translator(BaseModel):
         tgt_targets = batch['tgt_targets'].to(self.device)
         tgt_masks = batch['tgt_masks'].to(self.device)
 
-        outputs = self.model(src_inputs, tgt_inputs, src_masks, tgt_masks)
+        outputs = self.model(
+            src_inputs = src_inputs, 
+            tgt_inputs = tgt_inputs, 
+            src_masks = src_masks, 
+            tgt_masks = tgt_masks)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
