@@ -32,10 +32,10 @@ class Translator(BaseModel):
         tgt_masks = batch['tgt_masks'].to(self.device)
 
         outputs = self.model(
-            src_inputs = src_inputs, 
-            tgt_inputs = tgt_inputs, 
-            src_masks = src_masks, 
-            tgt_masks = tgt_masks)
+            src = src_inputs, 
+            trg = tgt_inputs, 
+            src_mask = src_masks, 
+            trg_mask = tgt_masks)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 
@@ -64,10 +64,10 @@ class Translator(BaseModel):
         tgt_masks = batch['tgt_masks'].to(self.device)
 
         outputs = self.model(
-            src_inputs = src_inputs, 
-            tgt_inputs = tgt_inputs, 
-            src_masks = src_masks, 
-            tgt_masks = tgt_masks)
+            src = src_inputs, 
+            trg = tgt_inputs, 
+            src_mask = src_masks, 
+            trg_mask = tgt_masks)
 
         loss = self.criterion(
                 outputs.contiguous().view(-1, outputs.size(-1)), 

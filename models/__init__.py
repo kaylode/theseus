@@ -20,8 +20,11 @@ def get_lstm_model(src_vocab, trg_vocab):
     lstm_config = {
             'src_vocab':        src_vocab, 
             'trg_vocab':        trg_vocab, 
-            "embed_size":       512, 
-            "hidden_size":      1024,
+            "embed_dim":        512, 
+            "hidden_dim":       1024,
             "num_layers":       1,
+            'bidirectional':    False,
+            'dropout' :         None
         }
+
     return Seq2Seq(**lstm_config)

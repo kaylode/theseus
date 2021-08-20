@@ -70,6 +70,7 @@ class Seq2Seq(nn.Module):
     """
     def __init__(self, src_vocab, trg_vocab, embed_dim, hidden_dim, num_layers, bidirectional, dropout):
         super(Seq2Seq, self).__init__()
+        self.name = "Seq2Seq"
         self.encoder = EncoderLSTM(embed_dim, hidden_dim, src_vocab, num_layers=num_layers, bidirectional=bidirectional)
         self.decoder = DecoderLSTM(embed_dim, hidden_dim, trg_vocab, num_layers=num_layers, bidirectional=bidirectional)
         self.out = nn.Linear(hidden_dim, trg_vocab)
