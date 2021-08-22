@@ -90,10 +90,11 @@ def sampling_search(model, src, src_mask, tokenizer, max_len=None, top_k = 100, 
     # Result tokens
     ys = torch.ones(batch_size, 1).fill_(start_symbol).long()
 
-    # Encoder output
-    memory = model.encoder(src, src_mask)
     
     with torch.no_grad():
+        # Encoder output
+        memory = model.encoder(src, src_mask)
+
         for i in range(max_len-1):
 
             # Target masks
@@ -211,42 +212,43 @@ def beam_search(model, src, src_mask, tokenizer, max_len=None, k=5, alpha=0.6):
     if max_len is None:
         max_len = src.shape[-1]
 
-    ys, memorys, log_scores = init_vars(
-        model, src, src_mask, tokenizer, 
-        max_len=max_len, k=k, device=device)
+    with torch.no_grad():
+        ys, memorys, log_scores = init_vars(
+            model, src, src_mask, tokenizer, 
+            max_len=max_len, k=k, device=device)
 
-    results = []
-    for batch_id in range(batch_size):
-        # Iterrate through batch
-        ys_k = ys[batch_id]
-        memorys_k = memorys[batch_id].unsqueeze(0)
-        log_scores_k = log_scores[batch_id].unsqueeze(0)
-        src_mask_k = src_mask[batch_id].unsqueeze(0)
-        for i in range(2, max_len):
-    
-            # Target masks
-            trg_mask = subsequent_mask(1, i).type_as(src_mask.data)
-            out = model.decoder(
-                ys_k[:,:i].to(device), 
-                memorys_k.to(device), 
-                src_mask_k.to(device), 
-                trg_mask.to(device))
-            prob = model.out(out[:, -1])
-            out = F.softmax(prob, dim=-1)
-            ys_k, log_scores_k = k_best_outputs(ys_k, out, log_scores_k, i, k)
+        results = []
+        for batch_id in range(batch_size):
+            # Iterrate through batch
+            ys_k = ys[batch_id]
+            memorys_k = memorys[batch_id].unsqueeze(0)
+            log_scores_k = log_scores[batch_id].unsqueeze(0)
+            src_mask_k = src_mask[batch_id].unsqueeze(0)
+            for i in range(2, max_len):
+        
+                # Target masks
+                trg_mask = subsequent_mask(1, i).type_as(src_mask.data)
+                out = model.decoder(
+                    ys_k[:,:i].to(device), 
+                    memorys_k.to(device), 
+                    src_mask_k.to(device), 
+                    trg_mask.to(device))
+                prob = model.out(out[:, -1])
+                out = F.softmax(prob, dim=-1)
+                ys_k, log_scores_k = k_best_outputs(ys_k, out, log_scores_k, i, k)
 
-            # Length penalty
-            length_penalty = ((5.0 + (i + 1)) / 6.0) ** alpha
+                # Length penalty
+                length_penalty = ((5.0 + (i + 1)) / 6.0) ** alpha
 
-            # Flatten probs into a list of possibilities.
-            log_scores_k = log_scores_k / length_penalty
+                # Flatten probs into a list of possibilities.
+                log_scores_k = log_scores_k / length_penalty
 
-        # Only get beam with highest prob
-        highest_prob, highest_prob_id = torch.max(log_scores_k, dim=1)
-        highest_prob_sent = ys_k[highest_prob_id]
-        token_ids_k = highest_prob_sent.detach().cpu().numpy()
-        results_k = convert_ids_to_toks(token_ids_k, tokenizer)   
-        results.append(results_k)
+            # Only get beam with highest prob
+            highest_prob, highest_prob_id = torch.max(log_scores_k, dim=1)
+            highest_prob_sent = ys_k[highest_prob_id]
+            token_ids_k = highest_prob_sent.detach().cpu().numpy()
+            results_k = convert_ids_to_toks(token_ids_k, tokenizer)   
+            results.append(results_k)
 
     return results
 
