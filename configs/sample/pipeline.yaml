@@ -1,0 +1,85 @@
+global:
+  debug: False
+  cfg_transform: ./transform.yaml
+  save_dir: './runs'
+  device: cuda:0
+  
+
+trainer:
+  name: ClassificationLearner
+  args:
+    num_epochs: 100
+    total_accumulate_steps: null
+    clip_grad:  10.0
+    print_per_iter: 100
+    evaluate_per_epoch :  1
+    visualize_when_val :  True
+
+
+model:
+  name: BaseTimmModel
+  args:
+    name: convnext_small
+    from_pretrained: True
+    num_classes: 41
+    txt_classnames: "./datasets/classes.txt"
+
+
+loss:
+  name: SmoothCEwithstat
+  args:
+
+
+optimizer:
+  name: Adam
+  args:
+    lr: 0.001
+
+
+metric:
+  - name: Accuracy
+    args:
+  - name: BalancedAccuracyMetric
+    args: 
+      num_classes: 41
+  - name: F1ScoreMetric
+    args:
+      average: weighted
+  # - name: ConfusionMatrix
+  #   args:
+  #     classes_map: 
+      
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: cosine2
+
+data: # instruction here
+  dataset:
+    train:
+      name: CSVDataset.from_folder
+      args:
+        image_dir: "./classification/data/mapdasCLF/images/train"
+        csv_path: "./classification/data/mapdasCLF/annotations/mapdas_train.csv"
+        txt_classnames: "./datasets/classes.txt"
+        test: False
+    
+    val:
+      name: CSVDataset.from_folder
+      args:
+        image_dir: "./classification/data/mapdasCLF/images/val"
+        csv_path: "./classification/data/mapdasCLF/annotations/mapdas_val.csv"
+        txt_classnames: "./datasets/classes.txt"
+        test: True
+
+  dataloader:
+    train:
+      name: CSVLoader
+      args:
+        batch_size: 128
+        train: True
+    val:
+      name: CSVLoader
+      args:
+        batch_size: 128
+        train: False
