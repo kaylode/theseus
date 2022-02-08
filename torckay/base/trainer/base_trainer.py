@@ -1,5 +1,6 @@
+import os
 from torckay.utilities.loggers.logger import LoggerManager
-from ...utilities.loggers.cp_logger import Checkpoint
+from torckay.utilities.loggers.cp_logger import Checkpoint
 from torckay.utilities.loggers.tf_logger import TensorboardLogger
 
 LOGGER = LoggerManager.init_logger(__name__)
@@ -32,7 +33,7 @@ class BaseTrainer():
         self.valloader = valloader
 
         self.save_dir = save_dir
-        self.checkpoint = Checkpoint(self.save_dir)
+        self.checkpoint = Checkpoint(os.path.join(self.save_dir, 'checkpoints'))
         self.num_epochs = num_epochs
         self.tf_logger = TensorboardLogger(self.save_dir)
         self.step_per_epoch = self.scheduler.step_per_epoch
