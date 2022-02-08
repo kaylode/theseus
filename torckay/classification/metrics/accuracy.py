@@ -22,7 +22,7 @@ class Accuracy(Metric):
 
     def update(self, output: torch.Tensor, batch: Dict[str, Any]):
 
-        target = batch["target"] 
+        target = batch["targets"] 
         prediction = torch.argmax(output, dim=1)
         correct = (prediction.view(-1) == target.view(-1)).sum()
         correct = correct.cpu()

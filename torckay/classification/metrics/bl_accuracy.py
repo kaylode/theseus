@@ -23,7 +23,7 @@ class BalancedAccuracyMetric(Metric):
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
-        targets = batch["target"] 
+        targets = batch["targets"] 
         outputs = torch.argmax(outputs,dim=1)
         outputs = outputs.detach().cpu()
         targets = targets.detach().cpu().view(-1)

@@ -85,6 +85,6 @@ class CSVDataset(torch.utils.data.Dataset):
         # targets = targets.float()
 
         return {
-            'input': imgs,
-            'target': targets
+            'inputs': imgs,
+            'targets': targets
         }

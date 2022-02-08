@@ -67,4 +67,7 @@ class SchedulerWrapper():
 
         self.scheduler = scheduler
         self.step_per_epoch = step_per_epoch
+    
+    def step(self, *args, **kwargs):
+        self.scheduler.step(*args, **kwargs)
         

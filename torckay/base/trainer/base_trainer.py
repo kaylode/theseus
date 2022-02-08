@@ -18,6 +18,7 @@ class BaseTrainer():
                 total_accumulate_steps=None,
                 clip_grad = 10.0,
                 print_per_iter=100,
+                save_per_iter=100,
                 evaluate_per_epoch = 1,
                 visualize_when_val = True,
                 best_value = 0.0
@@ -43,6 +44,7 @@ class BaseTrainer():
         self.clip_grad = clip_grad
         self.evaluate_per_epoch = evaluate_per_epoch
         self.print_per_iter = print_per_iter
+        self.save_per_iter = save_per_iter
         self.visualize_when_val = visualize_when_val
         self.best_value = best_value
         

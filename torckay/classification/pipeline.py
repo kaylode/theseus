@@ -71,7 +71,7 @@ class Pipeline(object):
         criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(
             self.device
         )
-        self.model = ModelWithLoss(model, criterion)
+        self.model = ModelWithLoss(model, criterion, self.device)
 
         self.metrics = get_instance_recursively(self.opt['metrics'], registry=METRIC_REGISTRY)
 
@@ -82,7 +82,7 @@ class Pipeline(object):
         )
 
         self.scheduler = get_instance(
-            self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer
+            self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{
                 'num_epochs': self.opt["trainer"]['args']['num_epochs'],
                 'trainset': self.train_dataset,

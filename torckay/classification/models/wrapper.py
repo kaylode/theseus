@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 class ModelWithLoss(nn.Module):
@@ -9,14 +10,15 @@ class ModelWithLoss(nn.Module):
 
     """
 
-    def __init__(self, model: nn.Module, criterion: nn.Module):
+    def __init__(self, model: nn.Module, criterion: nn.Module, device: torch.device):
         super().__init__()
         self.model = model
         self.criterion = criterion
+        self.device = device
 
     def forward(self, batch, metrics=None):
-        outputs = self.model(batch["inputs"])
-        loss, loss_dict = self.criterion(outputs, batch)
+        outputs = self.model(batch["inputs"].to(self.device))
+        loss, loss_dict = self.criterion(outputs, batch, self.device)
 
         if metrics is not None:
             for metric in metrics:
@@ -38,9 +40,3 @@ class ModelWithLoss(nn.Module):
 
     def trainable_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
-    @classmethod
-    def from_cfg(cls, model, criterion, getter):
-        model = getter(model)
-        criterion = getter(criterion)
-        return cls(model, criterion)

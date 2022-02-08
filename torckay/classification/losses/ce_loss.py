@@ -9,8 +9,8 @@ class CELoss(nn.Module):
         super(CELoss, self).__init__()
         self.criterion = nn.CrossEntropyLoss()
 
-    def forward(self, pred, batch):
-        target = batch["target"]
+    def forward(self, pred, batch, device):
+        target = batch["targets"].to(device)
         loss = self.criterion(pred, target.view(-1))
         loss_dict = {"L": loss.item()}
         return loss, loss_dict
@@ -22,8 +22,8 @@ class SmoothCELoss(nn.Module):
         super(SmoothCELoss, self).__init__()
         self.criterion = LabelSmoothingCrossEntropy(smoothing=smoothing)
 
-    def forward(self, pred, batch):
-        target = batch["target"]
+    def forward(self, pred, batch, device):
+        target = batch["targets"].to(device)
         loss = self.criterion(pred, target.view(-1))
         loss_dict = {"L": loss.item()}
         return loss, loss_dict
