@@ -2,7 +2,6 @@
 
 import torch
 import numpy as np
-from . import SCHEDULER_REGISTRY
 
 class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
     """

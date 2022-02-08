@@ -1,7 +1,7 @@
 global:
   debug: False
-  cfg_transform: ./transform.yaml
-  save_dir: './runs'
+  cfg_transform: configs/sample/transform.yaml
+  save_dir: 'runs'
   device: cuda:0
   
 
@@ -21,8 +21,7 @@ model:
   args:
     name: convnext_small
     from_pretrained: True
-    num_classes: 41
-    txt_classnames: "./datasets/classes.txt"
+    num_classes: 5
 
 
 loss:
@@ -57,19 +56,19 @@ scheduler:
 data: # instruction here
   dataset:
     train:
-      name: CSVDataset.from_folder
+      name: CSVDataset
       args:
-        image_dir: "./classification/data/mapdasCLF/images/train"
-        csv_path: "./classification/data/mapdasCLF/annotations/mapdas_train.csv"
-        txt_classnames: "./datasets/classes.txt"
+        image_dir: "data/mapdasCLF_5cls/images/train"
+        csv_path: "data/mapdasCLF_5cls/annotations/hierachies/mapdas_5cls_I_train.csv"
+        txt_classnames: "configs/sample/classes.txt"
         test: False
     
     val:
-      name: CSVDataset.from_folder
+      name: CSVDataset
       args:
-        image_dir: "./classification/data/mapdasCLF/images/val"
-        csv_path: "./classification/data/mapdasCLF/annotations/mapdas_val.csv"
-        txt_classnames: "./datasets/classes.txt"
+        image_dir: "data/mapdasCLF_5cls/images/val"
+        csv_path: "data/mapdasCLF_5cls/annotations/hierachies/mapdas_5cls_I_val.csv"
+        txt_classnames: "configs/sample/classes.txt"
         test: True
 
   dataloader:
