@@ -1,0 +1,1 @@
+from torckay.base.trainer import TRAINER_REGISTRY 

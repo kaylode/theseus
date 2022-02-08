@@ -1,0 +1,1 @@
+from torckay.base.losses import LOSS_REGISTRY
