@@ -1,5 +1,5 @@
 from torckay.utilities.loggers.logger import LoggerManager
-
+from ...utilities.loggers.cp_logger import Checkpoint
 LOGGER = LoggerManager.init_logger(__name__)
 
 from . import TRAINER_REGISTRY
@@ -13,6 +13,7 @@ class BaseTrainer():
                 metrics,
                 optimizer,
                 scheduler,
+                save_dir='weights',
                 scaler=None, 
                 num_epochs=100,
                 tf_logger=None,
@@ -31,6 +32,8 @@ class BaseTrainer():
         self.trainloader = trainloader
         self.valloader = valloader
 
+        self.save_dir = save_dir
+        self.checkpoint = Checkpoint(self.save_dir)
         self.num_epochs = num_epochs
         self.tf_logger = tf_logger
         self.step_per_epoch = self.scheduler.step_per_epoch
@@ -87,6 +90,9 @@ class BaseTrainer():
         raise NotImplementedError
 
     def training_epoch(self):
+        raise NotImplementedError
+    
+    def evaluate_epoch(self):
         raise NotImplementedError
 
     def on_evaluate_end(self):

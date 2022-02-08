@@ -13,7 +13,7 @@ class SchedulerWrapper():
     """
     Wrap scheduler
     """
-    def __init__(self, optimizer, scheduler_name, step_per_epoch = False, **kwargs) -> None:
+    def __init__(self, optimizer, scheduler_name,  **kwargs) -> None:
 
         if scheduler_name == '1cycle-yolo':
             def one_cycle(y1=0.0, y2=1.0, steps=100):

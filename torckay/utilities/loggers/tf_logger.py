@@ -2,7 +2,6 @@ import os
 import glob
 import traceback
 import pandas as pd
-from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
@@ -11,14 +10,11 @@ class TensorboardLogger():
     Logger for Tensorboard visualization
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, log_dir=None, resume=None):
+    def __init__(self, log_dir, resume=None):
         self.log_dir = log_dir
         
-        if self.log_dir is None:
-            self.log_dir = os.path.join('./loggers/runs',datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        self.datetime = os.path.basename(self.log_dir)
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
+      
+        # datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
         # Load old logging
