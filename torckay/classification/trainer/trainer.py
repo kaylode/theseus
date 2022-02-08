@@ -1,5 +1,7 @@
+import torch
 from torckay.base.trainer.supervised_trainer import SupervisedTrainer
 from torckay.utilities.loggers.logger import LoggerManager
+from torckay.utilities.loading import load_state_dict
 LOGGER = LoggerManager.init_logger(__name__)
 
 class ClassificationTrainer(SupervisedTrainer):
@@ -9,9 +11,6 @@ class ClassificationTrainer(SupervisedTrainer):
     def check_best(self, metric_dict):
         if metric_dict['acc'] > self.best_value:
             self.save_checkpoint('best')
-
-    def sanity_check(self):
-        return
 
     def save_checkpoint(self, outname='last'):
         weights = {
@@ -26,6 +25,15 @@ class ClassificationTrainer(SupervisedTrainer):
             weights[self.scaler.state_dict_key] = self.scaler.state_dict()
            
         self.checkpoint.save(weights, outname)
+
+    def load_checkpoint(self, path):
+        state_dict = torch.load(path)
+        self.model = load_state_dict(self.model, state_dict, 'model')
+        self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
+        self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
+        self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
+        self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
+        self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
         
     def visualize_batch(self):
         raise NotImplementedError
@@ -35,6 +43,11 @@ class ClassificationTrainer(SupervisedTrainer):
             self.visualize_batch()
         self.save_checkpoint()
     
+    def on_training_start(self):
+        if self.resume is not None:
+            self.load_checkpoint(self.resume)
+        
+
     def on_training_end(self):
         return
 

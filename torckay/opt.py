@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import yaml
+import json
 from torckay.utilities.print import pretty
 from torckay.utilities.loading import load_yaml
 from torckay.utilities.loggers.logger import LoggerManager
@@ -34,8 +35,7 @@ class Config(dict):
         return cls(path)
 
     def __repr__(self) -> str:
-        pretty(dict(self))
-        return super().__repr__()
+        return str(json.dumps(dict(self), sort_keys=False, indent=4))
 
 
 class Opts(ArgumentParser):

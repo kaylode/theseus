@@ -1,8 +1,9 @@
 global:
   debug: False
   cfg_transform: configs/sample/transform.yaml
-  save_dir: 'runs'
+  save_dir: runs
   device: cuda:0
+  resume: null
   
 
 trainer:

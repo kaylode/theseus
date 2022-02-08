@@ -22,7 +22,8 @@ class BaseTrainer():
                 save_per_iter=100,
                 evaluate_per_epoch = 1,
                 visualize_when_val = True,
-                best_value = 0.0
+                best_value = 0.0,
+                resume = None,
                 ):
 
         self.model = model
@@ -49,18 +50,18 @@ class BaseTrainer():
         self.save_per_iter = save_per_iter
         self.visualize_when_val = visualize_when_val
         self.best_value = best_value
+        self.resume = resume
+        self.epoch = 0
+        self.iters = 0
+        self.start_iter = 0
         
-    def fit(self, start_epoch = 0, start_iter = 0):
-        self.sanity_check()
+    def fit(self):
         self.num_iters = (self.num_epochs+1) * len(self.trainloader)
         
-        self.epoch = start_epoch
+        self.on_training_start()
 
         if self.step_per_epoch:
-            self.scheduler.last_epoch = start_epoch - 1
-
-        self.start_iter = start_iter % len(self.trainloader)
-        self.iters = self.start_iter + len(self.trainloader)*self.epoch + 1
+            self.scheduler.last_epoch = self.epoch - 1
 
         LOGGER.info(f'===========================START TRAINING=================================')
         for epoch in range(self.epoch, self.num_epochs):
@@ -102,6 +103,9 @@ class BaseTrainer():
             self.visualize_batch()
         self.save_checkpoint()
     
+    def on_training_start(self):
+        return
+
     def on_training_end(self):
         return
 

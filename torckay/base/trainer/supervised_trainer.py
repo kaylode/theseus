@@ -34,7 +34,7 @@ class SupervisedTrainer(BaseTrainer):
 
             self.scaler(loss, self.optimizer)
             
-            if (i+1) % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
+            if i % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
                 self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
                 self.optimizer.zero_grad()
 
@@ -107,10 +107,9 @@ class SupervisedTrainer(BaseTrainer):
 
         metric_string = ""
         for metric, score in metric_dict.items():
-            metric_string += metric +': ' + str(score) +' | '
+            metric_string += metric +': ' + f"{score}:.5f" +' | '
         metric_string +='\n'
         LOGGER.info(metric_string)
-
         LOGGER.info('==========================================================================')
 
         log_dict = {f"Validation/{k} Loss": v/len(self.valloader) for k,v in epoch_loss.items()}

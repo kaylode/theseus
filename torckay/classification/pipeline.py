@@ -32,6 +32,7 @@ class Pipeline(object):
         self.transform_cfg = load_yaml(opt['global']['cfg_transform'])
 
         self.device = torch.device(opt['global']['device'])
+        resume = torch.device(opt['global']['resume'])
 
         self.debug = opt['global']['debug']
         if self.debug:
@@ -104,17 +105,18 @@ class Pipeline(object):
             scheduler=self.scheduler,
             scaler=self.scaler,
             save_dir=self.savedir,
+            resume=resume,
             registry=TRAINER_REGISTRY,
         )
 
     def infocheck(self):
-        LOGGER.info(f"Number of trainable parameters: {sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}")
         LOGGER.info(self.opt)
+        LOGGER.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
 
     def sanitycheck(self):
         self.infocheck()
         LOGGER.info("Sanity checking before training")
-        self.evaluate()
+        self.trainer.evaluate_epoch()
 
     def fit(self):
         self.sanitycheck()

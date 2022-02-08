@@ -9,7 +9,7 @@ class Checkpoint():
     :param save_per_epoch: (int)
     :param path: (string)
     """
-    def __init__(self, path ):
+    def __init__(self, path):
         self.path = path
         
     def save(self, state_dict, outname):
@@ -17,6 +17,7 @@ class Checkpoint():
         Save model and optimizer weights
         :param model: Pytorch model with state dict
         """
+        os.makedirs(self.path, exist_ok=True)
         torch.save(state_dict, os.path.join(self.path,outname)+".pth")
     
 

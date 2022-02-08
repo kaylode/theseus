@@ -52,8 +52,8 @@ class LoggerManager:
     current_dir = os.path.abspath(os.getcwd())
     filename = f'{current_dir}/log.txt'
     date_format = '%d-%m-%y %H:%M:%S'
-    message_format = '[%(asctime)s][%(pathname)s::%(lineno)d][%(levelname)s]: %(message)s'
-    color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(pathname)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
+    message_format = '[%(asctime)s][%(filename)s::%(lineno)d][%(levelname)s]: %(message)s'
+    color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(filename)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
     level = logging.INFO        
 
     @staticmethod
