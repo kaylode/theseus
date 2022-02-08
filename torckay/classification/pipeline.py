@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import torch
 from torckay.classification.models.wrapper import ModelWithLoss
-from torckay.opt import Opts
+from torckay.opt import Config
 from torckay.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from torckay.classification.augmentations import TRANSFORM_REGISTRY
 from torckay.classification.losses import LOSS_REGISTRY
@@ -24,15 +24,15 @@ class Pipeline(object):
 
     def __init__(
         self,
-        opt: Opts
+        opt: Config
     ):
         super(Pipeline, self).__init__()
         self.opt = opt
         
-        self.transform_cfg = load_yaml(opt['global']['cfg_transform'])
+        self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
 
         self.device = torch.device(opt['global']['device'])
-        resume = torch.device(opt['global']['resume'])
+        resume = opt['global']['resume']
 
         self.debug = opt['global']['debug']
         if self.debug:
@@ -117,6 +117,8 @@ class Pipeline(object):
         self.infocheck()
         LOGGER.info("Sanity checking before training")
         self.trainer.evaluate_epoch()
+        self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
+        self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
     def fit(self):
         self.sanitycheck()
