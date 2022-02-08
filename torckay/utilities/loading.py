@@ -1,6 +1,7 @@
 import yaml
 import torch
 
+from torckay.base.optimizers.scalers.native import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
 LOGGER = LoggerManager.init_logger(__name__)
 
@@ -15,7 +16,7 @@ def load_state_dict(instance, state_dict, key):
     :param path: (string) checkpoint path
     """
 
-    if isinstance(instance, torch.nn.Module) or isinstance(instance, torch.optim.Optimizer):
+    if isinstance(instance, torch.nn.Module) or isinstance(instance, torch.optim.Optimizer) or isinstance(instance, NativeScaler):
         try:
             instance.load_state_dict(state_dict[key])
             LOGGER.info("Loaded Successfully!")
