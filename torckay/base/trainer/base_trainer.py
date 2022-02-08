@@ -39,8 +39,9 @@ class BaseTrainer():
         self.scaler = scaler
         self.use_amp = True if scaler is not None else False
         if total_accumulate_steps is None:
-            total_accumulate_steps = trainloader.batch_size
-        self.accumulate_steps = max(round(total_accumulate_steps / trainloader.batch_size), 1) 
+            self.accumulate_steps = 1
+        else:
+            self.accumulate_steps = max(round(total_accumulate_steps / trainloader.batch_size), 1) 
         self.clip_grad = clip_grad
         self.evaluate_per_epoch = evaluate_per_epoch
         self.print_per_iter = print_per_iter

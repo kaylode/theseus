@@ -39,7 +39,7 @@ class SupervisedTrainer(BaseTrainer):
                 self.optimizer.zero_grad()
 
                 if not self.step_per_epoch:
-                    self.scheduler.step((self.num_epochs + i) / len(self.trainloader))
+                    self.scheduler.step()
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
                     log_dict = {'Training/Learning rate': lr}
@@ -103,12 +103,14 @@ class SupervisedTrainer(BaseTrainer):
             epoch_loss[key] /= len(self.valloader)
             epoch_loss[key] = np.round(epoch_loss[key], 5)
         loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
-        LOGGER.info()
         LOGGER.info("[{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, loss_string, running_time))
 
+        metric_string = ""
         for metric, score in metric_dict.items():
-            LOGGER.info(metric +': ' + str(score), end = ' | ')
-        LOGGER.info()
+            metric_string += metric +': ' + str(score) +' | '
+        metric_string +='\n'
+        LOGGER.info(metric_string)
+
         LOGGER.info('==========================================================================')
 
         log_dict = {f"Validation/{k} Loss": v/len(self.valloader) for k,v in epoch_loss.items()}

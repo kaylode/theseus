@@ -24,6 +24,8 @@ class Accuracy(Metric):
 
         target = batch["targets"] 
         prediction = torch.argmax(output, dim=1)
+        prediction = prediction.cpu().detach()
+
         correct = (prediction.view(-1) == target.view(-1)).sum()
         correct = correct.cpu()
         self.total_correct += correct

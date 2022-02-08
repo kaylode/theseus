@@ -11,7 +11,7 @@ class ClassificationTrainer(SupervisedTrainer):
             self.save_checkpoint('best')
 
     def sanity_check(self):
-        raise NotImplementedError
+        return
 
     def save_checkpoint(self, outname='last'):
         weights = {
@@ -20,7 +20,6 @@ class ClassificationTrainer(SupervisedTrainer):
             'epoch': self.epoch,
             'iters': self.iters,
             'best_value': self.best_value,
-            'class_names': self.valloader.class_names,
         }
 
         if self.scaler is not None:

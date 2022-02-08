@@ -11,7 +11,7 @@ class CELoss(nn.Module):
 
     def forward(self, pred, batch, device):
         target = batch["targets"].to(device)
-        loss = self.criterion(pred, target.view(-1))
+        loss = self.criterion(pred, target.view(-1).contiguous())
         loss_dict = {"L": loss.item()}
         return loss, loss_dict
 
@@ -24,6 +24,6 @@ class SmoothCELoss(nn.Module):
 
     def forward(self, pred, batch, device):
         target = batch["targets"].to(device)
-        loss = self.criterion(pred, target.view(-1))
+        loss = self.criterion(pred, target.view(-1).contiguous())
         loss_dict = {"L": loss.item()}
         return loss, loss_dict

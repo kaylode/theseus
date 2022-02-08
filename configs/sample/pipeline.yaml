@@ -6,7 +6,7 @@ global:
   
 
 trainer:
-  name: ClassificationLearner
+  name: ClassificationTrainer
   args:
     num_epochs: 100
     total_accumulate_steps: null
@@ -25,7 +25,7 @@ model:
 
 
 loss:
-  name: SmoothCEwithstat
+  name: SmoothCELoss
   args:
 
 
@@ -35,7 +35,7 @@ optimizer:
     lr: 0.001
 
 
-metric:
+metrics:
   - name: Accuracy
     args:
   - name: BalancedAccuracyMetric
