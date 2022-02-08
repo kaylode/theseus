@@ -1,5 +1,7 @@
 from torckay.utilities.loggers.logger import LoggerManager
 from ...utilities.loggers.cp_logger import Checkpoint
+from torckay.utilities.loggers.tf_logger import TensorboardLogger
+
 LOGGER = LoggerManager.init_logger(__name__)
 
 from . import TRAINER_REGISTRY
@@ -13,10 +15,9 @@ class BaseTrainer():
                 metrics,
                 optimizer,
                 scheduler,
-                save_dir='weights',
+                save_dir='runs',
                 scaler=None, 
                 num_epochs=100,
-                tf_logger=None,
                 total_accumulate_steps=None,
                 clip_grad = 10.0,
                 print_per_iter=100,
@@ -35,7 +36,7 @@ class BaseTrainer():
         self.save_dir = save_dir
         self.checkpoint = Checkpoint(self.save_dir)
         self.num_epochs = num_epochs
-        self.tf_logger = tf_logger
+        self.tf_logger = TensorboardLogger(self.save_dir)
         self.step_per_epoch = self.scheduler.step_per_epoch
         self.scaler = scaler
         self.use_amp = True if scaler is not None else False

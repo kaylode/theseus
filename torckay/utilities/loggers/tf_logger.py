@@ -11,10 +11,7 @@ class TensorboardLogger():
     :param log_dir: Path to save checkpoint
     """
     def __init__(self, log_dir, resume=None):
-        self.log_dir = log_dir
-        
-      
-        # datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.log_dir = log_dir      
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
         # Load old logging

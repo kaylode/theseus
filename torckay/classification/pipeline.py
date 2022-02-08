@@ -1,5 +1,7 @@
 from typing import Callable, Dict, Optional
+from datetime import datetime
 
+import os
 import torch
 from torckay.base.models.wrapper import ModelWithLoss
 from torckay.opt import Opts
@@ -14,9 +16,6 @@ from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_yaml
 from torckay.base.optimizers.scalers import NativeScaler
-
-from torckay.classification.datasets import CSVLoader
-
 from torckay.utilities.loggers.logger import LoggerManager
  
 LOGGER = LoggerManager.init_logger(__name__)
@@ -33,7 +32,11 @@ class Pipeline(object):
         
         self.transform_cfg = load_yaml(opt['global']['cfg_transform'])
 
-        self.device = torch.device(opt['device'])
+        self.device = torch.device(opt['global']['device'])
+
+        self.debug = opt['global']['debug']
+        if self.debug:
+            LoggerManager.set_debug_mode("on")
 
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=TRANSFORM_REGISTRY
@@ -91,7 +94,8 @@ class Pipeline(object):
 
         self.scaler = NativeScaler()
 
-        self.learner = get_instance(
+        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        self.trainer = get_instance(
             self.opt["trainer"],
             model=self.model,
             trainloader=self.train_dataloader,
@@ -100,6 +104,7 @@ class Pipeline(object):
             optimizer=self.optimizer,
             scheduler=self.scheduler,
             scaler=self.scaler,
+            save_dir=self.savedir,
             registry=TRAINER_REGISTRY,
         )
 
@@ -114,7 +119,7 @@ class Pipeline(object):
 
     def fit(self):
         self.sanitycheck()
-        self.learner.fit()
+        self.trainer.fit()
 
     def evaluate(self):
         LOGGER.info("Evaluating ")

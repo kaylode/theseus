@@ -49,7 +49,7 @@ class LoggerManager:
         LOGGER = LoggerManager.init_logger(__name__)
 
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.abspath(os.getcwd())
     filename = f'{current_dir}/log.txt'
     date_format = '%d-%m-%y %H:%M:%S'
     message_format = '[%(asctime)s][%(pathname)s::%(lineno)d][%(levelname)s]: %(message)s'
