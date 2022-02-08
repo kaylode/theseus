@@ -43,7 +43,42 @@ class ClassificationTrainer(SupervisedTrainer):
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
         
-    def visualize_batch(self):
+    def visualize_gt(self):
+        denom = Denormalize()
+        batch = next(iter(self.trainloader))
+        images = batch["inputs"]
+
+        batch = []
+        for idx, inputs in enumerate(images):
+            img_show = denom(inputs)
+            img_cam = TFF.to_tensor(img_show)
+            batch.append(img_cam)
+        batch = torch.stack(batch, dim=0)
+        grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
+
+        fig = plt.figure()
+        plt.imshow(grid_img.permute(1, 2, 0))
+        self.tf_logger.write_image(
+            f'samples/train_batch', fig, step=self.iters)
+
+
+        batch = next(iter(self.valloader))
+        images = batch["inputs"]
+
+        batch = []
+        for idx, inputs in enumerate(images):
+            img_show = denom(inputs)
+            img_cam = TFF.to_tensor(img_show)
+            batch.append(img_cam)
+        batch = torch.stack(batch, dim=0)
+        grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
+
+        fig = plt.figure()
+        plt.imshow(grid_img.permute(1, 2, 0))
+        self.tf_logger.write_image(
+            f'samples/val_batch', fig, step=self.iters)
+
+    def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping
         denom = Denormalize()
         batch = next(iter(self.valloader))
@@ -61,30 +96,28 @@ class ClassificationTrainer(SupervisedTrainer):
             inputs = inputs.to(self.model.device)
             target_category = None
             grayscale_cam, label_idx = grad_cam(inputs, target_category)
-            label = self.val_dataset.classnames[label_idx]
+            label = self.valloader.dataset.classnames[label_idx]
             img_cam = show_cam_on_image(img_show, grayscale_cam, label)
+            img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
             img_cam = TFF.to_tensor(img_cam)
             batch.append(img_cam)
-
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
 
+        fig = plt.figure()
+        plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
-            f'samples/{self.epoch}_{self.iters}', grid_img.permute(1, 2, 0), step=self.epoch)
-
+            f'samples/gradcam', fig, step=self.iters)
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
-            self.visualize_batch()
+            LOGGER.info("Visualize GradCAM")
+            self.visualize_pred()
         self.save_checkpoint()
     
     def on_training_start(self):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
-        
 
     def on_training_end(self):
-        return
-
-    def on_evaluate_end(self):
         return

@@ -21,16 +21,24 @@ configs = {
             'block_name': 'blocks',
             'block_index': 6
         },
-        'target_layer_names': "1"
+        'target_layer_names': "0"
+    },
+
+    "convnext": {
+        'feature_module': {
+            'block_name': 'stages',
+            'block_index': 3
+        },
+        'target_layer_names': "blocks"
     }
 }
 
 
 def show_cam_on_image(img, mask, label):
     heatmap = cv2.applyColorMap(np.uint8(255 * mask), cv2.COLORMAP_JET)
-    heatmap = np.float32(heatmap) / 255
-    cam = heatmap + np.float32(img)
-    cam = cam / np.max(cam)
+    heatmap = np.clip(np.float32(heatmap),0,255) / np.max(heatmap)
+    cam = 0.3*heatmap + 0.7*np.float32(img)
+    # cam = cam / np.max(cam)
     cam = np.uint8(255 * cam)
     cv2.putText(cam, str(label),
                 (10, 10),
@@ -106,17 +114,13 @@ class ModelOutputs():
 
 class GradCam:
     def __init__(self, model, config_name):
+        config_name = config_name.split('_')[0]
         self.config_name = config_name
-        self.model = model.model
+        self.model = model.model.model
         self.feature_module_config = configs[config_name]["feature_module"]
         self.feature_module_name = self.feature_module_config["block_name"]
-
-        # Handle KeyError when using DataParallel
-        try:
-            self.feature_module = self.model._modules[self.feature_module_name]
-        except KeyError:
-            self.feature_module = self.model._modules['module']._modules[self.feature_module_name]
-
+        self.feature_module = self.model._modules[self.feature_module_name]
+        
         if "block_index" in self.feature_module_config.keys():
             block_index = int(self.feature_module_config["block_index"])
             self.feature_module = self.feature_module[block_index]

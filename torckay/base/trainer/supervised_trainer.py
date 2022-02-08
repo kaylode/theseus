@@ -107,7 +107,7 @@ class SupervisedTrainer(BaseTrainer):
 
         metric_string = ""
         for metric, score in metric_dict.items():
-            metric_string += metric +': ' + f"{score}:.5f" +' | '
+            metric_string += metric +': ' + f"{score:.5f}" +' | '
         metric_string +='\n'
         LOGGER.info(metric_string)
         LOGGER.info('==========================================================================')

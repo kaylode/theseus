@@ -116,6 +116,8 @@ class Pipeline(object):
     def sanitycheck(self):
         self.infocheck()
         LOGGER.info("Sanity checking before training")
+        LOGGER.info("Visualizing dataset...")
+        self.trainer.visualize_gt()
         self.trainer.on_training_start()
         self.trainer.evaluate_epoch()
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))

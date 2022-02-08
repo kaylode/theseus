@@ -97,11 +97,6 @@ class BaseTrainer():
     
     def evaluate_epoch(self):
         raise NotImplementedError
-
-    def on_evaluate_end(self):
-        if self.visualize_when_val:
-            self.visualize_batch()
-        self.save_checkpoint()
     
     def on_training_start(self):
         return
