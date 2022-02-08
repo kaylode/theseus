@@ -25,6 +25,16 @@ class TensorboardLogger():
         if resume is not None:
             self.load(resume)
 
+    def write_dict(self, dict, step):
+        """
+        Write a dict to specified directory
+        :param dict: (dict) has tags and values
+        :param step: (int) logging step
+        """
+        tags = [l for l in dict.keys()]
+        values = [l for l in dict.values()]
+        self.write(tags= tags, values= values, step=step)
+
     def write(self, tags, values, step):
         """
         Write a log to specified directory

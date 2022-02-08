@@ -1,8 +1,22 @@
-import random
-import numpy as np
+"""
+Source:
+https://github.com/pytorch/vision/blob/dc1139958404b27e5b1e83ca9bc381462a955e29/references/classification/transforms.py#L84
+"""
+
+import math
+from typing import Tuple
 from collections import namedtuple 
+import numpy as np
+
+import torch
+from torch import Tensor
+from torchvision.transforms import functional as F
+
+from . import TRANSFORM_REGISTRY
 from albumentations.core.transforms_interface import DualTransform
 from albumentations.augmentations.bbox_utils import denormalize_bbox, normalize_bbox
+
+from . import TRANSFORM_REGISTRY
 
 class CustomCutout(DualTransform):
     """
@@ -114,99 +128,187 @@ class CustomCutout(DualTransform):
         """
         return ('fill_value', 'bbox_removal_threshold', 'min_cutout_size', 'max_cutout_size', 'always_apply', 'p')
 
+class RandomMixup(torch.nn.Module):
+    """Randomly apply Mixup to the provided batch and targets.
+    The class implements the data augmentations as described in the paper
+    `"mixup: Beyond Empirical Risk Minimization" <https://arxiv.org/abs/1710.09412>`_.
+    Args:
+        num_classes (int): number of classes used for one-hot encoding.
+        p (float): probability of the batch being transformed. Default value is 0.5.
+        alpha (float): hyperparameter of the Beta distribution used for mixup.
+            Default value is 1.0.
+        inplace (bool): boolean to make this transform inplace. Default set to False.
+    """
 
-class CutMix:
-    def __init__(self, max_area_drop_pct=0.75) -> None:
-        self.max_area_drop_pct = max_area_drop_pct
+    def __init__(self, num_classes: int, p: float = 0.5, alpha: float = 1.0, inplace: bool = False) -> None:
+        super().__init__()
+        assert num_classes > 0, "Please provide a valid positive value for the num_classes."
+        assert alpha > 0, "Alpha param can't be zero."
 
-    def __call__(self, set_images, set_boxes, set_labels, imsize):
-        """ 
-        This implementation of cutmix author:  https://www.kaggle.com/nvnnghia 
-        Refactoring and adaptation: https://www.kaggle.com/shonenkov
-        """
-        w, h = imsize
-        s = imsize[0] // 2
-    
-        xc, yc = [int(random.uniform(h * 0.25, w * 0.75)) for _ in range(2)]  # center x, y
-
-        result_image = np.full((h, w, 3), 1, dtype=np.float32)
-        result_boxes = []
-        result_labels = np.array([], dtype=np.int)
-        
-        for i,(image, boxes, labels) in enumerate(zip(set_images, set_boxes, set_labels)):
-            if i == 0:
-                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
-                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
-            elif i == 1:  # top right
-                x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
-                x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
-            elif i == 2:  # bottom left
-                x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
-                x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, max(xc, w), min(y2a - y1a, h)
-            elif i == 3:  # bottom right
-                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
-                x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
-            
-            result_image[y1a:y2a, x1a:x2a] = image[y1b:y2b, x1b:x2b]
-            padw = x1a - x1b
-            padh = y1a - y1b
-
-            boxes[:, 0] += padw
-            boxes[:, 1] += padh
-            boxes[:, 2] += padw
-            boxes[:, 3] += padh
-
-            result_boxes.append(boxes)
-            result_labels = np.concatenate((result_labels, labels))
-    
-        result_boxes = np.concatenate(result_boxes, 0)
-        if self.max_area_drop_pct:
-            old_areas = (result_boxes[:,2] - result_boxes[:,0]) * (result_boxes[:,3] -  result_boxes[:,1])
-
-        np.clip(result_boxes[:, 0:], 0, 2 * s, out=result_boxes[:, 0:])
-        
-        if self.max_area_drop_pct:
-            new_areas = (result_boxes[:,2] - result_boxes[:,0]) * (result_boxes[:,3] -  result_boxes[:,1])
-            
-        result_boxes = result_boxes.astype(np.int32)
-        index_to_use = np.where((result_boxes[:,2]-result_boxes[:,0])*(result_boxes[:,3]-result_boxes[:,1]) > 0)
-
-        if self.max_area_drop_pct:
-            drop_pct = (old_areas-new_areas)*1.0 / old_areas
-            picked_index = np.where(drop_pct < self.max_area_drop_pct)
-            index_to_use = np.intersect1d(index_to_use, picked_index)
-
-
-        result_boxes = result_boxes[index_to_use]
-        result_labels = result_labels[index_to_use]
-        
-        return result_image, result_boxes, result_labels
-
-class MixUp:
-    def __init__(self, alpha=1.0):
+        self.num_classes = num_classes
+        self.p = p
         self.alpha = alpha
-        
-    def __call__(
-            self, 
-            image, boxes, labels,
-            r_image, r_boxes, r_labels):
+        self.inplace = inplace
+
+    def forward(self, batch: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
         """
-        Randomly mixes the given list if images with each other
-        source: https://www.kaggle.com/kaushal2896/data-augmentation-tutorial-basic-cutout-mixup
-        :param images: The images to be mixed up
-        :param bboxes: The bounding boxes (labels)
-        :param areas: The list of area of all the bboxes
-        :param alpha: Required to generate image wieghts (lambda) using beta distribution. In this case we'll use alpha=1, which is same as uniform distribution
+        Args:
+            batch (Tensor): Float tensor of size (B, C, H, W)
+            target (Tensor): Integer tensor of size (B, )
+        Returns:
+            Tensor: Randomly transformed batch.
         """
+        if batch.ndim != 4:
+            raise ValueError("Batch ndim should be 4. Got {}".format(batch.ndim))
+        elif target.ndim != 1:
+            raise ValueError("Target ndim should be 1. Got {}".format(target.ndim))
+        elif not batch.is_floating_point():
+            raise TypeError("Batch dtype should be a float tensor. Got {}.".format(batch.dtype))
+        elif target.dtype != torch.int64:
+            raise TypeError("Target dtype should be torch.int64. Got {}".format(target.dtype))
 
-        # Generate image weight
-        lam = np.random.beta(self.alpha, self.alpha)
+        if not self.inplace:
+            batch = batch.clone()
+            target = target.clone()
+
+        if target.ndim == 1:
+            target = torch.nn.functional.one_hot(target, num_classes=self.num_classes).to(dtype=batch.dtype)
+
+        if torch.rand(1).item() >= self.p:
+            return batch, target
+
+        # It's faster to roll the batch by one instead of shuffling it to create image pairs
+        batch_rolled = batch.roll(1, 0)
+        target_rolled = target.roll(1, 0)
+
+        # Implemented as on mixup paper, page 3.
+        lambda_param = float(torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0])
+        batch_rolled.mul_(1.0 - lambda_param)
+        batch.mul_(lambda_param).add_(batch_rolled)
+
+        target_rolled.mul_(1.0 - lambda_param)
+        target.mul_(lambda_param).add_(target_rolled)
+
+        return batch, target
+
+    def __repr__(self) -> str:
+        s = self.__class__.__name__ + "("
+        s += "num_classes={num_classes}"
+        s += ", p={p}"
+        s += ", alpha={alpha}"
+        s += ", inplace={inplace}"
+        s += ")"
+        return s.format(**self.__dict__)
+
+
+class RandomCutmix(torch.nn.Module):
+    """Randomly apply Cutmix to the provided batch and targets.
+    The class implements the data augmentations as described in the paper
+    `"CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features"
+    <https://arxiv.org/abs/1905.04899>`_.
+    Args:
+        num_classes (int): number of classes used for one-hot encoding.
+        p (float): probability of the batch being transformed. Default value is 0.5.
+        alpha (float): hyperparameter of the Beta distribution used for cutmix.
+            Default value is 1.0.
+        inplace (bool): boolean to make this transform inplace. Default set to False.
+    """
+
+    def __init__(self, num_classes: int, p: float = 0.5, alpha: float = 1.0, inplace: bool = False) -> None:
+        super().__init__()
+        assert num_classes > 0, "Please provide a valid positive value for the num_classes."
+        assert alpha > 0, "Alpha param can't be zero."
+
+        self.num_classes = num_classes
+        self.p = p
+        self.alpha = alpha
+        self.inplace = inplace
+
+    def forward(self, batch: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+        """
+        Args:
+            batch (Tensor): Float tensor of size (B, C, H, W)
+            target (Tensor): Integer tensor of size (B, )
+        Returns:
+            Tensor: Randomly transformed batch.
+        """
+        if batch.ndim != 4:
+            raise ValueError("Batch ndim should be 4. Got {}".format(batch.ndim))
+        elif target.ndim != 1:
+            raise ValueError("Target ndim should be 1. Got {}".format(target.ndim))
+        elif not batch.is_floating_point():
+            raise TypeError("Batch dtype should be a float tensor. Got {}.".format(batch.dtype))
+        elif target.dtype != torch.int64:
+            raise TypeError("Target dtype should be torch.int64. Got {}".format(target.dtype))
+
+        if not self.inplace:
+            batch = batch.clone()
+            target = target.clone()
+
+        if target.ndim == 1:
+            target = torch.nn.functional.one_hot(target, num_classes=self.num_classes).to(dtype=batch.dtype)
+
+        if torch.rand(1).item() >= self.p:
+            return batch, target
+
+        # It's faster to roll the batch by one instead of shuffling it to create image pairs
+        batch_rolled = batch.roll(1, 0)
+        target_rolled = target.roll(1, 0)
+
+        # Implemented as on cutmix paper, page 12 (with minor corrections on typos).
+        lambda_param = float(torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0])
+        W, H = F.get_image_size(batch)
+
+        r_x = torch.randint(W, (1,))
+        r_y = torch.randint(H, (1,))
+
+        r = 0.5 * math.sqrt(1.0 - lambda_param)
+        r_w_half = int(r * W)
+        r_h_half = int(r * H)
+
+        x1 = int(torch.clamp(r_x - r_w_half, min=0))
+        y1 = int(torch.clamp(r_y - r_h_half, min=0))
+        x2 = int(torch.clamp(r_x + r_w_half, max=W))
+        y2 = int(torch.clamp(r_y + r_h_half, max=H))
+
+        batch[:, :, y1:y2, x1:x2] = batch_rolled[:, :, y1:y2, x1:x2]
+        lambda_param = float(1.0 - (x2 - x1) * (y2 - y1) / (W * H))
+
+        target_rolled.mul_(1.0 - lambda_param)
+        target.mul_(lambda_param).add_(target_rolled)
+
+        return batch, target
+
+    def __repr__(self) -> str:
+        s = self.__class__.__name__ + "("
+        s += "num_classes={num_classes}"
+        s += ", p={p}"
+        s += ", alpha={alpha}"
+        s += ", inplace={inplace}"
+        s += ")"
+        return s.format(**self.__dict__)
+
+class Denormalize(object):
+    """
+    Denormalize image and boxes for visualization
+    """
+    def __init__(self, mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], **kwargs):
+        self.mean = mean
+        self.std = std
         
-        # Weighted Mixup
-        mixedup_images = lam*image + (1 - lam)*r_image
+    def __call__(self, img, box = None, label = None, mask = None, **kwargs):
+        """
+        :param img: (tensor) image to be denormalized
+        :param box: (list of tensor) bounding boxes to be denormalized, by multiplying them with image's width and heights. Format: (x,y,width,height)
+        """
+        mean = np.array(self.mean)
+        std = np.array(self.std)
+        img_show = img.numpy().squeeze().transpose((1,2,0))
+        img_show = (img_show * std+mean)
+        img_show = np.clip(img_show,0,1)
+        return img_show
 
-        # Mixup annotations
-        mixedup_bboxes = np.vstack((boxes, r_boxes)).astype(np.int32)
-        mixedup_labels = np.concatenate((labels, r_labels))
-
-        return mixedup_images, mixedup_bboxes, mixedup_labels
+TRANSFORM_REGISTRY.register(CustomCutout, prefix='Custom')
+TRANSFORM_REGISTRY.register(RandomCutmix, prefix='Custom')
+TRANSFORM_REGISTRY.register(RandomMixup, prefix='Custom')
+TRANSFORM_REGISTRY.register(Denormalize, prefix='Custom')

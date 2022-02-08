@@ -1,9 +1,9 @@
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import yaml
-from torckay.utils.print import pretty
-from torckay.utils.loading import load_yaml
-from torckay.loggers.logger import LoggerManager
+from torckay.utilities.print import pretty
+from torckay.utilities.loading import load_yaml
+from torckay.utilities.loggers.logger import LoggerManager
 
 LOGGER = LoggerManager.init_logger(__name__)
 

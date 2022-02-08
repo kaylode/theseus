@@ -2,7 +2,7 @@ from metrics import *
 from models import *
 from trainer import *
 from augmentations import *
-from loggers import *
+from torckay.loggers.tf_logger import *
 from configs import *
 
 import os
@@ -21,13 +21,13 @@ from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR, LambdaLR, ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts
 
 from utils.utils import download_pretrained_weights
-from utils.cuda import NativeScaler, get_devices_info
+from utilities.cuda import NativeScaler, get_devices_info
 
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 from augmentations.transforms import MEAN, STD, get_resize_augmentation
 
-from .random_seed import seed_everything
+from .seed import seed_everything
 
 CACHE_DIR='./.cache'
 

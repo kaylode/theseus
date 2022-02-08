@@ -1,3 +1,3 @@
 from torckay.registry import Registry
 
-MODEL_REGISTRY = Registry('MODEL')
+LOSS_REGISTRY = Registry('LOSS')
