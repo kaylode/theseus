@@ -308,7 +308,3 @@ class Denormalize(object):
         img_show = np.clip(img_show,0,1)
         return img_show
 
-TRANSFORM_REGISTRY.register(CustomCutout, prefix='Custom')
-TRANSFORM_REGISTRY.register(RandomCutmix, prefix='Custom')
-TRANSFORM_REGISTRY.register(RandomMixup, prefix='Custom')
-TRANSFORM_REGISTRY.register(Denormalize, prefix='Custom')

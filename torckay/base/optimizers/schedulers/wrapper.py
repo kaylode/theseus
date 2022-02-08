@@ -6,9 +6,6 @@ from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts)
 from .cosine import CosineWithRestarts
 
-SCHEDULER_REGISTRY = Registry('SCHEDULER')
-
-@SCHEDULER_REGISTRY.register()
 class SchedulerWrapper():
     """
     Wrap scheduler

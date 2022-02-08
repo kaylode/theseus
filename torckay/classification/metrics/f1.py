@@ -3,10 +3,8 @@ import numpy as np
 from sklearn.metrics import f1_score
 from typing import Any, Dict, Optional
 
-from torckay.base.metrics import METRIC_REGISTRY
 from torckay.base.metrics.metric_template import Metric
 
-@METRIC_REGISTRY.register()
 class F1ScoreMetric():
     """
     F1 Score Metric (including macro, micro)

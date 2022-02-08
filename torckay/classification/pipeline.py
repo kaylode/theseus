@@ -3,11 +3,10 @@ from datetime import datetime
 
 import os
 import torch
-from torckay.base.models.wrapper import ModelWithLoss
+from torckay.classification.models.wrapper import ModelWithLoss
 from torckay.opt import Opts
-from torckay.base.optimizers import OPTIM_REGISTRY
-from torckay.base.optimizers.schedulers import SCHEDULER_REGISTRY
-from torckay.base.augmentations.torchvision import TRANSFORM_REGISTRY
+from torckay.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
+from torckay.classification.augmentations import TRANSFORM_REGISTRY
 from torckay.classification.losses import LOSS_REGISTRY
 from torckay.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from torckay.classification.trainer import TRAINER_REGISTRY

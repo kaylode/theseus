@@ -1,12 +1,9 @@
 from typing import Any, Dict, Optional
 
 import torch
-
-from torckay.base.metrics import METRIC_REGISTRY
 from torckay.base.metrics.metric_template import Metric
 
 
-@METRIC_REGISTRY.register()
 class Accuracy(Metric):
 
     """Pixel accuracy metric

@@ -4,9 +4,6 @@ from torckay.utilities.loggers.tf_logger import TensorboardLogger
 
 LOGGER = LoggerManager.init_logger(__name__)
 
-from . import TRAINER_REGISTRY
-
-@TRAINER_REGISTRY.register()
 class BaseTrainer():
     def __init__(self,
                 model, 

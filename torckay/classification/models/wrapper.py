@@ -1,9 +1,5 @@
 from torch import nn
 
-from . import MODEL_REGISTRY
-
-
-@MODEL_REGISTRY.register()
 class ModelWithLoss(nn.Module):
     """Add utilitarian functions for module to work with pipeline
 

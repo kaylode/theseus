@@ -6,11 +6,9 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 from torchvision.transforms import transforms as tf
-from torckay.base.datasets import DATASET_REGISTRY
 
 from torckay.classification.augmentations.custom import RandomMixup, RandomCutmix
 
-@DATASET_REGISTRY.register()
 class CSVDataset(torch.utils.data.Dataset):
     r"""CSVDataset multi-labels classification dataset
 
@@ -90,34 +88,3 @@ class CSVDataset(torch.utils.data.Dataset):
             'input': imgs,
             'target': targets
         }
-
-    
-    @classmethod
-    def from_folder(
-        cls,
-        image_dir: List[str],
-        csv_path: List[str],
-        txt_classnames: str,
-        test: bool = False,
-        transform: Optional[List] = None,
-    ):
-        r"""From folder method
-
-        Args:
-            root: folder root
-            image_folder_name: image folder name
-            mask_folder_name: label folder name
-            extension: image file type extenstion. Defaults to "png".
-            test: Option using for inference mode. if True, __getitem__ does not return label.
-                Defaults to False.
-            transform: rgb transform. Defaults to None.
-
-        Returns:
-            CSVDataset: dataset class
-        """
-
-        return cls(image_dir, csv_path, txt_classnames, test=test, transform=transform)
-
-
-DATASET_REGISTRY._do_register("CSVDataset.from_folder", CSVDataset.from_folder)
-

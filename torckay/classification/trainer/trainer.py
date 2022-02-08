@@ -2,9 +2,6 @@ from torckay.base.trainer.supervised_trainer import SupervisedTrainer
 from torckay.utilities.loggers.logger import LoggerManager
 LOGGER = LoggerManager.init_logger(__name__)
 
-from . import TRAINER_REGISTRY
-
-@TRAINER_REGISTRY.register()
 class ClassificationTrainer(SupervisedTrainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

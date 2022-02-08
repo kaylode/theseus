@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from typing import Any, Dict, Optional
 from sklearn.metrics import confusion_matrix
-from torckay.base.metrics import METRIC_REGISTRY
 from torckay.base.metrics.metric_template import Metric
 
 def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):
@@ -39,7 +38,6 @@ def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=
         result += '\n'
     return result
 
-@METRIC_REGISTRY.register()
 class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification

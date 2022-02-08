@@ -2,11 +2,6 @@ import numpy as np
 import torch
 from torch.utils.data.sampler import WeightedRandomSampler
 
-from torckay.base.datasets import DATALOADER_REGISTRY
-
-from torckay.classification.augmentations.custom import RandomMixup, RandomCutmix
-
-
 def class_imbalance_sampler(labels):
     class_count = torch.bincount(labels.squeeze())
     class_weighting = 1. / class_count
@@ -15,7 +10,6 @@ def class_imbalance_sampler(labels):
     sampler = WeightedRandomSampler(sample_weights, len(sample_weights))
     return sampler
 
-@DATALOADER_REGISTRY.register()
 class CSVLoader(torch.utils.data.DataLoader):
     def __init__(self, dataset, batch_size,  train=True):
 

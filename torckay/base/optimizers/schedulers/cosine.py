@@ -4,8 +4,6 @@ import torch
 import numpy as np
 from . import SCHEDULER_REGISTRY
 
-
-@SCHEDULER_REGISTRY.register()
 class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
     """
     Cosine annealing with restarts.

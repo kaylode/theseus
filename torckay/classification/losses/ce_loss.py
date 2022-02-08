@@ -1,9 +1,7 @@
 from typing import Dict
 from torch import nn
-from torckay.classification.losses import LOSS_REGISTRY
 from timm.loss import LabelSmoothingCrossEntropy
 
-@LOSS_REGISTRY.register()
 class CELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
@@ -17,7 +15,6 @@ class CELoss(nn.Module):
         loss_dict = {"L": loss.item()}
         return loss, loss_dict
 
-@LOSS_REGISTRY.register()
 class SmoothCELoss(nn.Module):
     r"""SmoothCELoss is warper of label smoothing cross-entropy loss"""
 

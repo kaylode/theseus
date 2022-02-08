@@ -1,12 +1,8 @@
-from nncore.core.models import MODEL_REGISTRY
-
 from collections import OrderedDict
 import timm
-from timm.models.layers import SelectAdaptivePool2d
 import torch
 import torch.nn as nn
 
-@MODEL_REGISTRY.register()
 class BaseTimmModel(nn.Module):
     """Some Information about BaseTimmModel"""
 

@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 from typing import Any, Dict, Optional
-from torckay.base.metrics import METRIC_REGISTRY
 from torckay.base.metrics.metric_template import Metric
 
 def compute_multiclass(outputs, targets, index):
@@ -14,7 +13,6 @@ def compute_multiclass(outputs, targets, index):
                 correct+=1
     return correct, sample_size
 
-@METRIC_REGISTRY.register()
 class BalancedAccuracyMetric(Metric):
     """
     Balanced Accuracy metric for classification

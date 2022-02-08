@@ -10,9 +10,6 @@ from torckay.utilities.loggers.logger import LoggerManager
 
 LOGGER = LoggerManager.init_logger(__name__)
 
-from . import TRAINER_REGISTRY
-
-@TRAINER_REGISTRY.register()
 class SupervisedTrainer(BaseTrainer):
     def __init__(self, **kwargs):
 

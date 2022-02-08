@@ -1,8 +1,11 @@
-from torch.optim import SGD, Adam
-
 from torckay.registry import Registry
 
-from . import lr_scheduler, scalers
+from torch.optim import SGD, Adam
+from .schedulers import SchedulerWrapper
+
+
+SCHEDULER_REGISTRY = Registry("SCHEDULER")
+SCHEDULER_REGISTRY.register(SchedulerWrapper)
 
 OPTIM_REGISTRY = Registry('OPTIMIZER')
 OPTIM_REGISTRY.register(Adam)
