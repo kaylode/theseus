@@ -1,1 +1,1 @@
-from torckay.base.datasets import DATASET_REGISTRY
+from torckay.base.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY

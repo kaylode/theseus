@@ -7,12 +7,13 @@ from torckay.base.optimizers import OPTIM_REGISTRY
 from torckay.base.optimizers.schedulers import SCHEDULER_REGISTRY
 from torckay.base.augmentations.torchvision import TRANSFORM_REGISTRY
 from torckay.classification.losses import LOSS_REGISTRY
-from torckay.classification.datasets import DATASET_REGISTRY
+from torckay.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from torckay.classification.trainer import TRAINER_REGISTRY
 from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_yaml
+from torckay.base.optimizers.scalers import NativeScaler
 
 from torckay.classification.datasets import CSVLoader
 
@@ -38,15 +39,33 @@ class Pipeline(object):
             self.transform_cfg, registry=TRANSFORM_REGISTRY
         )
 
-        data = self.get_data(self.opt["data"], self.transform, return_dataset=False)
-        (
-            self.train_dataloader,
-            self.val_dataloader,
-            self.train_dataset,
-            self.val_dataset,
-        ) = data
+        self.train_dataset = get_instance(
+            opt['data']["dataset"]['train'],
+            registry=DATASET_REGISTRY,
+            transform=self.transform['train'],
+        )
 
-        model = get_instance(self.opt["model"], registry=MODEL_REGISTRY).to(self.device)
+        self.val_dataset = get_instance(
+            opt['data']["dataset"]['val'],
+            registry=DATASET_REGISTRY,
+            transform=self.transform['val'],
+        )
+
+        CLASSNAMES = self.val_dataset.classnames
+
+        self.train_dataloader = get_instance(
+            opt['data']["dataloader"]['train'],
+            registry=DATALOADER_REGISTRY,
+            dataset=self.train_dataset,
+        )
+
+        self.val_dataloader = get_instance(
+            opt['data']["dataloader"]['val'],
+            registry=DATALOADER_REGISTRY,
+            dataset=self.val_dataset
+        )
+
+        model = get_instance(self.opt["model"], registry=MODEL_REGISTRY, classnames=CLASSNAMES).to(self.device)
         criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(
             self.device
         )
@@ -69,6 +88,8 @@ class Pipeline(object):
                 'train_len': len(self.train_dataloader),
             }
         )
+
+        self.scaler = NativeScaler()
 
         self.learner = get_instance(
             self.opt["trainer"],
@@ -99,24 +120,4 @@ class Pipeline(object):
         LOGGER.info("Evaluating ")
    
 
-    def get_data(
-        self, cfg, transform: Optional[Dict[str, Callable]] = None, return_dataset=False
-    ):
-        def get_single_data(cfg, transform, stage: str = "train"):
-            assert stage in cfg["dataset"].keys(), f"{stage} is not in dataset config"
-            assert stage in cfg["loader"].keys(), f"{stage} is not in loader config"
-
-            if transform is None:
-                dataset = get_instance(cfg["dataset"][stage], registry=DATASET_REGISTRY)
-            else:
-                dataset = get_instance(
-                    cfg["dataset"][stage],
-                    registry=DATASET_REGISTRY,
-                    transform=transform[stage],
-                )
-
-
-            train_dataloader = CSVLoader(train_dataset, cfg["loader"]["train"]['batch_size'], _type='train')
-            val_dataloader = CSVLoader(val_dataset, cfg["loader"]["val"]['batch_size'], _type='val')
-
-        return (train_dataloader, val_dataloader, train_dataset, val_dataset)
+  
