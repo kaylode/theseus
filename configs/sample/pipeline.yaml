@@ -1,5 +1,5 @@
 global:
-  debug: False
+  debug: True
   cfg_transform: configs/sample/transform.yaml
   save_dir: runs
   device: cuda:0

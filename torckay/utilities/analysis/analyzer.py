@@ -19,7 +19,7 @@ class Analyzer:
         raise NotImplementedError
 
     def add_dataset(self, dataset):
-        self.class_names = dataset.class_names
+        self.class_names = dataset.classnames
         for i, item in enumerate(tqdm(dataset)):
             self.update_item(item)
 
@@ -84,7 +84,8 @@ class ClassificationAnalyzer(Analyzer):
         self.sample_dict['height'].append(height)
 
     def analyze(self):
-        _, axs = plt.subplots(1, 2 ,figsize=(20,10))
+        fig, axs = plt.subplots(1, 2 ,figsize=(20,10))
 
         self.sample_dimension_dist(axs[0])
         self.class_dist(axs[1])
+        return fig

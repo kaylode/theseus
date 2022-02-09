@@ -10,6 +10,7 @@ from torckay.utilities.loading import load_state_dict, find_old_tflog
 from torckay.classification.augmentations.custom import Denormalize
 from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
 from torckay.utilities.visualization.visualizer import Visualizer
+from torckay.utilities.analysis.analyzer import ClassificationAnalyzer
 
 LOGGER = logging.getLogger("main")
 
@@ -61,8 +62,7 @@ class ClassificationTrainer(SupervisedTrainer):
         fig = plt.figure()
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
-            f'samples/train_batch', fig, step=self.iters)
-
+            f'sanitycheck/train_batch', fig, step=self.iters)
 
         batch = next(iter(self.valloader))
         images = batch["inputs"]
@@ -78,7 +78,7 @@ class ClassificationTrainer(SupervisedTrainer):
         fig = plt.figure()
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
-            f'samples/val_batch', fig, step=self.iters)
+            f'sanitycheck/val_batch', fig, step=self.iters)
 
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping and model predictions
@@ -137,27 +137,27 @@ class ClassificationTrainer(SupervisedTrainer):
         gradcam_batch = torch.stack(gradcam_batch, dim=0)
         pred_batch = torch.stack(pred_batch, dim=0)
 
-        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int(idx+1/4), normalize=False)
+        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int((idx+1)/8), normalize=False)
 
         fig = plt.figure()
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
-            f'samples/gradcam', fig, step=self.iters)
+            f'evaluation/gradcam', fig, step=self.iters)
 
-        pred_grid_img = torchvision.utils.make_grid(pred_batch[:int(len(pred_batch)/2)], nrow=int(idx+1/8), normalize=False)
+        pred_grid_img = torchvision.utils.make_grid(pred_batch[:int(len(pred_batch)/2)], nrow=int((idx+1)/8), normalize=False)
         fig = plt.figure()
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
-            f'samples/prediction', fig, step=self.iters)
+            f'evaluation/prediction', fig, step=self.iters)
 
-        pred_grid_img = torchvision.utils.make_grid(pred_batch[int(len(pred_batch)/2):], nrow=int(idx+1/8), normalize=False)
+        pred_grid_img = torchvision.utils.make_grid(pred_batch[int(len(pred_batch)/2):], nrow=int((idx+1)/8), normalize=False)
         fig = plt.figure()
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
-            f'samples/prediction2', fig, step=self.iters)
+            f'evaluation/prediction2', fig, step=self.iters)
 
 
         # Zeroing gradients in optimizer for safety
@@ -166,11 +166,25 @@ class ClassificationTrainer(SupervisedTrainer):
     @torch.no_grad()
     def visualize_model(self):
         # Vizualize Model Graph
-        LOGGER.debug("Visualizing model architecture")
+        LOGGER.debug("Visualizing architecture...")
 
         batch = next(iter(self.valloader))
         images = batch["inputs"].to(self.model.device)
         self.tf_logger.write_model(self.model.model, images)
+
+    def analyze_gt(self):
+        LOGGER.debug("Analyzing datasets...")
+        analyzer = ClassificationAnalyzer()
+        analyzer.add_dataset(self.trainloader.dataset)
+        fig = analyzer.analyze()
+        self.tf_logger.write_image(
+            f'sanitycheck/train_analysis', fig, step=0)
+
+        analyzer = ClassificationAnalyzer()
+        analyzer.add_dataset(self.valloader.dataset)
+        fig = analyzer.analyze()
+        self.tf_logger.write_image(
+            f'sanitycheck/val_analysis', fig, step=0)
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
@@ -185,6 +199,8 @@ class ClassificationTrainer(SupervisedTrainer):
             ))
 
     def sanitycheck(self):
+        LOGGER.setLevel(logging.DEBUG)
         self.visualize_gt()
+        self.analyze_gt()
         self.visualize_model()
         self.evaluate_epoch()
