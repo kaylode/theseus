@@ -46,7 +46,7 @@ metrics:
 optimizer:
   name: AdamW
   args:
-    lr: 0.01
+    lr: 0.001               # [adam: 1e-3 | sgd: 1e-2]
     weight_decay: 0.0005
     betas: [0.937, 0.999]
 
@@ -60,7 +60,7 @@ scheduler:
     eta_min: 0.000001
 
 
-data: # instruction here
+data: 
   dataset:
     train:
       name: CSVDataset
