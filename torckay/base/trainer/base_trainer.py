@@ -1,9 +1,9 @@
 import os
-from torckay.utilities.loggers.logger import LoggerManager
+import logging
 from torckay.utilities.loggers.cp_logger import Checkpoint
 from torckay.utilities.loggers.tf_logger import TensorboardLogger
 
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 class BaseTrainer():
     def __init__(self,

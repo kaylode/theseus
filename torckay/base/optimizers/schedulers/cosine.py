@@ -3,9 +3,9 @@
 import torch
 from typing import Dict, Any
 import numpy as np
-from torckay.utilities.loggers.logger import LoggerManager
+import logging
 
-LOGGER = LoggerManager.__init__(__name__)
+LOGGER = logging.getLogger('main')
 
 class CosineWithRestarts():
     """

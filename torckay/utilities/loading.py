@@ -2,10 +2,9 @@ import os
 import yaml
 import torch
 import glob
-
+import logging
 from torckay.base.optimizers.scalers.native import NativeScaler
-from torckay.utilities.loggers.logger import LoggerManager
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 def load_yaml(path):
     with open(path, 'rt') as f:

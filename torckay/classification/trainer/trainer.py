@@ -1,17 +1,17 @@
 import os
+import logging
 import cv2
 import torch
 import torchvision
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from torckay.base.trainer.supervised_trainer import SupervisedTrainer
-from torckay.utilities.loggers.logger import LoggerManager
 from torckay.utilities.loading import load_state_dict, find_old_tflog
 from torckay.classification.augmentations.custom import Denormalize
 from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
 
 
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 class ClassificationTrainer(SupervisedTrainer):
     def __init__(self, **kwargs):
@@ -119,7 +119,7 @@ class ClassificationTrainer(SupervisedTrainer):
         LOGGER.debug("Visualizing model architecture")
 
         batch = next(iter(self.valloader))
-        images = batch["inputs"].unsqueeze(0).to(self.model.device)
+        images = batch["inputs"].to(self.model.device)
         self.tf_logger.write_model(self.model.model, images)
 
     def on_evaluate_end(self):

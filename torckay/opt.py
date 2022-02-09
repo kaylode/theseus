@@ -1,12 +1,10 @@
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-
+import logging
 import yaml
 import json
-from torckay.utilities.print import pretty
 from torckay.utilities.loading import load_yaml
-from torckay.utilities.loggers.logger import LoggerManager
 
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 
 class Config(dict):

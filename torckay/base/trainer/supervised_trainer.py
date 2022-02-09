@@ -1,14 +1,13 @@
 import time
+import logging
 import numpy as np
 from tqdm import tqdm
-
 import torch
 from torch.cuda import amp
 
 from .base_trainer import BaseTrainer
-from torckay.utilities.loggers.logger import LoggerManager
 
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 class SupervisedTrainer(BaseTrainer):
     def __init__(self, **kwargs):

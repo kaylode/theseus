@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
 import os
-from datetime import datetime
+import logging
 
-from torckay.utilities.loggers.logger import LoggerManager
-
-LOGGER = LoggerManager.init_logger(__name__)
+LOGGER = logging.getLogger("main")
 
 class Checkpoint():
     """

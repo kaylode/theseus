@@ -57,10 +57,11 @@ class LoggerManager:
     level = logging.INFO        
 
     @staticmethod
-    def init_logger(name):
+    def init_logger(name, filename):
         # Init logger
         logger = logging.getLogger(name)
         logger.setLevel(LoggerManager.level)
+        LoggerManager.filename = filename
 
         # Create handlers
         handlers = LoggerManager.init_handlers()

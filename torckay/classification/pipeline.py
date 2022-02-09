@@ -16,8 +16,6 @@ from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
 from torckay.base.optimizers.scalers import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
- 
-LOGGER = LoggerManager.init_logger(__name__)
 
 class Pipeline(object):
     """docstring for Pipeline."""
@@ -29,14 +27,16 @@ class Pipeline(object):
         super(Pipeline, self).__init__()
         self.opt = opt
         
+        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        self.debug = opt['global']['debug']
+        if self.debug:
+            LoggerManager.set_debug_mode("on")
+        self.logger = LoggerManager.init_logger("main", os.path.join(self.savedir, 'log.txt'))
+
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
 
         self.device = torch.device(opt['global']['device'])
         resume = opt['global']['resume']
-
-        self.debug = opt['global']['debug']
-        if self.debug:
-            LoggerManager.set_debug_mode("on")
 
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=TRANSFORM_REGISTRY
@@ -104,8 +104,6 @@ class Pipeline(object):
             }
         )
 
-
-        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.trainer = get_instance(
             self.opt["trainer"],
             model=self.model,
@@ -121,12 +119,12 @@ class Pipeline(object):
         )
 
     def infocheck(self):
-        LOGGER.info(self.opt)
-        LOGGER.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
+        self.logger.info(self.opt)
+        self.logger.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
 
     def sanitycheck(self):
         self.infocheck()
-        LOGGER.info("Sanity checking before training...")
+        self.logger.info("Sanity checking before training...")
         self.trainer.sanitycheck()
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
@@ -136,7 +134,7 @@ class Pipeline(object):
         self.trainer.fit()
 
     def evaluate(self):
-        LOGGER.info("Evaluating...")
+        self.logger.info("Evaluating...")
         self.trainer.evaluate_epoch()
    
 
