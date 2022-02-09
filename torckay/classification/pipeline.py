@@ -28,6 +28,8 @@ class Pipeline(object):
         self.opt = opt
         
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        os.makedirs(self.savedir, exist_ok=True)
+        
         self.debug = opt['global']['debug']
         if self.debug:
             LoggerManager.set_debug_mode("on")

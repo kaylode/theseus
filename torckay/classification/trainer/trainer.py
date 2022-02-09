@@ -9,7 +9,7 @@ from torckay.base.trainer.supervised_trainer import SupervisedTrainer
 from torckay.utilities.loading import load_state_dict, find_old_tflog
 from torckay.classification.augmentations.custom import Denormalize
 from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
-
+from torckay.utilities.visualization.visualizer import Visualizer
 
 LOGGER = logging.getLogger("main")
 
@@ -81,37 +81,67 @@ class ClassificationTrainer(SupervisedTrainer):
             f'samples/val_batch', fig, step=self.iters)
 
     def visualize_pred(self):
-        # Vizualize Grad Class Activation Mapping
-        LOGGER.debug("Visualizing GradCAM...")
+        # Vizualize Grad Class Activation Mapping and model predictions
+        LOGGER.debug("Visualizing model predictions...")
+
+        visualizer = Visualizer()
 
         denom = Denormalize()
         batch = next(iter(self.valloader))
         images = batch["inputs"]
+        targets = batch["targets"]
 
         self.model.eval()
 
         model_name = self.model.model.name
         grad_cam = GradCam(model=self.model, config_name=model_name)
 
-        batch = []
-        for idx, inputs in enumerate(images):
-            img_show = denom(inputs)
-            inputs = inputs.unsqueeze(0)
-            inputs = inputs.to(self.model.device)
+        gradcam_batch = []
+        pred_batch = []
+        for idx, (input, target) in enumerate(zip(images, targets)):
+            img_show = denom(input)
+            visualizer.set_image(img_show)
+            input = input.unsqueeze(0)
+            input = input.to(self.model.device)
             target_category = None
-            grayscale_cam, label_idx = grad_cam(inputs, target_category)
+            grayscale_cam, label_idx, score = grad_cam(input, target_category, return_prob=True)
             label = self.valloader.dataset.classnames[label_idx]
+            target = self.valloader.dataset.classnames[target.item()]
+
+            if label == target:
+                color = [0,1,0]
+            else:
+                color = [0,0,1]
+
+            visualizer.draw_label(f"GT:{target}\nPRED: {label}\nCONF:{score}", fontColor=color)
             img_cam = show_cam_on_image(img_show, grayscale_cam, label)
             img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
             img_cam = TFF.to_tensor(img_cam)
-            batch.append(img_cam)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
+            gradcam_batch.append(img_cam)
+
+            pred_img = visualizer.get_image()
+            pred_img = TFF.to_tensor(pred_img)
+            pred_batch.append(pred_img)
+
+        gradcam_batch = torch.stack(gradcam_batch, dim=0)
+        pred_batch = torch.stack(pred_batch, dim=0)
+
+        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=8, normalize=False)
+        pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=8, normalize=False)
 
         fig = plt.figure()
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
             f'samples/gradcam', fig, step=self.iters)
+
+        fig = plt.figure()
+        plt.imshow(pred_grid_img.permute(1, 2, 0))
+        self.tf_logger.write_image(
+            f'samples/prediction', fig, step=self.iters)
+
+
+        # Zeroing gradients in optimizer for safety
+        self.optimizer.zero_grad()
 
     @torch.no_grad()
     def visualize_model(self):

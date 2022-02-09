@@ -59,26 +59,34 @@ class CSVDataset(torch.utils.data.Dataset):
         for _, row in df.iterrows():
             image_name, label = row
             image_path = os.path.join(self.image_dir, image_name)
-            self.fns.append([image_path, self.classes_idx[label]])
+            self.fns.append([image_path, label])
             self.classes_dist.append(self.classes_idx[label])
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
 
-        image_path, class_idx = self.fns[idx]
+        image_path, label_name = self.fns[idx]
         im = Image.open(image_path).convert('RGB')
-        label = torch.LongTensor([class_idx])  # convert label to 0 - 1 (W, H)
-
+        width, height = im.width, im.height
+        class_idx = self.classes_idx[label_name]
         transformed = self.transform(im)
 
-        item = {"input": transformed, "target": label.long()}
-        return item
+        target = {}
+        target['labels'] = [class_idx]
+        target['label_name'] = label_name
+
+        return {
+            "input": transformed, 
+            'target': target,
+            'img_name': os.path.basename(image_path),
+            'ori_size': [width, height]
+        }
 
     def __len__(self) -> int:
         return len(self.fns)
 
     def collate_fn(self, batch: List):
         imgs = torch.stack([s['input'] for s in batch])
-        targets = torch.stack([s['target'] for s in batch])
+        targets = torch.stack([torch.LongTensor(s['target']['labels']) for s in batch])
 
         # if self.mixupcutmix is not None:
         #     imgs, targets = self.mixupcutmix(imgs, targets.squeeze(1))

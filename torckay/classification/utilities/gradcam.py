@@ -134,11 +134,14 @@ class GradCam:
     def forward(self, input_img):
         return self.model(input_img)
 
-    def __call__(self, input_img, target_category=None):
+    def __call__(self, input_img, target_category=None, return_prob=False):
         features, output = self.extractor(input_img)
 
         if target_category == None:
             target_category = np.argmax(output.cpu().data.numpy())
+
+            if return_prob:
+                score = np.max(output.cpu().data.numpy())
 
         one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
         one_hot[0][target_category] = 1
@@ -167,4 +170,8 @@ class GradCam:
         cam = cv2.resize(cam, input_img.shape[2:])
         cam = cam - np.min(cam)
         cam = cam / np.max(cam)
-        return cam, int(target_category)
+
+        if return_prob:
+            return cam, int(target_category), score
+        else:
+            return cam, int(target_category)
