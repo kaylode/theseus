@@ -18,7 +18,9 @@ class ClassificationTrainer(SupervisedTrainer):
         super().__init__(**kwargs)
 
     def check_best(self, metric_dict):
-        if metric_dict['acc'] > self.best_value:
+        if metric_dict['bl_acc'] > self.best_value:
+            LOGGER.info(f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}")
+            self.best_value = metric_dict['bl_acc']
             self.save_checkpoint('best')
 
     def save_checkpoint(self, outname='last'):
@@ -36,12 +38,14 @@ class ClassificationTrainer(SupervisedTrainer):
         self.checkpoint.save(weights, outname)
 
     def load_checkpoint(self, path):
+        LOGGER.info("Loading checkpoints...")
         state_dict = torch.load(path)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
         
     def visualize_gt(self):
+        LOGGER.debug("Visualizing dataset...")
         denom = Denormalize()
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
@@ -78,6 +82,8 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping
+        LOGGER.debug("Visualizing GradCAM...")
+
         denom = Denormalize()
         batch = next(iter(self.valloader))
         images = batch["inputs"]
@@ -107,9 +113,17 @@ class ClassificationTrainer(SupervisedTrainer):
         self.tf_logger.write_image(
             f'samples/gradcam', fig, step=self.iters)
 
+    @torch.no_grad()
+    def visualize_model(self):
+        # Vizualize Model Graph
+        LOGGER.debug("Visualizing model architecture")
+
+        batch = next(iter(self.valloader))
+        images = batch["inputs"].unsqueeze(0).to(self.model.device)
+        self.tf_logger.write_model(self.model.model, images)
+
     def on_evaluate_end(self):
         if self.visualize_when_val:
-            LOGGER.info("Visualize GradCAM")
             self.visualize_pred()
         self.save_checkpoint()
     
@@ -120,5 +134,7 @@ class ClassificationTrainer(SupervisedTrainer):
                 os.path.dirname(os.path.dirname(self.resume))
             ))
 
-    def on_training_end(self):
-        return
+    def sanitycheck(self):
+        self.visualize_gt()
+        self.visualize_model()
+        self.evaluate_epoch()

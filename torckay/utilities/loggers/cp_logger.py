@@ -3,6 +3,10 @@ import torch.nn as nn
 import os
 from datetime import datetime
 
+from torckay.utilities.loggers.logger import LoggerManager
+
+LOGGER = LoggerManager.init_logger(__name__)
+
 class Checkpoint():
     """
     Checkpoint for saving state dict
@@ -19,5 +23,7 @@ class Checkpoint():
         """
         os.makedirs(self.path, exist_ok=True)
         torch.save(state_dict, os.path.join(self.path,outname)+".pth")
+        LOGGER.info(f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth")
+
     
 

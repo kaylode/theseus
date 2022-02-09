@@ -83,7 +83,7 @@ class Pipeline(object):
         )
 
         self.scaler = NativeScaler()
-        
+
         if resume:
             state_dict = torch.load(resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
@@ -126,11 +126,8 @@ class Pipeline(object):
 
     def sanitycheck(self):
         self.infocheck()
-        LOGGER.info("Sanity checking before training")
-        LOGGER.info("Visualizing dataset...")
-        self.trainer.visualize_gt()
-        self.trainer.on_training_start()
-        self.trainer.evaluate_epoch()
+        LOGGER.info("Sanity checking before training...")
+        self.trainer.sanitycheck()
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
@@ -139,7 +136,7 @@ class Pipeline(object):
         self.trainer.fit()
 
     def evaluate(self):
-        LOGGER.info("Evaluating")
+        LOGGER.info("Evaluating...")
         self.trainer.evaluate_epoch()
    
 

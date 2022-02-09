@@ -53,6 +53,14 @@ class TensorboardLogger():
 
         self.writer.add_figure(tag, image, global_step=step)
 
+    def write_model(self, model, inputs):
+        """
+        Write a model graph to tensorboard
+        :param model: (nn.Module) torch model
+        :param inputs: sample tensor
+        """
+        self.writer.add_graph(model, inputs)
+
     def load(self, old_log):
         """
         Load tensorboard from log
