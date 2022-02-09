@@ -1,5 +1,7 @@
+import os
 import yaml
 import torch
+import glob
 
 from torckay.base.optimizers.scalers.native import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
@@ -25,3 +27,10 @@ def load_state_dict(instance, state_dict, key):
         return instance
     else:
         return state_dict[key]
+
+def find_old_tflog(pardir):
+    event_paths = glob.glob(os.path.join(pardir, "event*"))
+    if len(event_paths) == 0:
+        return None
+    else:
+        return event_paths[0]

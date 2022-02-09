@@ -13,7 +13,7 @@ from torckay.classification.trainer import TRAINER_REGISTRY
 from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
-from torckay.utilities.loading import load_yaml
+from torckay.utilities.loading import load_state_dict
 from torckay.base.optimizers.scalers import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
  
@@ -82,13 +82,15 @@ class Pipeline(object):
             params=self.model.parameters(),
         )
 
+        last_epoch = load_state_dict(None, torch.load(resume), 'epoch')
+
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{
                 'num_epochs': self.opt["trainer"]['args']['num_epochs'],
                 'trainset': self.train_dataset,
                 'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
-                'train_len': len(self.train_dataloader),
+                'last_epoch': last_epoch,
             }
         )
 

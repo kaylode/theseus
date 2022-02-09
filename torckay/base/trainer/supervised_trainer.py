@@ -36,7 +36,6 @@ class SupervisedTrainer(BaseTrainer):
             
             if i % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
                 self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
-                self.optimizer.zero_grad()
 
                 if not self.step_per_epoch:
                     self.scheduler.step()
@@ -44,6 +43,8 @@ class SupervisedTrainer(BaseTrainer):
                     lr = sum(lrl) / len(lrl)
                     log_dict = {'Training/Learning rate': lr}
                     self.tf_logger.write_dict(log_dict, step=self.iters)
+
+                self.optimizer.zero_grad()
 
             torch.cuda.synchronize()
             end_time = time.time()
@@ -72,7 +73,8 @@ class SupervisedTrainer(BaseTrainer):
             if (self.iters % self.save_per_iter == 0 or self.iters == self.num_iters - 1):
                 LOGGER.info(f'Save model at [{self.iters}|{self.num_iters}] to last.pth')
                 self.save_checkpoint()
-            
+
+    @torch.no_grad()   
     def evaluate_epoch(self):
         self.model.eval()
         epoch_loss = {}
@@ -80,7 +82,7 @@ class SupervisedTrainer(BaseTrainer):
         metric_dict = {}
         LOGGER.info('=============================EVALUATION===================================')
         start_time = time.time()
-        with torch.no_grad():
+        with amp.autocast(enabled=self.use_amp):
             for batch in tqdm(self.valloader):
                 outputs = self.model.evaluate_step(batch, self.metrics)
                 

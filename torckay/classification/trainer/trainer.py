@@ -6,9 +6,10 @@ from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from torckay.base.trainer.supervised_trainer import SupervisedTrainer
 from torckay.utilities.loggers.logger import LoggerManager
-from torckay.utilities.loading import load_state_dict
+from torckay.utilities.loading import load_state_dict, find_old_tflog
 from torckay.classification.augmentations.custom import Denormalize
 from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
+
 
 LOGGER = LoggerManager.init_logger(__name__)
 
@@ -118,6 +119,9 @@ class ClassificationTrainer(SupervisedTrainer):
     def on_training_start(self):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
+            self.tf_logger.load(find_old_tflog(
+                os.path.pardir(os.path.pardir(self.resume)
+            )))
 
     def on_training_end(self):
         return
