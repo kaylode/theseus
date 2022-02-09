@@ -54,7 +54,7 @@ class SchedulerWrapper():
                 T_0=kwargs['num_epochs'],
                 T_mult=1,
                 eta_min=0.0001,
-                last_epoch=-1,
+                last_epoch=kwargs['last_epoch'],
                 verbose=False
             )
             step_per_epoch = False
@@ -62,8 +62,11 @@ class SchedulerWrapper():
         elif scheduler_name == 'cosine2':
             scheduler = CosineWithRestarts(
                 optimizer, 
-                T_max=kwargs['train_len'])
-            step_per_epoch = False
+                t_initial=5,
+                t_mul=0.9,
+                eta_mul=0.8,
+                last_epoch=kwargs['last_epoch'])
+            step_per_epoch = True
 
         self.scheduler = scheduler
         self.step_per_epoch = step_per_epoch

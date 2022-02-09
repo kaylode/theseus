@@ -12,7 +12,7 @@ trainer:
     num_epochs: 100
     total_accumulate_steps: null
     clip_grad:  10.0
-    print_per_iter: 100
+    print_per_iter: 2
     evaluate_per_epoch :  1
     visualize_when_val :  True
 
@@ -31,9 +31,11 @@ loss:
 
 
 optimizer:
-  name: Adam
+  name: AdamW
   args:
     lr: 0.001
+    weight_decay: 0.0005
+    betas: [0.937, 0.999]
 
 
 metrics:
@@ -41,7 +43,7 @@ metrics:
     args:
   - name: BalancedAccuracyMetric
     args: 
-      num_classes: 41
+      num_classes: 5
   - name: F1ScoreMetric
     args:
       average: weighted
@@ -53,6 +55,9 @@ scheduler:
   name: SchedulerWrapper
   args:
     scheduler_name: cosine2
+    t_initial: 5
+    t_mul: 0.9
+    eta_mul: 0.8
 
 data: # instruction here
   dataset:
@@ -76,10 +81,10 @@ data: # instruction here
     train:
       name: CSVLoader
       args:
-        batch_size: 128
+        batch_size: 64
         train: True
     val:
       name: CSVLoader
       args:
-        batch_size: 128
+        batch_size: 64
         train: False
