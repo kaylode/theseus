@@ -111,9 +111,17 @@ class ClassificationTrainer(SupervisedTrainer):
             if label == target:
                 color = [0,1,0]
             else:
-                color = [0,0,1]
+                color = [1,0,0]
 
-            visualizer.draw_label(f"GT:{target}\nPRED: {label}\nCONF:{score}", fontColor=color)
+            visualizer.draw_label(
+                f"GT: {target}\nP: {label}\nC: {score:.3}", 
+                fontColor=color, 
+                fontScale=0.8,
+                thickness=2,
+                outline=None,
+                offset=100
+            )
+
             img_cam = show_cam_on_image(img_show, grayscale_cam, label)
             img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
             img_cam = TFF.to_tensor(img_cam)
@@ -123,21 +131,33 @@ class ClassificationTrainer(SupervisedTrainer):
             pred_img = TFF.to_tensor(pred_img)
             pred_batch.append(pred_img)
 
+            if idx == 63: # limit number of images
+                break
+
         gradcam_batch = torch.stack(gradcam_batch, dim=0)
         pred_batch = torch.stack(pred_batch, dim=0)
 
-        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=8, normalize=False)
-        pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=8, normalize=False)
+        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int(idx+1/4), normalize=False)
 
         fig = plt.figure()
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
+        plt.axis("off")
         self.tf_logger.write_image(
             f'samples/gradcam', fig, step=self.iters)
 
+        pred_grid_img = torchvision.utils.make_grid(pred_batch[:int(len(pred_batch)/2)], nrow=int(idx+1/8), normalize=False)
         fig = plt.figure()
         plt.imshow(pred_grid_img.permute(1, 2, 0))
+        plt.axis("off")
         self.tf_logger.write_image(
             f'samples/prediction', fig, step=self.iters)
+
+        pred_grid_img = torchvision.utils.make_grid(pred_batch[int(len(pred_batch)/2):], nrow=int(idx+1/8), normalize=False)
+        fig = plt.figure()
+        plt.imshow(pred_grid_img.permute(1, 2, 0))
+        plt.axis("off")
+        self.tf_logger.write_image(
+            f'samples/prediction2', fig, step=self.iters)
 
 
         # Zeroing gradients in optimizer for safety

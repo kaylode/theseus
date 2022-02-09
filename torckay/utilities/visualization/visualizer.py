@@ -4,7 +4,9 @@ import numpy as np
 from PIL import Image
 from typing import Optional
 from .colors import color_list
-from .utils import draw_mask, draw_polylines, draw_text, get_font_size, reduce_opacity
+from .utils import (
+    draw_mask, draw_polylines, draw_text,
+    get_font_size, reduce_opacity, draw_text_cv2)
 
 class Visualizer():
     def __init__(self):
@@ -12,7 +14,6 @@ class Visualizer():
         self.class_names = None
 
     def set_image(self, image: np.ndarray) -> None:
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         self.image = image
 
         if self.image.dtype == 'uint8':
@@ -28,7 +29,7 @@ class Visualizer():
             self.image = np.clip(self.image, 0.0, 1.0)
             self.image = (self.image*255).astype(np.uint8)
 
-        return self.image[:,:,::-1]
+        return self.image
 
     def save_image(self, path):
         cv2.imwrite(path, self.get_image()[:,:,::-1])
@@ -39,7 +40,7 @@ class Visualizer():
             fontScale              = 2,
             fontColor              = (0,0,1),
             thickness              = 3,
-            lineType               = 2,
+            outline                = (0,0,0),
             offset = 50 
         ):
         assert self.image is not None
@@ -49,17 +50,18 @@ class Visualizer():
         h,w,c = self.image.shape
         white_canvas = np.ones((h+offset,w, c))
         white_canvas[:h,:w,:c] = self.image
-        bottomLeftCornerOfText = (int(w/3), h+offset-10)
+        bottomLeftCornerOfText = (int(w/6), h+10)
 
-        cv2.putText(white_canvas, str(label), 
+        draw_text_cv2(white_canvas, str(label), 
             bottomLeftCornerOfText, 
-            font, 
-            fontScale,
-            fontColor,
-            thickness,
-            lineType)
+            fontFace=font, 
+            fontScale=fontScale,
+            color=fontColor,
+            outline_color=outline,
+            thickness=thickness)
 
         self.image = white_canvas.copy()
+
 
     def draw_polygon_ocr(self, polygons, texts=None, font='assets/fonts/aachenb.ttf'):
         image = self.image.copy()
