@@ -62,9 +62,10 @@ class SchedulerWrapper():
         elif scheduler_name == 'cosine2':
             scheduler = CosineWithRestarts(
                 optimizer, 
-                t_initial=5,
-                t_mul=0.9,
-                eta_mul=0.8,
+                t_initial=kwargs['t_initial'],
+                t_mul=kwargs['t_mul'],
+                eta_mul=kwargs['eta_mul'],
+                eta_min=kwargs['eta_min'],
                 last_epoch=kwargs['last_epoch'])
             step_per_epoch = True
 

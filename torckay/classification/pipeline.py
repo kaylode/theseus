@@ -82,7 +82,17 @@ class Pipeline(object):
             params=self.model.parameters(),
         )
 
-        last_epoch = load_state_dict(None, torch.load(resume), 'epoch')
+        self.scaler = NativeScaler()
+        
+        if resume:
+            state_dict = torch.load(resume)
+            self.model.model = load_state_dict(self.model.model, state_dict, 'model')
+            self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
+            self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
+            last_epoch = load_state_dict(None, state_dict, 'epoch')
+        else:
+            last_epoch = -1
+
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
@@ -94,7 +104,6 @@ class Pipeline(object):
             }
         )
 
-        self.scaler = NativeScaler()
 
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.trainer = get_instance(

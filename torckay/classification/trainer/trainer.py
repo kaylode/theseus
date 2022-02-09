@@ -37,9 +37,6 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def load_checkpoint(self, path):
         state_dict = torch.load(path)
-        self.model.model = load_state_dict(self.model.model, state_dict, 'model')
-        self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-        self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
@@ -120,8 +117,8 @@ class ClassificationTrainer(SupervisedTrainer):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
             self.tf_logger.load(find_old_tflog(
-                os.path.pardir(os.path.pardir(self.resume)
-            )))
+                os.path.dirname(os.path.dirname(self.resume))
+            ))
 
     def on_training_end(self):
         return
