@@ -5,6 +5,10 @@ from timm.models.layers import SelectAdaptivePool2d
 import torch
 import torch.nn as nn
 
+import logging
+
+LOGGER = logging.getLogger('main')
+
 class MultiHeadModel(nn.Module):
     """Some Information about BaseTimmModel"""
 
@@ -14,12 +18,14 @@ class MultiHeadModel(nn.Module):
         pretrained_backbone=None,
         num_head_classes=[1,1],
         train_index=0,
-        classnames=None
+        txt_classnames=None
     ):
         super().__init__()
         self.name = name
         self.train_index = train_index
-        self.classnames = classnames
+        self.txt_classnames = txt_classnames
+        if txt_classnames is not None:
+            self.txt_classnames = self.load_classnames()
 
         model = timm.create_model(name, pretrained=True)
         self.drop_rate = model.drop_rate
@@ -30,7 +36,7 @@ class MultiHeadModel(nn.Module):
             try:
                 ret = model.load_state_dict(state_dict, strict=False)
             except RuntimeError as e:
-                print(f'[Warning] Ignoring {e}')
+                LOGGER.warn(f'[Warning] Ignoring {e}')
 
         # Remove last head, freeze backbone
         self.backbone = nn.Sequential(*(list(model.children())[:-1]))
@@ -54,9 +60,23 @@ class MultiHeadModel(nn.Module):
             ]))
         )
 
+    def load_classnames(self):
+        self.classnames = []
+        with open(self.txt_classnames, 'r') as f:
+            groups = f.read().splitlines()
+
+        for group in groups:
+            classnames = group.split()
+            self.classnames.append(classnames)
+            
+    def forward_head(self, x, head_index):
+        outputs = self.backbone(x)
+        outputs = self.heads[head_index](outputs)
+        return outputs
+
     def forward(self, x):
         outputs = self.forward_head(x, self.train_index)
-        return {'out': outputs}
+        return outputs
 
     def get_prediction(self, adict):
         inputs = adict['input']

@@ -5,6 +5,10 @@ import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
+import logging
+
+LOGGER = logging.getLogger('main')
+
 class TensorboardLogger():
     """
     Logger for Tensorboard visualization
@@ -105,7 +109,7 @@ def tflog2pandas(path: str) -> pd.DataFrame:
             runlog_data = pd.concat([runlog_data, r])
     # Dirty catch of DataLossError
     except Exception:
-        print("Event file possibly corrupt: {}".format(path))
+        LOGGER.warn("Event file possibly corrupt: {}".format(path))
         traceback.print_exc()
     return runlog_data
 
