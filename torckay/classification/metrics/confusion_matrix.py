@@ -1,8 +1,24 @@
 import torch
-import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from sklearn.metrics import confusion_matrix
 from torckay.base.metrics.metric_template import Metric
+import seaborn as sns
+
+def make_cm_fig(cm, labels=None):
+    ax = sns.heatmap(cm, annot=True, cmap='Blues')
+
+    ax.set_title('Confusion Matrix\n\n');
+    ax.set_xlabel('\nPredicted')
+    ax.set_ylabel('Actual ');
+
+    ## Ticket labels - List must be in alphabetical order
+    if not labels:
+        labels = [str(i) for i in range(len(cm))]
+
+    ax.xaxis.set_ticklabels(labels)
+    ax.yaxis.set_ticklabels(labels)
+    return ax
+
 
 def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):
     """pretty print for confusion matrixes"""
@@ -42,9 +58,8 @@ class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification
     """
-    def __init__(self, classes_map):
-        self.classes_map = classes_map
-        self.labels = [classes_map[i] for i in range(len(classes_map))]
+    def __init__(self, classnames=None):
+        self.classnames = classnames
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
@@ -66,4 +81,5 @@ class ConfusionMatrix(Metric):
 
     def value(self):
         values = confusion_matrix(self.outputs, self.targets)
-        return {"cfm": str(values)}
+        fig = make_cm_fig(values, self.classnames)
+        return {"cfm": fig}
