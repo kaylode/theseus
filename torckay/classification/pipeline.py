@@ -129,6 +129,12 @@ class Pipeline(object):
         device_info = get_devices_info(self.device_name)
         self.logger.info("Using " + device_info)
 
+        self.logger.info(f"Number of training samples: {len(self.train_dataset)}")
+        self.logger.info(f"Number of validation samples: {len(self.val_dataset)}")
+        self.logger.info(f"Number of training iterations each epoch: {len(self.train_dataloader)}")
+        self.logger.info(f"Number of validation iterations each epoch: {len(self.val_dataloader)}")
+        self.logger.info(f"Everything will be saved to {self.savedir}")
+
     def initiate(self):
         self.infocheck()
 

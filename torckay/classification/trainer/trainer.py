@@ -64,7 +64,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
-            f'sanitycheck/train_batch', fig, step=self.iters)
+            f'sanitycheck/batch/train', fig, step=self.iters)
 
         batch = next(iter(self.valloader))
         images = batch["inputs"]
@@ -82,7 +82,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
-            f'sanitycheck/val_batch', fig, step=self.iters)
+            f'sanitycheck/batch/val', fig, step=self.iters)
 
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping and model predictions
@@ -176,13 +176,13 @@ class ClassificationTrainer(SupervisedTrainer):
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
         self.tf_logger.write_image(
-            f'sanitycheck/train_analysis', fig, step=0)
+            f'sanitycheck/analysis/train', fig, step=0)
 
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
         self.tf_logger.write_image(
-            f'sanitycheck/val_analysis', fig, step=0)
+            f'sanitycheck/analysis/val', fig, step=0)
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
