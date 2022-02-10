@@ -59,7 +59,7 @@ class ClassificationTrainer(SupervisedTrainer):
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,8))
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
             f'sanitycheck/train_batch', fig, step=self.iters)
@@ -75,7 +75,7 @@ class ClassificationTrainer(SupervisedTrainer):
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,8))
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
             f'sanitycheck/val_batch', fig, step=self.iters)
@@ -139,26 +139,18 @@ class ClassificationTrainer(SupervisedTrainer):
 
         gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int((idx+1)/8), normalize=False)
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,8))
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
             f'evaluation/gradcam', fig, step=self.iters)
 
-        pred_grid_img = torchvision.utils.make_grid(pred_batch[:int(len(pred_batch)/2)], nrow=int((idx+1)/8), normalize=False)
-        fig = plt.figure()
+        pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
+        fig = plt.figure(figsize=(10,10))
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
             f'evaluation/prediction', fig, step=self.iters)
-
-        pred_grid_img = torchvision.utils.make_grid(pred_batch[int(len(pred_batch)/2):], nrow=int((idx+1)/8), normalize=False)
-        fig = plt.figure()
-        plt.imshow(pred_grid_img.permute(1, 2, 0))
-        plt.axis("off")
-        self.tf_logger.write_image(
-            f'evaluation/prediction2', fig, step=self.iters)
-
 
         # Zeroing gradients in optimizer for safety
         self.optimizer.zero_grad()
@@ -182,7 +174,7 @@ class ClassificationTrainer(SupervisedTrainer):
 
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
-        fig = analyzer.analyze()
+        fig = analyzer.analyze(figsize=(8,8))
         self.tf_logger.write_image(
             f'sanitycheck/val_analysis', fig, step=0)
 

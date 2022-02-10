@@ -83,8 +83,8 @@ class ClassificationAnalyzer(Analyzer):
         self.sample_dict['width'].append(width)
         self.sample_dict['height'].append(height)
 
-    def analyze(self):
-        fig, axs = plt.subplots(1, 2 ,figsize=(20,10))
+    def analyze(self, figsize=(8,8)):
+        fig, axs = plt.subplots(1, 2 ,figsize=figsize)
 
         self.sample_dimension_dist(axs[0])
         self.class_dist(axs[1])
