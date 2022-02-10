@@ -46,7 +46,9 @@ class ClassificationTrainer(SupervisedTrainer):
         state_dict = torch.load(path)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
-        self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
+        self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
+        self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
+
         
     def visualize_gt(self):
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)

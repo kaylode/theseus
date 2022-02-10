@@ -108,7 +108,6 @@ class Pipeline(object):
             state_dict = torch.load(resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
             last_epoch = load_state_dict(None, state_dict, 'epoch')
         else:
             last_epoch = -1
