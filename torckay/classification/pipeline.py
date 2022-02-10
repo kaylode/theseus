@@ -138,12 +138,12 @@ class Pipeline(object):
     def initiate(self):
         self.infocheck()
 
+        self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
+        self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
+
         if self.debug:
             self.logger.debug("Sanity checking before training...")
             self.trainer.sanitycheck()
-            
-        self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
-        self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
     def fit(self):
         self.initiate()

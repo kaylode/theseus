@@ -189,7 +189,7 @@ class ClassificationTrainer(SupervisedTrainer):
             self.visualize_pred()
         self.save_checkpoint()
     
-    def on_training_start(self):
+    def on_start(self):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
             self.tf_logger.load(find_old_tflog(

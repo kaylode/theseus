@@ -58,7 +58,7 @@ class BaseTrainer():
     def fit(self):
         self.num_iters = (self.num_epochs+1) * len(self.trainloader)
         
-        self.on_training_start()
+        self.on_start()
 
         if self.step_per_epoch:
             self.scheduler.last_epoch = self.epoch - 1
@@ -98,7 +98,7 @@ class BaseTrainer():
     def evaluate_epoch(self):
         raise NotImplementedError
     
-    def on_training_start(self):
+    def on_start(self):
         return
 
     def on_training_end(self):
