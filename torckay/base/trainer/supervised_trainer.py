@@ -133,7 +133,8 @@ class SupervisedTrainer(BaseTrainer):
 
         metric_string = ""
         for metric, score in metric_dict.items():
-            metric_string += metric +': ' + f"{score:.5f}" +' | '
+            if isinstance(score, (int, float)):
+                metric_string += metric +': ' + f"{score:.5f}" +' | '
         metric_string +='\n'
 
         LOGGER.text(metric_string, level=LoggerObserver.INFO)

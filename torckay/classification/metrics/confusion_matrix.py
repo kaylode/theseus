@@ -3,9 +3,14 @@ from typing import Any, Dict
 from sklearn.metrics import confusion_matrix
 from torckay.base.metrics.metric_template import Metric
 import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 
 def make_cm_fig(cm, labels=None):
-    ax = sns.heatmap(cm, annot=True, cmap='Blues')
+    fig, ax = plt.subplots(1, figsize=(10,10))
+
+    ax = sns.heatmap(cm, annot=False, 
+            fmt='', cmap='Blues',ax =ax)
 
     ax.set_title('Confusion Matrix\n\n');
     ax.set_xlabel('\nPredicted')
@@ -17,7 +22,7 @@ def make_cm_fig(cm, labels=None):
 
     ax.xaxis.set_ticklabels(labels)
     ax.yaxis.set_ticklabels(labels)
-    return ax
+    return fig
 
 
 def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):

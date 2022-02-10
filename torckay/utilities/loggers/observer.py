@@ -1,13 +1,13 @@
 from typing import Callable, Dict, Optional, List
 import logging
 import torch
-import matplotlib.pyplot as plt
+import matplotlib as mpl
 from .subscriber import LoggerSubscriber
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
         return LoggerObserver.TORCH_MODULE
-    if isinstance(value, plt.figure.Figure):
+    if isinstance(value, mpl.figure.Figure):
         return LoggerObserver.FIGURE
     if isinstance(value, str):
         return LoggerObserver.TEXT

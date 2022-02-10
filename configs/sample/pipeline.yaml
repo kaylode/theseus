@@ -41,9 +41,9 @@ metrics:
   - name: F1ScoreMetric
     args:
       average: weighted
-  # - name: ConfusionMatrix
-  #   args:
-  #     classes_map: 
+  - name: ConfusionMatrix
+    args:
+      classnames: null
 
 optimizer:
   name: AdamW
