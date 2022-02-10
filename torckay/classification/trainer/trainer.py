@@ -66,8 +66,16 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-        self.tf_logger.write_image(
-            f'sanitycheck/batch/train', fig, step=self.iters)
+        self.logger.log([{
+            'tag': "sanitycheck/batch/train",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
+
+        
 
         batch = next(iter(self.valloader))
         images = batch["inputs"]
@@ -84,8 +92,15 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-        self.tf_logger.write_image(
-            f'sanitycheck/batch/val', fig, step=self.iters)
+
+        self.logger.log([{
+            'tag': "sanitycheck/batch/val",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping and model predictions
@@ -150,16 +165,30 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
-        self.tf_logger.write_image(
-            f'evaluation/gradcam', fig, step=self.iters)
+
+        self.logger.log([{
+            'tag': "evaluation/gradcam",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
         fig = plt.figure(figsize=(10,10))
         plt.tight_layout(pad=0)
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
-        self.tf_logger.write_image(
-            f'evaluation/prediction', fig, step=self.iters)
+
+        self.logger.log([{
+            'tag': "evaluation/prediction",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         # Zeroing gradients in optimizer for safety
         self.optimizer.zero_grad()
@@ -178,14 +207,26 @@ class ClassificationTrainer(SupervisedTrainer):
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.tf_logger.write_image(
-            f'sanitycheck/analysis/train', fig, step=0)
+        self.logger.log([{
+            'tag': "sanitycheck/analysis/train",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.tf_logger.write_image(
-            f'sanitycheck/analysis/val', fig, step=0)
+        self.logger.log([{
+            'tag': "sanitycheck/analysis/val",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
@@ -195,9 +236,6 @@ class ClassificationTrainer(SupervisedTrainer):
     def on_start(self):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
-            self.tf_logger.load(find_old_tflog(
-                os.path.dirname(os.path.dirname(self.resume))
-            ))
 
     def sanitycheck(self):
         self.visualize_gt()

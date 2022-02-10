@@ -72,7 +72,7 @@ class StdoutLogger(LoggerSubscriber):
     def init_handlers(self):
         # Create one file logger and one stream logger
         stream_handler = logging.StreamHandler()
-        file_handler = logging.FileHandler(StdoutLogger.filename)
+        file_handler = logging.FileHandler(self.filename)
         
         # Create formatters and add it to handlers
         format = logging.Formatter(StdoutLogger.message_format, datefmt=StdoutLogger.date_format)
@@ -82,7 +82,7 @@ class StdoutLogger(LoggerSubscriber):
         
         return stream_handler, file_handler
 
-    def add_handlers(logger, handlers):
+    def add_handlers(self, logger, handlers):
         # Add handlers to the logger
         for handler in handlers:
             logger.addHandler(handler)

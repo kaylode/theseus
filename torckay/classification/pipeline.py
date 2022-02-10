@@ -14,8 +14,14 @@ from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
+from torckay.utilities.loggers.observer import LoggerObserver
+from torckay.utilities.loggers.tf_logger import TensorboardLogger
 from torckay.utilities.loggers.stdout_logger import StdoutLogger
+from torckay.utilities.loading import load_state_dict, find_old_tflog
+
 from torckay.utilities.cuda import get_devices_info
+
+
 
 class Pipeline(object):
     """docstring for Pipeline."""
@@ -31,9 +37,12 @@ class Pipeline(object):
         os.makedirs(self.savedir, exist_ok=True)
         
         self.debug = opt['global']['debug']
+        self.logger = LoggerObserver.getLogger("main") 
+
+        stdout_logger = StdoutLogger(__name__, self.savedir)
         if self.debug:
-            StdoutLogger.set_debug_mode("on")
-        self.logger = StdoutLogger.init_logger("main", os.path.join(self.savedir, 'log.txt'))
+            stdout_logger.set_debug_mode("on")
+        self.logger.subscribe(stdout_logger)
 
         self.use_fp16 = opt['global']['use_fp16']
 
@@ -42,6 +51,14 @@ class Pipeline(object):
         self.device_name = opt['global']['device']
         self.device = torch.device(self.device_name)
         resume = opt['global']['resume']
+
+        tf_logger = TensorboardLogger(self.savedir)
+        if resume is not None:
+            tf_logger.load(find_old_tflog(
+                os.path.dirname(os.path.dirname(resume))
+            ))
+        self.logger.subscribe(tf_logger)
+        
 
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=TRANSFORM_REGISTRY
@@ -122,17 +139,17 @@ class Pipeline(object):
         )
 
     def infocheck(self):
-        self.logger.info(self.opt)
-        self.logger.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
+        self.logger.text(self.opt, level=LoggerObserver.INFO)
+        self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
 
         device_info = get_devices_info(self.device_name)
-        self.logger.info("Using " + device_info)
+        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
 
-        self.logger.info(f"Number of training samples: {len(self.train_dataset)}")
-        self.logger.info(f"Number of validation samples: {len(self.val_dataset)}")
-        self.logger.info(f"Number of training iterations each epoch: {len(self.train_dataloader)}")
-        self.logger.info(f"Number of validation iterations each epoch: {len(self.val_dataloader)}")
-        self.logger.info(f"Everything will be saved to {self.savedir}")
+        self.logger.text(f"Number of training samples: {len(self.train_dataset)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of validation samples: {len(self.val_dataset)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of training iterations each epoch: {len(self.train_dataloader)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of validation iterations each epoch: {len(self.val_dataloader)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Everything will be saved to {self.savedir}", level=LoggerObserver.INFO)
 
     def initiate(self):
         self.infocheck()
@@ -141,7 +158,7 @@ class Pipeline(object):
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
         if self.debug:
-            self.logger.debug("Sanity checking before training...")
+            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
             self.trainer.sanitycheck()
 
     def fit(self):
@@ -149,7 +166,7 @@ class Pipeline(object):
         self.trainer.fit()
 
     def evaluate(self):
-        self.logger.info("Evaluating...")
+        self.logger.text("Evaluating...", level=LoggerObserver.INFO)
         self.trainer.evaluate_epoch()
    
 
