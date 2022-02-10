@@ -17,14 +17,17 @@ class CSVLoader(torch.utils.data.DataLoader):
             labels = torch.LongTensor(dataset.classes_dist).unsqueeze(1)
             sampler = class_imbalance_sampler(labels)
             drop_last = True
+            shuffle = False
         else:
             sampler = None
             drop_last = False
+            shuffle = True
             
         super(CSVLoader, self).__init__(
             dataset,
             batch_size=batch_size,
             collate_fn = dataset.collate_fn,
             drop_last=drop_last, 
-            sampler=sampler
+            sampler=sampler,
+            shuffle=shuffle
         )

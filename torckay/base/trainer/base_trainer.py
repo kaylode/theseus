@@ -2,6 +2,7 @@ import os
 import logging
 from torckay.utilities.loggers.cp_logger import Checkpoint
 from torckay.utilities.loggers.tf_logger import TensorboardLogger
+from torckay.base.optimizers.scalers import NativeScaler
 
 LOGGER = logging.getLogger("main")
 
@@ -14,7 +15,7 @@ class BaseTrainer():
                 optimizer,
                 scheduler,
                 save_dir='runs',
-                scaler=None, 
+                use_fp16=False, 
                 num_epochs=100,
                 total_accumulate_steps=None,
                 clip_grad = 10.0,
@@ -38,8 +39,9 @@ class BaseTrainer():
         self.num_epochs = num_epochs
         self.tf_logger = TensorboardLogger(self.save_dir)
         self.step_per_epoch = self.scheduler.step_per_epoch
-        self.scaler = scaler
-        self.use_amp = True if scaler is not None else False
+        self.use_amp = True if use_fp16 else False
+        self.scaler = NativeScaler() if use_fp16 else False
+
         if total_accumulate_steps is None:
             self.accumulate_steps = 1
         else:

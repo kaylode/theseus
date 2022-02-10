@@ -3,6 +3,7 @@ global:
   cfg_transform: configs/sample/transform.yaml
   save_dir: runs
   device: cuda:0
+  use_fp16: True
   resume: null
   
 
@@ -12,7 +13,7 @@ trainer:
     num_epochs: 100
     total_accumulate_steps: null
     clip_grad:  10.0
-    print_per_iter: 2
+    print_per_iter: 20
     save_per_iter: 1000
     evaluate_per_epoch :  1
     visualize_when_val :  True

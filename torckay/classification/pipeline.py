@@ -14,7 +14,6 @@ from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
-from torckay.base.optimizers.scalers import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
 from torckay.utilities.cuda import get_devices_info
 
@@ -35,6 +34,8 @@ class Pipeline(object):
         if self.debug:
             LoggerManager.set_debug_mode("on")
         self.logger = LoggerManager.init_logger("main", os.path.join(self.savedir, 'log.txt'))
+
+        self.use_fp16 = opt['global']['use_fp16']
 
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
 
@@ -86,8 +87,6 @@ class Pipeline(object):
             params=self.model.parameters(),
         )
 
-        self.scaler = NativeScaler()
-
         if resume:
             state_dict = torch.load(resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
@@ -116,7 +115,7 @@ class Pipeline(object):
             metrics=self.metrics,
             optimizer=self.optimizer,
             scheduler=self.scheduler,
-            scaler=self.scaler,
+            use_fp16=self.use_fp16,
             save_dir=self.savedir,
             resume=resume,
             registry=TRAINER_REGISTRY,

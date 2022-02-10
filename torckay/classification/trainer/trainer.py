@@ -57,7 +57,7 @@ class ClassificationTrainer(SupervisedTrainer):
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
         batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
+        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
 
         fig = plt.figure(figsize=(8,8))
         plt.tight_layout(pad=0)
@@ -75,7 +75,7 @@ class ClassificationTrainer(SupervisedTrainer):
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
         batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
+        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
 
         fig = plt.figure(figsize=(8,8))
         plt.tight_layout(pad=0)
@@ -118,7 +118,7 @@ class ClassificationTrainer(SupervisedTrainer):
                 color = [1,0,0]
 
             visualizer.draw_label(
-                f"GT: {target}\nP: {label}\nC: {score:.3}", 
+                f"GT: {target}\nP: {label}\nC: {score:.4f}", 
                 fontColor=color, 
                 fontScale=0.8,
                 thickness=2,
