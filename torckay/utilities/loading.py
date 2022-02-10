@@ -4,7 +4,8 @@ import torch
 import glob
 import logging
 from torckay.base.optimizers.scalers.native import NativeScaler
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 def load_yaml(path):
     with open(path, 'rt') as f:
@@ -20,9 +21,9 @@ def load_state_dict(instance, state_dict, key):
     if isinstance(instance, torch.nn.Module) or isinstance(instance, torch.optim.Optimizer) or isinstance(instance, NativeScaler):
         try:
             instance.load_state_dict(state_dict[key])
-            LOGGER.info("Loaded Successfully!")
+            LOGGER.text("Loaded Successfully!", level=LoggerObserver.INFO)
         except RuntimeError as e:
-            LOGGER.warn(f'[Warning] Ignoring {e}')
+            LOGGER.text(f'[Warning] Ignoring {e}', level=LoggerObserver.WARN)
         return instance
     else:
         return state_dict[key]

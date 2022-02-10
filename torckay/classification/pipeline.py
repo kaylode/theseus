@@ -14,7 +14,7 @@ from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
-from torckay.utilities.loggers.logger import LoggerManager
+from torckay.utilities.loggers.stdout_logger import StdoutLogger
 from torckay.utilities.cuda import get_devices_info
 
 class Pipeline(object):
@@ -32,8 +32,8 @@ class Pipeline(object):
         
         self.debug = opt['global']['debug']
         if self.debug:
-            LoggerManager.set_debug_mode("on")
-        self.logger = LoggerManager.init_logger("main", os.path.join(self.savedir, 'log.txt'))
+            StdoutLogger.set_debug_mode("on")
+        self.logger = StdoutLogger.init_logger("main", os.path.join(self.savedir, 'log.txt'))
 
         self.use_fp16 = opt['global']['use_fp16']
 

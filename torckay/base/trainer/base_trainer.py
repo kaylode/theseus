@@ -1,10 +1,10 @@
+from distutils.log import Log
 import os
-import logging
 from torckay.utilities.loggers.cp_logger import Checkpoint
-from torckay.utilities.loggers.tf_logger import TensorboardLogger
 from torckay.base.optimizers.scalers import NativeScaler
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 class BaseTrainer():
     def __init__(self,
@@ -37,7 +37,6 @@ class BaseTrainer():
         self.save_dir = save_dir
         self.checkpoint = Checkpoint(os.path.join(self.save_dir, 'checkpoints'))
         self.num_epochs = num_epochs
-        self.tf_logger = TensorboardLogger(self.save_dir)
         self.step_per_epoch = self.scheduler.step_per_epoch
         self.use_amp = True if use_fp16 else False
         self.scaler = NativeScaler() if use_fp16 else False
@@ -65,7 +64,7 @@ class BaseTrainer():
         if self.step_per_epoch:
             self.scheduler.last_epoch = self.epoch - 1
 
-        LOGGER.info(f'===========================START TRAINING=================================')
+        LOGGER.text(f'===========================START TRAINING=================================', level=LoggerObserver.INFO)
         for epoch in range(self.epoch, self.num_epochs):
             try:
                 self.epoch = epoch
@@ -83,7 +82,7 @@ class BaseTrainer():
                 break
 
         self.on_finish()
-        LOGGER.info("Training Completed!")
+        LOGGER.text("Training Completed!", level=LoggerObserver.INFO)
 
     def sanity_check(self):
         raise NotImplementedError
@@ -114,8 +113,14 @@ class BaseTrainer():
             self.scheduler.step()
             lrl = [x['lr'] for x in self.optimizer.param_groups]
             lr = sum(lrl) / len(lrl)
-            log_dict = {'Training/Learning rate': lr}
-            self.tf_logger.write_dict(log_dict, step=self.epoch)
+            LOGGER.log([{
+                'tag': 'Training/Learning rate',
+                'value': lr,
+                'type': LoggerObserver.SCALAR,
+                'kwargs': {
+                    'step': self.epoch
+                }
+            }])
 
     def on_finish(self):
         self.save_checkpoint()

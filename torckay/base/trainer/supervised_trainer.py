@@ -1,5 +1,4 @@
 import time
-import logging
 import numpy as np
 from tqdm import tqdm
 import torch
@@ -7,7 +6,8 @@ from torch.cuda import amp
 
 from .base_trainer import BaseTrainer
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 class SupervisedTrainer(BaseTrainer):
     def __init__(self, **kwargs):
@@ -40,8 +40,16 @@ class SupervisedTrainer(BaseTrainer):
                     self.scheduler.step()
                     lrl = [x['lr'] for x in self.optimizer.param_groups]
                     lr = sum(lrl) / len(lrl)
-                    log_dict = {'Training/Learning rate': lr}
-                    self.tf_logger.write_dict(log_dict, step=self.iters)
+
+                    LOGGER.log([{
+                        'tag': 'Training/Learning rate',
+                        'value': lr,
+                        'type': LoggerObserver.SCALAR,
+                        'kwargs': {
+                            'step': self.iters
+                        }
+                    }])
+
 
                 self.optimizer.zero_grad()
 
@@ -62,15 +70,28 @@ class SupervisedTrainer(BaseTrainer):
                     running_loss[key] /= self.print_per_iter
                     running_loss[key] = np.round(running_loss[key], 5)
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
-                LOGGER.info("[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(self.epoch, self.num_epochs, self.iters, self.num_iters,loss_string, running_time))
+
+                LOGGER.text(
+                    "[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(
+                        self.epoch, self.num_epochs, self.iters, 
+                        self.num_iters,loss_string, running_time), 
+                    LoggerObserver.INFO)
                 
-                log_dict = {f"Training/{k} Loss": v/self.print_per_iter for k,v in running_loss.items()}
-                self.tf_logger.write_dict(log_dict, step=self.iters)
+                log_dict = [{
+                    'tag': f"Training/{k} Loss",
+                    'value': v/self.print_per_iter,
+                    'type': LoggerObserver.SCALAR,
+                    'kwargs': {
+                        'step': self.iters
+                    }
+                } for k,v in running_loss.items()]
+                LOGGER.log(log_dict)
+
                 running_loss = {}
                 running_time = 0
 
             if (self.iters % self.save_per_iter == 0 or self.iters == self.num_iters - 1):
-                LOGGER.info(f'Save model at [{self.iters}|{self.num_iters}] to last.pth')
+                LOGGER.text(f'Save model at [{self.iters}|{self.num_iters}] to last.pth', LoggerObserver.INFO)
                 self.save_checkpoint()
 
     @torch.no_grad()   
@@ -79,7 +100,8 @@ class SupervisedTrainer(BaseTrainer):
         epoch_loss = {}
 
         metric_dict = {}
-        LOGGER.info('=============================EVALUATION===================================')
+        LOGGER.text('=============================EVALUATION===================================', LoggerObserver.INFO)
+
         start_time = time.time()
         with amp.autocast(enabled=self.use_amp):
             for batch in tqdm(self.valloader):
@@ -104,20 +126,38 @@ class SupervisedTrainer(BaseTrainer):
             epoch_loss[key] /= len(self.valloader)
             epoch_loss[key] = np.round(epoch_loss[key], 5)
         loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
-        LOGGER.info("[{}|{}] || {} || Time: {:10.4f} s".format(self.epoch, self.num_epochs, loss_string, running_time))
+        LOGGER.text(
+            "[{}|{}] || {} || Time: {:10.4f} s".format(
+                self.epoch, self.num_epochs, loss_string, running_time),
+        level=LoggerObserver.INFO)
 
         metric_string = ""
         for metric, score in metric_dict.items():
             metric_string += metric +': ' + f"{score:.5f}" +' | '
         metric_string +='\n'
-        LOGGER.info(metric_string)
-        LOGGER.info('==========================================================================')
 
-        log_dict = {f"Validation/{k} Loss": v/len(self.valloader) for k,v in epoch_loss.items()}
+        LOGGER.text(metric_string, level=LoggerObserver.INFO)
+        LOGGER.text('==========================================================================', level=LoggerObserver.INFO)
 
-        metric_log_dict = {f"Validation/{k}":v for k,v in metric_dict.items()}
-        log_dict.update(metric_log_dict)
-        self.tf_logger.write_dict(log_dict, step=self.epoch)
+        log_dict = [{
+            'tag': f"Validation/{k} Loss",
+            'value': v/len(self.valloader),
+            'type': LoggerObserver.SCALAR,
+            'kwargs': {
+                'step': self.epoch
+            }
+        } for k,v in epoch_loss.items()]
+
+        log_dict += [{
+            'tag': f"Validation/{k}",
+            'value': v,
+            'type': LoggerObserver.SCALAR,
+            'kwargs': {
+                'step': self.epoch
+            }
+        } for k,v in metric_dict.items()]
+
+        LOGGER.log(log_dict)
 
         self.check_best(metric_dict)
 

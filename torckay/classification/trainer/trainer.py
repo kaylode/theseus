@@ -12,7 +12,8 @@ from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
 from torckay.utilities.visualization.visualizer import Visualizer
 from torckay.utilities.analysis.analyzer import ClassificationAnalyzer
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 class ClassificationTrainer(SupervisedTrainer):
     def __init__(self, **kwargs):
@@ -20,7 +21,9 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def check_best(self, metric_dict):
         if metric_dict['bl_acc'] > self.best_value:
-            LOGGER.info(f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}")
+            LOGGER.text(
+                f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}",
+                level=LoggerObserver.INFO)
             self.best_value = metric_dict['bl_acc']
             self.save_checkpoint('best')
 
@@ -39,14 +42,14 @@ class ClassificationTrainer(SupervisedTrainer):
         self.checkpoint.save(weights, outname)
 
     def load_checkpoint(self, path):
-        LOGGER.info("Loading checkpoints...")
+        LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
         state_dict = torch.load(path)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
         
     def visualize_gt(self):
-        LOGGER.debug("Visualizing dataset...")
+        LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
         denom = Denormalize()
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
@@ -86,7 +89,7 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping and model predictions
-        LOGGER.debug("Visualizing model predictions...")
+        LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
         visualizer = Visualizer()
 
@@ -164,14 +167,14 @@ class ClassificationTrainer(SupervisedTrainer):
     @torch.no_grad()
     def visualize_model(self):
         # Vizualize Model Graph
-        LOGGER.debug("Visualizing architecture...")
+        LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
 
         batch = next(iter(self.valloader))
         images = batch["inputs"].to(self.model.device)
         self.tf_logger.write_model(self.model.model, images)
 
     def analyze_gt(self):
-        LOGGER.debug("Analyzing datasets...")
+        LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))

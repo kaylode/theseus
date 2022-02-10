@@ -3,12 +3,12 @@ Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.4/tools/p
 """
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-import logging
 import yaml
 import json
 from torckay.utilities.loading import load_yaml
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 
 class Config(dict):
@@ -26,14 +26,14 @@ class Config(dict):
         raise AttributeError("object has no attribute '{}'".format(key))
 
     def save_yaml(self, path):
-        LOGGER.debug(f"Saving config to {path}...")
+        LOGGER.text(f"Saving config to {path}...", level=LoggerObserver.DEBUG)
         with open(path, 'w') as f:
             yaml.dump(
                 dict(self), f, default_flow_style=False, sort_keys=False)
 
     @classmethod
     def load_yaml(cls, path):
-        LOGGER.debug(f"Loading config from {path}...")
+        LOGGER.text(f"Loading config from {path}...", level=LoggerObserver.DEBUG)
         return cls(path)
 
     def __repr__(self) -> str:
@@ -75,7 +75,7 @@ class Opts(ArgumentParser):
             config (dict): Config to be merged.
         Returns: global config
         """
-        LOGGER.debug("Overriding configuration...")
+        LOGGER.text("Overriding configuration...", LoggerObserver.DEBUG)
         for key, value in overriden.items():
             if "." not in key:
                 if isinstance(value, dict) and key in global_config:
@@ -84,7 +84,7 @@ class Opts(ArgumentParser):
                     if key in global_config.keys():
                         global_config[key] = value
                     else:
-                        LOGGER.warn(f"'{key}' not found in config")
+                        LOGGER.text(f"'{key}' not found in config", level=LoggerObserver.WARN)
             else:
                 sub_keys = key.split('.')
                 assert (
@@ -97,7 +97,7 @@ class Opts(ArgumentParser):
                         if sub_key in cur.keys():
                             cur[sub_key] = value
                         else:
-                            LOGGER.warn(f"'{key}' not found in config")
+                            LOGGER.text(f"'{key}' not found in config", level=LoggerObserver.WARN)
                     else:
                         cur = cur[sub_key]
         return global_config

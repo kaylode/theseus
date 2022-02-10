@@ -7,7 +7,8 @@ import torch.nn as nn
 
 import logging
 
-LOGGER = logging.getLogger('main')
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger('main')
 
 class MultiHeadModel(nn.Module):
     """Some Information about BaseTimmModel"""
@@ -36,7 +37,7 @@ class MultiHeadModel(nn.Module):
             try:
                 ret = model.load_state_dict(state_dict, strict=False)
             except RuntimeError as e:
-                LOGGER.warn(f'[Warning] Ignoring {e}')
+                LOGGER.text(f'[Warning] Ignoring {e}', level=LoggerObserver.WARN)
 
         # Remove last head, freeze backbone
         self.backbone = nn.Sequential(*(list(model.children())[:-1]))

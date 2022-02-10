@@ -5,7 +5,8 @@ from typing import Dict, Any
 import numpy as np
 import logging
 
-LOGGER = logging.getLogger('main')
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger('main')
 
 class CosineWithRestarts():
     """
@@ -69,9 +70,10 @@ class CosineWithRestarts():
         assert t_initial > 0
         assert eta_min >= 0
         if t_initial == 1 and t_mul == 1 and eta_mul == 1:
-            LOGGER.warn(
+            LOGGER.text(
                 "Cosine annealing scheduler will have no effect on the learning "
-                "rate since t_initial = t_mul = eta_mul = 1."
+                "rate since t_initial = t_mul = eta_mul = 1.",
+                level = LoggerObserver.WARN
             )
         self.t_initial = t_initial
         self.t_mul = t_mul
