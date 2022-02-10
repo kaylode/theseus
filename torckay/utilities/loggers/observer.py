@@ -1,6 +1,17 @@
 from typing import Callable, Dict, Optional, List
-from .subscriber import LoggerSubscriber
 import logging
+import torch
+import matplotlib.pyplot as plt
+from .subscriber import LoggerSubscriber
+
+def get_type(value):
+    if isinstance(value, torch.nn.Module):
+        return LoggerObserver.TORCH_MODULE
+    if isinstance(value, plt.figure.Figure):
+        return LoggerObserver.FIGURE
+    if isinstance(value, str):
+        return LoggerObserver.TEXT
+    return LoggerObserver.SCALAR
 
 class LoggerObserver(object):
     SCALAR = 'scalar'
@@ -42,7 +53,7 @@ class LoggerObserver(object):
             for log in logs:
                 tag = log['tag']
                 value = log['value']
-                type = log['type']
+                type = log['type'] if 'type' in log.keys() else get_type(value)
                 kwargs = log['kwargs'] if 'kwargs' in log.keys() else {}
 
                 if type == LoggerObserver.SCALAR:

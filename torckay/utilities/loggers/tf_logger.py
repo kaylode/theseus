@@ -31,23 +31,23 @@ class TensorboardLogger(LoggerSubscriber):
 
         self.writer.add_scalar(tag, value, step)
 
-    def log_figure(self, tag, image, step, **kwargs):
+    def log_figure(self, tag, value, step, **kwargs):
         """
         Write a matplotlib fig to tensorboard
         :param tags: (str) tag for log
-        :param image: (image) image to log
+        :param value: (image) image to log
         :param step: (int) logging step
         """
 
-        self.writer.add_figure(tag, image, global_step=step)
+        self.writer.add_figure(tag, value, global_step=step)
 
-    def log_torch_module(self, model, inputs, **kwargs):
+    def log_torch_module(self, tag, value, inputs, **kwargs):
         """
         Write a model graph to tensorboard
-        :param model: (nn.Module) torch model
+        :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
-        self.writer.add_graph(model, inputs)
+        self.writer.add_graph(value, inputs)
 
     def load(self, old_log):
         """

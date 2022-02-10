@@ -151,7 +151,6 @@ class SupervisedTrainer(BaseTrainer):
         log_dict += [{
             'tag': f"Validation/{k}",
             'value': v,
-            'type': LoggerObserver.SCALAR,
             'kwargs': {
                 'step': self.epoch
             }

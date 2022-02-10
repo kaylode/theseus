@@ -24,7 +24,7 @@ class Checkpoint():
         torch.save(state_dict, os.path.join(self.path,outname)+".pth")
         LOGGER.text(
             f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth",
-            level=LoggerObserver.info)
+            level=LoggerObserver.INFO)
 
     
 

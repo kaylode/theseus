@@ -66,7 +66,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "sanitycheck/batch/train",
             'value': fig,
             'type': LoggerObserver.FIGURE,
@@ -93,7 +93,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
 
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "sanitycheck/batch/val",
             'value': fig,
             'type': LoggerObserver.FIGURE,
@@ -166,7 +166,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
 
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "evaluation/gradcam",
             'value': fig,
             'type': LoggerObserver.FIGURE,
@@ -181,7 +181,7 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
 
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "evaluation/prediction",
             'value': fig,
             'type': LoggerObserver.FIGURE,
@@ -200,14 +200,21 @@ class ClassificationTrainer(SupervisedTrainer):
 
         batch = next(iter(self.valloader))
         images = batch["inputs"].to(self.model.device)
-        self.tf_logger.write_model(self.model.model, images)
+        LOGGER.log([{
+            'tag': "sanitycheck/analysis/architecture",
+            'value': self.model.model,
+            'type': LoggerObserver.TORCH_MODULE,
+            'kwargs': {
+                'inputs': images
+            }
+        }])
 
     def analyze_gt(self):
         LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "sanitycheck/analysis/train",
             'value': fig,
             'type': LoggerObserver.FIGURE,
@@ -219,7 +226,7 @@ class ClassificationTrainer(SupervisedTrainer):
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.logger.log([{
+        LOGGER.log([{
             'tag': "sanitycheck/analysis/val",
             'value': fig,
             'type': LoggerObserver.FIGURE,
