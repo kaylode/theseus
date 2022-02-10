@@ -16,6 +16,7 @@ from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
 from torckay.base.optimizers.scalers import NativeScaler
 from torckay.utilities.loggers.logger import LoggerManager
+from torckay.utilities.cuda import get_devices_info
 
 class Pipeline(object):
     """docstring for Pipeline."""
@@ -37,7 +38,8 @@ class Pipeline(object):
 
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
 
-        self.device = torch.device(opt['global']['device'])
+        self.device_name = opt['global']['device']
+        self.device = torch.device(self.device_name)
         resume = opt['global']['resume']
 
         self.transform = get_instance_recursively(
@@ -124,15 +126,21 @@ class Pipeline(object):
         self.logger.info(self.opt)
         self.logger.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
 
-    def sanitycheck(self):
+        device_info = get_devices_info(self.device_name)
+        self.logger.info("Using " + device_info)
+
+    def initiate(self):
         self.infocheck()
-        self.logger.info("Sanity checking before training...")
-        self.trainer.sanitycheck()
+
+        if self.debug:
+            self.logger.debug("Sanity checking before training...")
+            self.trainer.sanitycheck()
+            
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
     def fit(self):
-        self.sanitycheck()
+        self.initiate()
         self.trainer.fit()
 
     def evaluate(self):

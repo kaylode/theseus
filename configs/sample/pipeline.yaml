@@ -13,6 +13,7 @@ trainer:
     total_accumulate_steps: null
     clip_grad:  10.0
     print_per_iter: 2
+    save_per_iter: 1000
     evaluate_per_epoch :  1
     visualize_when_val :  True
 

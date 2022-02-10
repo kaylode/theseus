@@ -60,6 +60,8 @@ class ClassificationTrainer(SupervisedTrainer):
         grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
 
         fig = plt.figure(figsize=(8,8))
+        plt.tight_layout(pad=0)
+        plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
             f'sanitycheck/train_batch', fig, step=self.iters)
@@ -76,6 +78,8 @@ class ClassificationTrainer(SupervisedTrainer):
         grid_img = torchvision.utils.make_grid(batch, nrow=8, normalize=False)
 
         fig = plt.figure(figsize=(8,8))
+        plt.tight_layout(pad=0)
+        plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
         self.tf_logger.write_image(
             f'sanitycheck/val_batch', fig, step=self.iters)
@@ -140,6 +144,7 @@ class ClassificationTrainer(SupervisedTrainer):
         gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int((idx+1)/8), normalize=False)
 
         fig = plt.figure(figsize=(8,8))
+        plt.tight_layout(pad=0)
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
@@ -147,6 +152,7 @@ class ClassificationTrainer(SupervisedTrainer):
 
         pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
         fig = plt.figure(figsize=(10,10))
+        plt.tight_layout(pad=0)
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
         self.tf_logger.write_image(
@@ -168,13 +174,13 @@ class ClassificationTrainer(SupervisedTrainer):
         LOGGER.debug("Analyzing datasets...")
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
-        fig = analyzer.analyze()
+        fig = analyzer.analyze(figsize=(10,5))
         self.tf_logger.write_image(
             f'sanitycheck/train_analysis', fig, step=0)
 
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
-        fig = analyzer.analyze(figsize=(8,8))
+        fig = analyzer.analyze(figsize=(10,5))
         self.tf_logger.write_image(
             f'sanitycheck/val_analysis', fig, step=0)
 
@@ -191,7 +197,6 @@ class ClassificationTrainer(SupervisedTrainer):
             ))
 
     def sanitycheck(self):
-        LOGGER.setLevel(logging.DEBUG)
         self.visualize_gt()
         self.analyze_gt()
         self.visualize_model()
