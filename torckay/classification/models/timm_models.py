@@ -11,7 +11,8 @@ class BaseTimmModel(nn.Module):
         num_classes=1000,
         name="efficientnet_b0",
         from_pretrained=True,
-        classnames=None
+        classnames=None,
+        **kwargs
     ):
         super().__init__()
         self.name = name
@@ -22,6 +23,9 @@ class BaseTimmModel(nn.Module):
             self.model = timm.create_model(name, pretrained=from_pretrained, num_classes=num_classes)
         else:
             self.model = timm.create_model(name, pretrained=from_pretrained)
+
+    def get_model(self):
+        return self.model
 
     def forward(self, x):
         outputs = self.model(x)

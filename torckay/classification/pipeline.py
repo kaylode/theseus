@@ -164,7 +164,7 @@ class Pipeline(object):
         self.trainer.fit()
 
     def evaluate(self):
-        
+        self.infocheck()
         writer = ImageWriter(os.path.join(self.savedir, 'samples'))
         self.logger.subscribe(writer)
 

@@ -5,8 +5,8 @@ from timm.loss import LabelSmoothingCrossEntropy
 class CELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
-    def __init__(self):
-        super(CELoss, self).__init__()
+    def __init__(self, **kwargs):
+        super(CELoss, self).__init__(**kwargs)
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, pred, batch, device):
@@ -18,8 +18,8 @@ class CELoss(nn.Module):
 class SmoothCELoss(nn.Module):
     r"""SmoothCELoss is warper of label smoothing cross-entropy loss"""
 
-    def __init__(self, smoothing=0.1):
-        super(SmoothCELoss, self).__init__()
+    def __init__(self, smoothing=0.1, **kwargs):
+        super(SmoothCELoss, self).__init__(**kwargs)
         self.criterion = LabelSmoothingCrossEntropy(smoothing=smoothing)
 
     def forward(self, pred, batch, device):
