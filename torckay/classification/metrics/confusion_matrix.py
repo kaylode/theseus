@@ -65,6 +65,7 @@ class ConfusionMatrix(Metric):
     """
     def __init__(self, classnames=None):
         self.classnames = classnames
+        self.num_classes = [i for i in range(len(self.classnames)) if classnames is not None else None]
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
@@ -85,6 +86,6 @@ class ConfusionMatrix(Metric):
         self.targets = []
 
     def value(self):
-        values = confusion_matrix(self.outputs, self.targets)
+        values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes)
         fig = make_cm_fig(values, self.classnames)
         return {"cfm": fig}
