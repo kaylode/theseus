@@ -85,8 +85,12 @@ data:
       args:
         batch_size: 64
         train: True
+        drop_last: True
+        shuffle: True
     val:
       name: CSVLoader
       args:
         batch_size: 64
         train: False
+        drop_last: False
+        shuffle: True
