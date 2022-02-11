@@ -65,7 +65,7 @@ class ConfusionMatrix(Metric):
     """
     def __init__(self, classnames=None):
         self.classnames = classnames
-        self.num_classes = [i for i in range(len(self.classnames)) if classnames is not None else None]
+        self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
