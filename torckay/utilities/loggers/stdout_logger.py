@@ -54,10 +54,14 @@ class StdoutLogger(LoggerSubscriber):
     date_format = '%d-%m-%y %H:%M:%S'
     message_format = '[%(asctime)s][%(filename)s::%(lineno)d][%(levelname)s]: %(message)s'
     color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(filename)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
-    def __init__(self, name, logdir):
+    def __init__(self, name, logdir, debug=False):
         self.logdir = logdir
         self.filename = f'{self.logdir}/log.txt'
-        self.level = logging.INFO        
+
+        if debug:
+            self.level = logging.DEBUG        
+        else:
+            self.level = logging.INFO        
 
         # Init logger
         self.logger = logging.getLogger(name)

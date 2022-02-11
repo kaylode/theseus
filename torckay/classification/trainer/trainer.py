@@ -27,6 +27,10 @@ class ClassificationTrainer(SupervisedTrainer):
                     level=LoggerObserver.INFO)
                 self.best_value = metric_dict['bl_acc']
                 self.save_checkpoint('best')
+            
+            else:
+                if self.visualize_when_val:
+                    self.visualize_pred()
 
     def save_checkpoint(self, outname='last'):
         weights = {

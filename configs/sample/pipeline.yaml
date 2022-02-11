@@ -4,6 +4,7 @@ global:
   save_dir: runs
   device: cuda:0
   use_fp16: True
+  pretrained: null
   resume: null
   
 

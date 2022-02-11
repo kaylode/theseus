@@ -14,9 +14,7 @@ from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
-from torckay.utilities.loggers.observer import LoggerObserver
-from torckay.utilities.loggers.tf_logger import TensorboardLogger
-from torckay.utilities.loggers.stdout_logger import StdoutLogger
+from torckay.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
 from torckay.utilities.loading import load_state_dict, find_old_tflog
 
 from torckay.utilities.cuda import get_devices_info
@@ -39,9 +37,7 @@ class Pipeline(object):
         self.debug = opt['global']['debug']
         self.logger = LoggerObserver.getLogger("main") 
 
-        stdout_logger = StdoutLogger(__name__, self.savedir)
-        if self.debug:
-            stdout_logger.set_debug_mode("on")
+        stdout_logger = StdoutLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(stdout_logger)
 
         self.use_fp16 = opt['global']['use_fp16']
@@ -50,15 +46,8 @@ class Pipeline(object):
 
         self.device_name = opt['global']['device']
         self.device = torch.device(self.device_name)
-        resume = opt['global']['resume']
-
-        tf_logger = TensorboardLogger(self.savedir)
-        if resume is not None:
-            tf_logger.load(find_old_tflog(
-                os.path.dirname(os.path.dirname(resume))
-            ))
-        self.logger.subscribe(tf_logger)
-        
+        self.resume = opt['global']['resume']
+        self.pretrained = opt['global']['pretrained']
 
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=TRANSFORM_REGISTRY
@@ -104,14 +93,16 @@ class Pipeline(object):
             params=self.model.parameters(),
         )
 
-        if resume:
-            state_dict = torch.load(resume)
+        last_epoch = -1
+        if self.pretrained:
+            state_dict = torch.load(self.resume)
+            self.model.model = load_state_dict(self.model.model, state_dict, 'model')
+
+        if self.resume:
+            state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            last_epoch = load_state_dict(None, state_dict, 'epoch')
-        else:
-            last_epoch = -1
-
+            last_epoch = load_state_dict(last_epoch, state_dict, 'epoch')
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
@@ -133,7 +124,7 @@ class Pipeline(object):
             scheduler=self.scheduler,
             use_fp16=self.use_fp16,
             save_dir=self.savedir,
-            resume=resume,
+            resume=self.resume,
             registry=TRAINER_REGISTRY,
         )
 
@@ -160,11 +151,22 @@ class Pipeline(object):
             self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
             self.trainer.sanitycheck()
 
+        tf_logger = TensorboardLogger(self.savedir)
+        if self.resume is not None:
+            tf_logger.load(find_old_tflog(
+                os.path.dirname(os.path.dirname(self.resume))
+            ))
+        self.logger.subscribe(tf_logger)
+
     def fit(self):
         self.initiate()
         self.trainer.fit()
 
     def evaluate(self):
+        
+        writer = ImageWriter(os.path.join(self.savedir, 'samples'))
+        self.logger.subscribe(writer)
+
         self.logger.text("Evaluating...", level=LoggerObserver.INFO)
         self.trainer.evaluate_epoch()
    
