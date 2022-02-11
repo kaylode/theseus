@@ -95,7 +95,7 @@ class Pipeline(object):
 
         last_epoch = -1
         if self.pretrained:
-            state_dict = torch.load(self.resume)
+            state_dict = torch.load(self.pretrained)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
 
         if self.resume:
@@ -147,16 +147,17 @@ class Pipeline(object):
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
-        if self.debug:
-            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
-            self.trainer.sanitycheck()
-
         tf_logger = TensorboardLogger(self.savedir)
         if self.resume is not None:
             tf_logger.load(find_old_tflog(
                 os.path.dirname(os.path.dirname(self.resume))
             ))
         self.logger.subscribe(tf_logger)
+
+        if self.debug:
+            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
+            self.trainer.sanitycheck()
+
 
     def fit(self):
         self.initiate()
