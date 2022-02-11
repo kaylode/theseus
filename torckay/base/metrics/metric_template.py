@@ -1,6 +1,8 @@
 class Metric:
     """Abstract metric class
     """
+    def __init__(self, **kwargs):
+        pass
 
     def update(self):
         raise NotImplementedError()
