@@ -23,10 +23,13 @@ def load_state_dict(instance, state_dict, key):
             instance.load_state_dict(state_dict[key])
             LOGGER.text("Loaded Successfully!", level=LoggerObserver.INFO)
         except RuntimeError as e:
-            LOGGER.text(f'[Warning] Ignoring {e}', level=LoggerObserver.WARN)
+            LOGGER.text(f'Loaded Successfully. Ignoring {e}', level=LoggerObserver.WARN)
         return instance
     else:
-        return state_dict[key]
+        if key in state_dict.keys():    
+            return state_dict[key]
+        else:
+            LOGGER.text(f"Cannot load key={key} from state_dict", LoggerObserver.WARN)
 
 def find_old_tflog(pardir):
     event_paths = glob.glob(os.path.join(pardir, "event*"))

@@ -21,11 +21,12 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def check_best(self, metric_dict):
         if metric_dict['bl_acc'] > self.best_value:
-            LOGGER.text(
-                f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}",
-                level=LoggerObserver.INFO)
-            self.best_value = metric_dict['bl_acc']
-            self.save_checkpoint('best')
+            if self.iters > 0: # Have been training, else in evaluation-only mode or just sanity check
+                LOGGER.text(
+                    f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}",
+                    level=LoggerObserver.INFO)
+                self.best_value = metric_dict['bl_acc']
+                self.save_checkpoint('best')
 
     def save_checkpoint(self, outname='last'):
         weights = {
