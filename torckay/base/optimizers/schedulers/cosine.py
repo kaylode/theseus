@@ -131,7 +131,7 @@ class CosineWithRestarts():
             self._last_restart = step
 
         base_lrs = [lr * self.eta_mul ** self._n_restarts for lr in self.base_values]
-        self._cycle_len = int(self.t_initial * self.t_mul ** self._n_restarts)
+        self._cycle_len = max(int(self.t_initial * self.t_mul ** self._n_restarts), 1)
 
         lrs = [
             self.eta_min
