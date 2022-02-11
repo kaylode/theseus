@@ -30,6 +30,8 @@ class Pipeline(object):
     ):
         super(Pipeline, self).__init__()
         self.opt = opt
+
+        self.logger.text(self.opt, level=LoggerObserver.INFO)
         
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(self.savedir, exist_ok=True)
@@ -129,7 +131,6 @@ class Pipeline(object):
         )
 
     def infocheck(self):
-        self.logger.text(self.opt, level=LoggerObserver.INFO)
         self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
 
         device_info = get_devices_info(self.device_name)
