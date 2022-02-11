@@ -3,7 +3,8 @@ import torch.nn as nn
 import os
 import logging
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 class Checkpoint():
     """
@@ -21,7 +22,9 @@ class Checkpoint():
         """
         os.makedirs(self.path, exist_ok=True)
         torch.save(state_dict, os.path.join(self.path,outname)+".pth")
-        LOGGER.info(f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth")
+        LOGGER.text(
+            f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth",
+            level=LoggerObserver.INFO)
 
     
 

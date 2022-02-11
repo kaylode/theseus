@@ -15,8 +15,8 @@ class Accuracy(Metric):
         ignore_index (Optional[Any], optional): [description]. Defaults to None.
     """
 
-    def __init__(self, ignore_index: Optional[Any] = None):
-        super().__init__()
+    def __init__(self, ignore_index: Optional[Any] = None, **kwargs):
+        super().__init__(**kwargs)
         self.ignore_index = ignore_index
         self.reset()
 

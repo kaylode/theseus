@@ -5,11 +5,10 @@ import pandas as pd
 from torch.utils.tensorboard import SummaryWriter
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
-import logging
+from torckay.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
+LOGGER = LoggerObserver.getLogger('main')
 
-LOGGER = logging.getLogger('main')
-
-class TensorboardLogger():
+class TensorboardLogger(LoggerSubscriber):
     """
     Logger for Tensorboard visualization
     :param log_dir: Path to save checkpoint
@@ -22,48 +21,33 @@ class TensorboardLogger():
         if resume is not None:
             self.load(resume)
 
-    def write_dict(self, dict, step):
-        """
-        Write a dict to specified directory
-        :param dict: (dict) has tags and values
-        :param step: (int) logging step
-        """
-        tags = [l for l in dict.keys()]
-        values = [l for l in dict.values()]
-        self.write(tags= tags, values= values, step=step)
-
-    def write(self, tags, values, step):
+    def log_scalar(self, tag, value, step, **kwargs):
         """
         Write a log to specified directory
         :param tags: (str) tag for log
         :param values: (number) value for corresponding tag
         :param step: (int) logging step
         """
-        if not isinstance(tags, list):
-            tags = list(tags)
-        if not isinstance(values, list):
-            values = list(values)
 
-        for i, (tag, value) in enumerate(zip(tags,values)):
-            self.writer.add_scalar(tag, value, step)
+        self.writer.add_scalar(tag, value, step)
 
-    def write_image(self, tag, image, step):
+    def log_figure(self, tag, value, step, **kwargs):
         """
         Write a matplotlib fig to tensorboard
         :param tags: (str) tag for log
-        :param image: (image) image to log
+        :param value: (image) image to log
         :param step: (int) logging step
         """
 
-        self.writer.add_figure(tag, image, global_step=step)
+        self.writer.add_figure(tag, value, global_step=step)
 
-    def write_model(self, model, inputs):
+    def log_torch_module(self, tag, value, inputs, **kwargs):
         """
         Write a model graph to tensorboard
-        :param model: (nn.Module) torch model
+        :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
-        self.writer.add_graph(model, inputs)
+        self.writer.add_graph(value, inputs)
 
     def load(self, old_log):
         """
@@ -109,7 +93,7 @@ def tflog2pandas(path: str) -> pd.DataFrame:
             runlog_data = pd.concat([runlog_data, r])
     # Dirty catch of DataLossError
     except Exception:
-        LOGGER.warn("Event file possibly corrupt: {}".format(path))
+        LOGGER.text("Event file possibly corrupt: {}".format(path), level=LoggerObserver.WARN)
         traceback.print_exc()
     return runlog_data
 

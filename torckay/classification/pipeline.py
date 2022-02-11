@@ -14,8 +14,12 @@ from torckay.classification.metrics import METRIC_REGISTRY
 from torckay.classification.models import MODEL_REGISTRY
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 from torckay.utilities.loading import load_state_dict
-from torckay.utilities.loggers.logger import LoggerManager
+from torckay.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
+from torckay.utilities.loading import load_state_dict, find_old_tflog
+
 from torckay.utilities.cuda import get_devices_info
+
+
 
 class Pipeline(object):
     """docstring for Pipeline."""
@@ -31,9 +35,10 @@ class Pipeline(object):
         os.makedirs(self.savedir, exist_ok=True)
         
         self.debug = opt['global']['debug']
-        if self.debug:
-            LoggerManager.set_debug_mode("on")
-        self.logger = LoggerManager.init_logger("main", os.path.join(self.savedir, 'log.txt'))
+        self.logger = LoggerObserver.getLogger("main") 
+
+        stdout_logger = StdoutLogger(__name__, self.savedir, debug=self.debug)
+        self.logger.subscribe(stdout_logger)
 
         self.use_fp16 = opt['global']['use_fp16']
 
@@ -41,7 +46,8 @@ class Pipeline(object):
 
         self.device_name = opt['global']['device']
         self.device = torch.device(self.device_name)
-        resume = opt['global']['resume']
+        self.resume = opt['global']['resume']
+        self.pretrained = opt['global']['pretrained']
 
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=TRANSFORM_REGISTRY
@@ -79,7 +85,7 @@ class Pipeline(object):
         )
         self.model = ModelWithLoss(model, criterion, self.device)
 
-        self.metrics = get_instance_recursively(self.opt['metrics'], registry=METRIC_REGISTRY)
+        self.metrics = get_instance_recursively(self.opt['metrics'], registry=METRIC_REGISTRY, classnames=CLASSNAMES)
 
         self.optimizer = get_instance(
             self.opt["optimizer"],
@@ -87,15 +93,16 @@ class Pipeline(object):
             params=self.model.parameters(),
         )
 
-        if resume:
-            state_dict = torch.load(resume)
+        last_epoch = -1
+        if self.pretrained:
+            state_dict = torch.load(self.pretrained)
+            self.model.model = load_state_dict(self.model.model, state_dict, 'model')
+
+        if self.resume:
+            state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
-            last_epoch = load_state_dict(None, state_dict, 'epoch')
-        else:
-            last_epoch = -1
-
+            last_epoch = load_state_dict(last_epoch, state_dict, 'epoch')
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
@@ -117,22 +124,22 @@ class Pipeline(object):
             scheduler=self.scheduler,
             use_fp16=self.use_fp16,
             save_dir=self.savedir,
-            resume=resume,
+            resume=self.resume,
             registry=TRAINER_REGISTRY,
         )
 
     def infocheck(self):
-        self.logger.info(self.opt)
-        self.logger.info(f"Number of trainable parameters: {self.model.trainable_parameters():,}")
+        self.logger.text(self.opt, level=LoggerObserver.INFO)
+        self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
 
         device_info = get_devices_info(self.device_name)
-        self.logger.info("Using " + device_info)
+        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
 
-        self.logger.info(f"Number of training samples: {len(self.train_dataset)}")
-        self.logger.info(f"Number of validation samples: {len(self.val_dataset)}")
-        self.logger.info(f"Number of training iterations each epoch: {len(self.train_dataloader)}")
-        self.logger.info(f"Number of validation iterations each epoch: {len(self.val_dataloader)}")
-        self.logger.info(f"Everything will be saved to {self.savedir}")
+        self.logger.text(f"Number of training samples: {len(self.train_dataset)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of validation samples: {len(self.val_dataset)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of training iterations each epoch: {len(self.train_dataloader)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Number of validation iterations each epoch: {len(self.val_dataloader)}", level=LoggerObserver.INFO)
+        self.logger.text(f"Everything will be saved to {self.savedir}", level=LoggerObserver.INFO)
 
     def initiate(self):
         self.infocheck()
@@ -140,16 +147,28 @@ class Pipeline(object):
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
 
+        tf_logger = TensorboardLogger(self.savedir)
+        if self.resume is not None:
+            tf_logger.load(find_old_tflog(
+                os.path.dirname(os.path.dirname(self.resume))
+            ))
+        self.logger.subscribe(tf_logger)
+
         if self.debug:
-            self.logger.debug("Sanity checking before training...")
+            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
             self.trainer.sanitycheck()
+
 
     def fit(self):
         self.initiate()
         self.trainer.fit()
 
     def evaluate(self):
-        self.logger.info("Evaluating...")
+        
+        writer = ImageWriter(os.path.join(self.savedir, 'samples'))
+        self.logger.subscribe(writer)
+
+        self.logger.text("Evaluating...", level=LoggerObserver.INFO)
         self.trainer.evaluate_epoch()
    
 

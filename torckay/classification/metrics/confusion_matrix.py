@@ -1,8 +1,29 @@
 import torch
-import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from sklearn.metrics import confusion_matrix
 from torckay.base.metrics.metric_template import Metric
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+def make_cm_fig(cm, labels=None):
+    fig, ax = plt.subplots(1, figsize=(10,10))
+
+    ax = sns.heatmap(cm, annot=False, 
+            fmt='', cmap='Blues',ax =ax)
+
+    ax.set_title('Confusion Matrix\n\n');
+    ax.set_xlabel('\nPredicted')
+    ax.set_ylabel('Actual ');
+
+    ## Ticket labels - List must be in alphabetical order
+    if not labels:
+        labels = [str(i) for i in range(len(cm))]
+
+    ax.xaxis.set_ticklabels(labels)
+    ax.yaxis.set_ticklabels(labels)
+    return fig
+
 
 def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):
     """pretty print for confusion matrixes"""
@@ -42,9 +63,10 @@ class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification
     """
-    def __init__(self, classes_map):
-        self.classes_map = classes_map
-        self.labels = [classes_map[i] for i in range(len(classes_map))]
+    def __init__(self, classnames=None, **kwargs):
+        super().__init__(**kwargs)
+        self.classnames = classnames
+        self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
@@ -65,5 +87,6 @@ class ConfusionMatrix(Metric):
         self.targets = []
 
     def value(self):
-        values = confusion_matrix(self.outputs, self.targets)
-        return {"cfm": str(values)}
+        values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes)
+        fig = make_cm_fig(values, self.classnames)
+        return {"cfm": fig}

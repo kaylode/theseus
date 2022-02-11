@@ -12,7 +12,8 @@ from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
 from torckay.utilities.visualization.visualizer import Visualizer
 from torckay.utilities.analysis.analyzer import ClassificationAnalyzer
 
-LOGGER = logging.getLogger("main")
+from torckay.utilities.loggers.observer import LoggerObserver
+LOGGER = LoggerObserver.getLogger("main")
 
 class ClassificationTrainer(SupervisedTrainer):
     def __init__(self, **kwargs):
@@ -20,9 +21,16 @@ class ClassificationTrainer(SupervisedTrainer):
 
     def check_best(self, metric_dict):
         if metric_dict['bl_acc'] > self.best_value:
-            LOGGER.info(f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}")
-            self.best_value = metric_dict['bl_acc']
-            self.save_checkpoint('best')
+            if self.iters > 0: # Have been training, else in evaluation-only mode or just sanity check
+                LOGGER.text(
+                    f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}",
+                    level=LoggerObserver.INFO)
+                self.best_value = metric_dict['bl_acc']
+                self.save_checkpoint('best')
+            
+            else:
+                if self.visualize_when_val:
+                    self.visualize_pred()
 
     def save_checkpoint(self, outname='last'):
         weights = {
@@ -39,14 +47,16 @@ class ClassificationTrainer(SupervisedTrainer):
         self.checkpoint.save(weights, outname)
 
     def load_checkpoint(self, path):
-        LOGGER.info("Loading checkpoints...")
+        LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
         state_dict = torch.load(path)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
-        self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')
+        self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
+        self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
+
         
     def visualize_gt(self):
-        LOGGER.debug("Visualizing dataset...")
+        LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
         denom = Denormalize()
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
@@ -63,8 +73,16 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-        self.tf_logger.write_image(
-            f'sanitycheck/batch/train', fig, step=self.iters)
+        LOGGER.log([{
+            'tag': "Sanitycheck/batch/train",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
+
+        
 
         batch = next(iter(self.valloader))
         images = batch["inputs"]
@@ -81,12 +99,21 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-        self.tf_logger.write_image(
-            f'sanitycheck/batch/val', fig, step=self.iters)
 
+        LOGGER.log([{
+            'tag': "Sanitycheck/batch/val",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
+
+
+    @torch.enable_grad() #enable grad for GradCAM
     def visualize_pred(self):
         # Vizualize Grad Class Activation Mapping and model predictions
-        LOGGER.debug("Visualizing model predictions...")
+        LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
         visualizer = Visualizer()
 
@@ -147,16 +174,30 @@ class ClassificationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.imshow(gradcam_grid_img.permute(1, 2, 0))
         plt.axis("off")
-        self.tf_logger.write_image(
-            f'evaluation/gradcam', fig, step=self.iters)
+
+        LOGGER.log([{
+            'tag': "Validation/gradcam",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
         fig = plt.figure(figsize=(10,10))
         plt.tight_layout(pad=0)
         plt.imshow(pred_grid_img.permute(1, 2, 0))
         plt.axis("off")
-        self.tf_logger.write_image(
-            f'evaluation/prediction', fig, step=self.iters)
+
+        LOGGER.log([{
+            'tag': "Validation/prediction",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         # Zeroing gradients in optimizer for safety
         self.optimizer.zero_grad()
@@ -164,25 +205,44 @@ class ClassificationTrainer(SupervisedTrainer):
     @torch.no_grad()
     def visualize_model(self):
         # Vizualize Model Graph
-        LOGGER.debug("Visualizing architecture...")
+        LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
 
         batch = next(iter(self.valloader))
         images = batch["inputs"].to(self.model.device)
-        self.tf_logger.write_model(self.model.model, images)
+        LOGGER.log([{
+            'tag': "Sanitycheck/analysis/architecture",
+            'value': self.model.model,
+            'type': LoggerObserver.TORCH_MODULE,
+            'kwargs': {
+                'inputs': images
+            }
+        }])
 
     def analyze_gt(self):
-        LOGGER.debug("Analyzing datasets...")
+        LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.tf_logger.write_image(
-            f'sanitycheck/analysis/train', fig, step=0)
+        LOGGER.log([{
+            'tag': "Sanitycheck/analysis/train",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
-        self.tf_logger.write_image(
-            f'sanitycheck/analysis/val', fig, step=0)
+        LOGGER.log([{
+            'tag': "Sanitycheck/analysis/val",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
@@ -192,9 +252,6 @@ class ClassificationTrainer(SupervisedTrainer):
     def on_start(self):
         if self.resume is not None:
             self.load_checkpoint(self.resume)
-            self.tf_logger.load(find_old_tflog(
-                os.path.dirname(os.path.dirname(self.resume))
-            ))
 
     def sanitycheck(self):
         self.visualize_gt()

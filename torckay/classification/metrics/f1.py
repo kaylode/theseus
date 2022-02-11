@@ -5,11 +5,12 @@ from typing import Any, Dict, Optional
 
 from torckay.base.metrics.metric_template import Metric
 
-class F1ScoreMetric():
+class F1ScoreMetric(Metric):
     """
     F1 Score Metric (including macro, micro)
     """
-    def __init__(self, average = 'weighted'):
+    def __init__(self, average = 'weighted', **kwargs):
+        super().__init__(**kwargs)
         self.average = average
         self.reset()
 

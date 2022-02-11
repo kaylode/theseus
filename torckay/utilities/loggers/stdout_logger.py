@@ -1,5 +1,6 @@
 import os
 import logging
+from .observer import LoggerSubscriber
 
 class CustomFormatter(logging.Formatter):
     """
@@ -39,60 +40,74 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-class LoggerManager:
+class StdoutLogger(LoggerSubscriber):
     """
     Logger class
     For more documents, look into https://docs.python.org/3/library/logging.html
     
     Usage:
-        from modules.logger import LoggerManager
-        LOGGER = LoggerManager.init_logger(__name__)
+        from modules.logger import StdoutLogger
+        LOGGER = StdoutLogger.init_logger(__name__)
 
     """
-    current_dir = os.path.abspath(os.getcwd())
-    filename = f'{current_dir}/log.txt'
+
     date_format = '%d-%m-%y %H:%M:%S'
     message_format = '[%(asctime)s][%(filename)s::%(lineno)d][%(levelname)s]: %(message)s'
     color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(filename)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
-    level = logging.INFO        
+    def __init__(self, name, logdir, debug=False):
+        self.logdir = logdir
+        self.filename = f'{self.logdir}/log.txt'
 
-    @staticmethod
-    def init_logger(name, filename):
+        if debug:
+            self.level = logging.DEBUG        
+        else:
+            self.level = logging.INFO        
+
         # Init logger
-        logger = logging.getLogger(name)
-        logger.setLevel(LoggerManager.level)
-        LoggerManager.filename = filename
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(self.level)
 
         # Create handlers
-        handlers = LoggerManager.init_handlers()
+        handlers = self.init_handlers()
 
         # Add handlers
-        LoggerManager.add_handlers(logger, handlers=handlers)
-        return logger
+        self.add_handlers(self.logger, handlers=handlers)
 
-    @staticmethod
-    def init_handlers():
+    def init_handlers(self):
         # Create one file logger and one stream logger
         stream_handler = logging.StreamHandler()
-        file_handler = logging.FileHandler(LoggerManager.filename)
+        file_handler = logging.FileHandler(self.filename)
         
         # Create formatters and add it to handlers
-        format = logging.Formatter(LoggerManager.message_format, datefmt=LoggerManager.date_format)
-        custom_format = CustomFormatter(LoggerManager.color_message_format, date_format=LoggerManager.date_format)
+        format = logging.Formatter(StdoutLogger.message_format, datefmt=StdoutLogger.date_format)
+        custom_format = CustomFormatter(StdoutLogger.color_message_format, date_format=StdoutLogger.date_format)
         stream_handler.setFormatter(custom_format)
         file_handler.setFormatter(format)
         
         return stream_handler, file_handler
 
-    @staticmethod
-    def add_handlers(logger, handlers):
+    def add_handlers(self, logger, handlers):
         # Add handlers to the logger
         for handler in handlers:
             logger.addHandler(handler)
 
-    @staticmethod
-    def set_debug_mode(toggle="off"):
+    def set_debug_mode(self, toggle="off"):
         if toggle == "on":
-            LoggerManager.level = logging.DEBUG
+            self.level = logging.DEBUG
         else:
-            LoggerManager.level = logging.INFO
+            self.level = logging.INFO
+        self.logger.setLevel(self.level)
+
+    def log_text(self, tag, value, level, **kwargs):
+        if level == logging.WARN:
+            self.logger.warn(value)
+
+        if level == logging.INFO:
+            self.logger.info(value)
+
+        if level == logging.ERROR:
+            self.logger.error(value)
+
+        if level == logging.DEBUG:
+            self.logger.debug(value)
+        
