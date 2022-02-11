@@ -4,11 +4,42 @@ from timm.models.layers import SelectAdaptivePool2d
 
 import torch
 import torch.nn as nn
-
-import logging
+from torckay.utilities.loading import load_state_dict
 
 from torckay.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger('main')
+
+
+class MultiHeads(nn.Module):
+    def __init__(self, backbone, num_head_classes, forward_index) -> None:
+        super().__init__()
+        self.num_head_classes = num_head_classes
+        self.forward_index = forward_index
+
+        # Create multiheads
+        self.heads = nn.ModuleList()
+        for i, num_classes in enumerate(num_head_classes):
+
+            self.heads.add_module(f"{i}", self.create_head(backbone, num_classes))
+            if forward_index != i:
+                self.heads[i].requires_grad = False
+
+    def create_head(self, model, num_classes):
+        return nn.Sequential(OrderedDict([
+                ('global_pool', SelectAdaptivePool2d(pool_type='avg')),
+                ('norm', model.head.norm),
+                ('flatten', nn.Flatten(1)),
+                ('drop', nn.Dropout(model.drop_rate)),
+                ('fc', nn.Linear(model.num_features, num_classes) if num_classes > 0 else nn.Identity())
+            ]))
+        
+
+    def forward(self, x):
+        return self.forward_head(x, self.forward_index)
+
+    def forward_head(self, x, head_index):
+        return self.heads[head_index](x)
+
 
 class MultiHeadModel(nn.Module):
     """Some Information about BaseTimmModel"""
@@ -19,7 +50,8 @@ class MultiHeadModel(nn.Module):
         pretrained_backbone=None,
         num_head_classes=[1,1],
         train_index=0,
-        txt_classnames=None
+        txt_classnames=None,
+        **kwargs
     ):
         super().__init__()
         self.name = name
@@ -32,34 +64,26 @@ class MultiHeadModel(nn.Module):
         self.drop_rate = model.drop_rate
         self.num_features = model.num_features
 
-        if pretrained_backbone is not None:
-            state_dict = torch.load(pretrained_backbone, map_location='cpu')
-            try:
-                ret = model.load_state_dict(state_dict, strict=False)
-            except RuntimeError as e:
-                LOGGER.text(f'[Warning] Ignoring {e}', level=LoggerObserver.WARN)
-
         # Remove last head, freeze backbone
-        self.backbone = nn.Sequential(*(list(model.children())[:-1]))
-        for param in self.backbone.parameters():
+        self.model = nn.Sequential()
+        for n,m in list(model.named_children())[:-1]:
+            self.model.add_module(n, m)
+
+        for param in self.model.parameters():
             param.requires_grad = False
 
-        self.heads = nn.ModuleList()
-        for i, num_classes in enumerate(num_head_classes):
-            self.append_classifier(model, num_classes, i)
-            if train_index != i:
-                self.heads[i].requires_grad = False
+        if pretrained_backbone is not None:
+            state_dict = torch.load(pretrained_backbone)
+            load_state_dict(self, state_dict, 'model')
 
-    def append_classifier(self, model, num_classes, head_index):
-        self.heads.add_module(f'{head_index}', 
-          nn.Sequential(OrderedDict([
-                ('global_pool', SelectAdaptivePool2d(pool_type='avg')),
-                ('norm', model.head.norm),
-                ('flatten', nn.Flatten(1)),
-                ('drop', nn.Dropout(model.drop_rate)),
-                ('fc', nn.Linear(model.num_features, num_classes) if num_classes > 0 else nn.Identity())
-            ]))
-        )
+        self.feature_layer_name = list(self.model.named_children())[-1][0]
+
+        heads = MultiHeads(model, num_head_classes, train_index)
+        # Add heads to model
+        self.model.add_module('heads', heads)
+
+    def get_model(self):
+        return self.model
 
     def load_classnames(self):
         self.classnames = []
@@ -69,10 +93,25 @@ class MultiHeadModel(nn.Module):
         for group in groups:
             classnames = group.split()
             self.classnames.append(classnames)
-            
+
+    def forward_features(self, x):
+        features = None
+
+        def forward_features_hook(module_, input_, output_):
+            nonlocal features
+            features = output_
+
+        a_hook = self.model._modules[self.feature_layer_name].register_forward_hook(forward_features_hook) 
+        
+        self.model(x)
+
+        a_hook.remove()
+        return features
+
     def forward_head(self, x, head_index):
-        outputs = self.backbone(x)
-        outputs = self.heads[head_index](outputs)
+        
+        features = self.forward_features(x)
+        outputs = self.model.heads.forward_head(features, head_index)
         return outputs
 
     def forward(self, x):
