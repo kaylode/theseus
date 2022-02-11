@@ -17,8 +17,8 @@ class BalancedAccuracyMetric(Metric):
     """
     Balanced Accuracy metric for classification
     """
-    def __init__(self):
-        
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):

@@ -63,7 +63,8 @@ class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification
     """
-    def __init__(self, classnames=None):
+    def __init__(self, classnames=None, **kwargs):
+        super().__init__(**kwargs)
         self.classnames = classnames
         self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
         self.reset()
