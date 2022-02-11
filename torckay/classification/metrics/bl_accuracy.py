@@ -17,9 +17,8 @@ class BalancedAccuracyMetric(Metric):
     """
     Balanced Accuracy metric for classification
     """
-    def __init__(self, num_classes):
+    def __init__(self):
         
-        self.num_classes = num_classes
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
@@ -34,15 +33,22 @@ class BalancedAccuracyMetric(Metric):
     def reset(self):
         self.outputs = []
         self.targets = []
-        self.corrects = [0 for i in range(self.num_classes)]
-        self.total = [0 for i in range(self.num_classes)]
+        
+
+    def get_all_unique_id(self):
+        self.unique_ids = np.unique(self.targets)
 
     def value(self):
-        for i in range(self.num_classes):
+        self.get_all_unique_id()
+
+        self.corrects = {str(k):0 for k in self.unique_ids}
+        self.total = {str(k):0 for k in self.unique_ids}
+
+        for i in self.unique_ids:
             correct, sample_size = compute_multiclass(self.outputs, self.targets, i)
-            self.corrects[i] += correct
-            self.total[i] += sample_size
-        each_acc = [self.corrects[i]*1.0/(self.total[i]) for i in range(self.num_classes) if self.total[i]>0]
-        values = sum(each_acc)/self.num_classes
+            self.corrects[str(i)] += correct
+            self.total[str(i)] += sample_size
+        each_acc = [self.corrects[str(i)]*1.0/(self.total[str(i)]) for i in self.unique_ids if self.total[str(i)]>0]
+        values = sum(each_acc)/len(self.unique_ids)
 
         return {'bl_acc': values}
