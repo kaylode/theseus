@@ -116,7 +116,7 @@ class GradCam:
     def __init__(self, model, config_name):
         config_name = config_name.split('_')[0]
         self.config_name = config_name
-        self.model = model.model.model
+        self.model = model
         self.feature_module_config = configs[config_name]["feature_module"]
         self.feature_module_name = self.feature_module_config["block_name"]
         self.feature_module = self.model._modules[self.feature_module_name]
@@ -135,7 +135,10 @@ class GradCam:
         return self.model(input_img)
 
     def __call__(self, input_img, target_category=None, return_prob=False):
-        features, output = self.extractor(input_img)
+        with torch.set_grad_enabled(True):
+            input_img.requires_grad = True
+            features, output = self.extractor(input_img)
+        input_img.requires_grad = False
 
         if target_category == None:
             target_category = np.argmax(output.cpu().data.numpy())

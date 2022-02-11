@@ -125,7 +125,7 @@ class ClassificationTrainer(SupervisedTrainer):
         self.model.eval()
 
         model_name = self.model.model.name
-        grad_cam = GradCam(model=self.model, config_name=model_name)
+        grad_cam = GradCam(model=self.model.model.get_model(), config_name=model_name)
 
         gradcam_batch = []
         pred_batch = []
