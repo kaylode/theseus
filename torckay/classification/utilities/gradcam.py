@@ -141,7 +141,7 @@ class GradCam:
             target_category = np.argmax(output.cpu().data.numpy())
 
             if return_prob:
-                score = np.max(output.cpu().data.numpy())
+                score = np.max(torch.softmax(output, axis=1).cpu().data.numpy())
 
         one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
         one_hot[0][target_category] = 1
