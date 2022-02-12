@@ -7,8 +7,12 @@ from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XG
 from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
+from torckay.utilities.loggers.observer import LoggerObserver
+
 model_last_layers = {
     'convnext': ['stages', -1],
+    'efficientnet': ['blocks', -1],
+    'xception': ['act4']
 }
 
 def get_layer_recursively(model, layer_names):
@@ -37,6 +41,13 @@ class CAMWrapper(BaseCAM):
             prefix = model_name.split('_')[0]
             if prefix in model_last_layers.keys():
                 model_name = prefix
+
+            if model_name not in model_last_layers.keys():
+                LoggerObserver.text(
+                    "Model has not been registered for using CAM. Please register in the `model_last_layers` dict above", 
+                    LoggerObserver.ERROR
+                )
+
             target_layers = get_layer_recursively(model, model_last_layers[model_name])
 
         super(CAMWrapper, self).__init__(model, target_layers, **kwargs)
@@ -106,10 +117,11 @@ class CAMWrapper(BaseCAM):
     def get_method(cls, name, **kwargs):
         if name == 'gradcam':
             CAMWrapper.__bases__ = (GradCAM, )
+        if name == 'eigencam':
+            CAMWrapper.__bases__ = (EigenCAM, )
         return cls(**kwargs)
         # ModifiedBaseCAM.__bases__ = ScoreCAM
         # ModifiedBaseCAM.__bases__ = GradCAMPlusPlus
         # ModifiedBaseCAM.__bases__ = AblationCAM
         # ModifiedBaseCAM.__bases__ = XGradCAM
-        # ModifiedBaseCAM.__bases__ = EigenCAM
         # ModifiedBaseCAM.__bases__ = FullGrad
