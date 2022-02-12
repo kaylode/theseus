@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from torckay.base.trainer.supervised_trainer import SupervisedTrainer
 from torckay.utilities.loading import load_state_dict
 from torckay.base.augmentations.custom import Denormalize
-from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
+from torckay.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 from torckay.utilities.visualization.visualizer import Visualizer
 from torckay.utilities.analysis.analyzer import ClassificationAnalyzer
 
@@ -125,7 +125,10 @@ class ClassificationTrainer(SupervisedTrainer):
         self.model.eval()
 
         model_name = self.model.model.name
-        grad_cam = GradCam(model=self.model.model.get_model(), config_name=model_name)
+        grad_cam = CAMWrapper.get_method(
+            name='gradcam', 
+            model=self.model.model.get_model(), 
+            model_name=model_name, use_cuda=True)
 
         gradcam_batch = []
         pred_batch = []
@@ -134,9 +137,8 @@ class ClassificationTrainer(SupervisedTrainer):
             visualizer.set_image(img_show)
             input = input.unsqueeze(0)
             input = input.to(self.model.device)
-            target_category = None
-            grayscale_cam, label_idx, score = grad_cam(input, target_category, return_prob=True)
-            label = self.valloader.dataset.classnames[label_idx]
+            grayscale_cams, label_indices, scores = grad_cam(input, return_probs=True)
+            label = self.valloader.dataset.classnames[label_indices[0]]
             target = self.valloader.dataset.classnames[target.item()]
 
             if label == target:
@@ -145,16 +147,17 @@ class ClassificationTrainer(SupervisedTrainer):
                 color = [1,0,0]
 
             visualizer.draw_label(
-                f"GT: {target}\nP: {label}\nC: {score:.4f}", 
+                f"GT: {target}\nP: {label}\nC: {scores[0]:.4f}", 
                 fontColor=color, 
                 fontScale=0.8,
                 thickness=2,
                 outline=None,
                 offset=100
             )
+            
+            grayscale_cam = grayscale_cams[0, :]
+            img_cam =show_cam_on_image(img_show, grayscale_cam, use_rgb=True)
 
-            img_cam = show_cam_on_image(img_show, grayscale_cam, label)
-            img_cam = cv2.cvtColor(img_cam, cv2.COLOR_BGR2RGB)
             img_cam = TFF.to_tensor(img_cam)
             gradcam_batch.append(img_cam)
 

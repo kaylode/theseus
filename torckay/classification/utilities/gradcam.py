@@ -1,180 +1,115 @@
-import cv2
 import torch
 import numpy as np
+from typing import Callable, List, Tuple
 
+from pytorch_grad_cam.base_cam import BaseCAM
+from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
+from pytorch_grad_cam.utils.image import show_cam_on_image
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
-
-_MEAN = (0.485, 0.456, 0.406)
-_STD = [0.229, 0.224, 0.225]
-
-configs = {
-    "nfnet": {
-        'feature_module': {
-            'block_name': 'stages',
-            'block_index': 3
-        },
-        'target_layer_names': "5"
-    },
-
-    "efficientnet": {
-        'feature_module': {
-            'block_name': 'blocks',
-            'block_index': 6
-        },
-        'target_layer_names': "0"
-    },
-
-    "convnext": {
-        'feature_module': {
-            'block_name': 'stages',
-            'block_index': 3
-        },
-        'target_layer_names': "blocks"
-    }
+model_last_layers = {
+    'convnext': ['stages', -1],
 }
 
+def get_layer_recursively(model, layer_names):
+    last_layer = model
+    for layer_name in layer_names:
+        if isinstance(layer_name, str):
+            last_layer = last_layer._modules[layer_name]
+        if isinstance(layer_name, int):
+            last_layer = last_layer[layer_name]
 
-def show_cam_on_image(img, mask, label):
-    heatmap = cv2.applyColorMap(np.uint8(255 * mask), cv2.COLORMAP_JET)
-    heatmap = np.clip(np.float32(heatmap),0,255) / np.max(heatmap)
-    cam = 0.3*heatmap + 0.7*np.float32(img)
-    # cam = cam / np.max(cam)
-    cam = np.uint8(255 * cam)
-    cv2.putText(cam, str(label),
-                (10, 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 255, 0),
-                2)
-
-    return cam
-
-
-class FeatureExtractor():
-    """ Class for extracting activations and
-    registering gradients from targetted intermediate layers """
-
-    def __init__(self, model, target_layers):
-        self.model = model
-        self.target_layers = target_layers
-        self.gradients = []
-
-    def save_gradient(self, grad):
-        self.gradients.append(grad)
-
-    def __call__(self, x):
-        outputs = []
-        self.gradients = []
-        for name, module in self.model._modules.items():
-            x = module(x)
-            if name in self.target_layers:
-                x.register_hook(self.save_gradient)
-                outputs += [x]
-        return outputs, x
-
-
-class ModelOutputs():
-    """ Class for making a forward pass, and getting:
-    1. The network output.
-    2. Activations from intermeddiate targetted layers.
-    3. Gradients from intermeddiate targetted layers. """
-
-    def __init__(self, model, feature_module, feature_module_name, target_layers):
-        self.model = model
-        self.feature_module = feature_module
-        self.feature_module_name = feature_module_name
-        self.feature_extractor = FeatureExtractor(
-            self.feature_module, target_layers)
-
-    def get_gradients(self):
-        return self.feature_extractor.gradients
-
-    def __call__(self, x):
-        target_activations = []
-
-        # Handle KeyError when using DataParallel
-        try:
-            self.model._modules[self.feature_module_name]
-            self.model_modules = self.model._modules
-        except KeyError:
-            self.model_modules = self.model._modules['module']._modules
-
-        for name, module in self.model_modules.items():
-            if name == self.feature_module_name:
-                for name2, module2 in module._modules.items():
-                    if module2 == self.feature_module:
-                        target_activations, x = self.feature_extractor(x)
-                    else:
-                        x = module2(x)
-            else:
-                x = module(x)
-
-        return target_activations, x
-
-
-class GradCam:
-    def __init__(self, model, config_name):
-        config_name = config_name.split('_')[0]
-        self.config_name = config_name
-        self.model = model
-        self.feature_module_config = configs[config_name]["feature_module"]
-        self.feature_module_name = self.feature_module_config["block_name"]
-        self.feature_module = self.model._modules[self.feature_module_name]
+    return [last_layer]
         
-        if "block_index" in self.feature_module_config.keys():
-            block_index = int(self.feature_module_config["block_index"])
-            self.feature_module = self.feature_module[block_index]
 
-        self.target_layer_names = configs[config_name]["target_layer_names"]
-        self.model.eval()
+## Modified base class with new method
+class CAMWrapper(BaseCAM):
+    def __init__(self,
+        model: torch.nn.Module,
+        model_name: str = None,
+        target_layers: List[torch.nn.Module] = None,
+        **kwargs) -> None:
 
-        self.extractor = ModelOutputs(
-            self.model, self.feature_module, self.feature_module_name, self.target_layer_names)
 
-    def forward(self, input_img):
-        return self.model(input_img)
+        assert model_name is not None or target_layers is not None, "Should specify model name or target layers name"
+      
+        if target_layers is None:
+            prefix = model_name.split('_')[0]
+            if prefix in model_last_layers.keys():
+                model_name = prefix
+            target_layers = get_layer_recursively(model, model_last_layers[model_name])
 
-    def __call__(self, input_img, target_category=None, return_prob=False):
-        with torch.set_grad_enabled(True):
-            input_img.requires_grad = True
-            features, output = self.extractor(input_img)
-        input_img.requires_grad = False
+        super(CAMWrapper, self).__init__(model, target_layers, **kwargs)
 
-        if target_category == None:
-            target_category = np.argmax(output.cpu().data.numpy())
+    def forward(self,
+                input_tensor: torch.Tensor,
+                targets: List[torch.nn.Module],
+                eigen_smooth: bool = False,
+                return_probs:bool = False) -> np.ndarray:
 
-            if return_prob:
-                score = np.max(torch.softmax(output, dim=1).cpu().data.numpy())
+        if self.cuda:
+            input_tensor = input_tensor.cuda()
 
-        one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
-        one_hot[0][target_category] = 1
-        one_hot = torch.from_numpy(one_hot).requires_grad_(True)
+        if self.compute_input_gradient:
+            input_tensor = torch.autograd.Variable(input_tensor,
+                                                   requires_grad=True)
 
-        one_hot = one_hot.cuda()
+        outputs = self.activations_and_grads(input_tensor)
+        if targets is None:
+            target_categories = np.argmax(outputs.cpu().data.numpy(), axis=-1)
+            targets = [ClassifierOutputTarget(category) for category in target_categories]
 
-        one_hot = torch.sum(one_hot * output)
+            if return_probs:
+                scores = np.max(torch.softmax(outputs, dim=-1).cpu().data.numpy(), axis=-1)
 
-        self.feature_module.zero_grad()
-        self.model.zero_grad()
-        one_hot.backward(retain_graph=True)
+        if self.uses_gradients:
+            self.model.zero_grad()
+            loss = sum([target(output) for target, output in zip(targets, outputs)])
+            loss.backward(retain_graph=True)
 
-        grads_val = self.extractor.get_gradients()[-1].cpu().data.numpy()
+        # In most of the saliency attribution papers, the saliency is
+        # computed with a single target layer.
+        # Commonly it is the last convolutional layer.
+        # Here we support passing a list with multiple target layers.
+        # It will compute the saliency image for every image,
+        # and then aggregate them (with a default mean aggregation).
+        # This gives you more flexibility in case you just want to
+        # use all conv layers for example, all Batchnorm layers,
+        # or something else.
+        cam_per_layer = self.compute_cam_per_layer(input_tensor,
+                                                   targets,
+                                                   eigen_smooth)
 
-        target = features[-1]
-        target = target.cpu().data.numpy()[0, :]
+        results = self.aggregate_multi_layers(cam_per_layer)
 
-        weights = np.mean(grads_val, axis=(2, 3))[0, :]
-        cam = np.zeros(target.shape[1:], dtype=np.float32)
-
-        for i, w in enumerate(weights):
-            cam += w * target[i, :, :]
-
-        cam = np.maximum(cam, 0)
-        cam = cv2.resize(cam, input_img.shape[2:])
-        cam = cam - np.min(cam)
-        cam = cam / np.max(cam)
-
-        if return_prob:
-            return cam, int(target_category), score
+        if return_probs: 
+            return results, target_categories, scores
         else:
-            return cam, int(target_category)
+            return results
+
+    def __call__(self,
+                 input_tensor: torch.Tensor,
+                 targets: List[torch.nn.Module] = None,
+                 aug_smooth: bool = False,
+                 eigen_smooth: bool = False,
+                 return_probs: bool = False) -> np.ndarray:
+
+        # Smooth the CAM result with test time augmentation
+        if aug_smooth is True:
+            return self.forward_augmentation_smoothing(
+                input_tensor, targets, eigen_smooth)
+
+        return self.forward(input_tensor,
+                            targets, eigen_smooth, return_probs)
+
+    @classmethod
+    def get_method(cls, name, **kwargs):
+        if name == 'gradcam':
+            CAMWrapper.__bases__ = (GradCAM, )
+        return cls(**kwargs)
+        # ModifiedBaseCAM.__bases__ = ScoreCAM
+        # ModifiedBaseCAM.__bases__ = GradCAMPlusPlus
+        # ModifiedBaseCAM.__bases__ = AblationCAM
+        # ModifiedBaseCAM.__bases__ = XGradCAM
+        # ModifiedBaseCAM.__bases__ = EigenCAM
+        # ModifiedBaseCAM.__bases__ = FullGrad
