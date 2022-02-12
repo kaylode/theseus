@@ -31,19 +31,22 @@ class BaseTimmModel(nn.Module):
         outputs = self.model(x)
         return outputs
 
-    def get_prediction(self, adict):
-        inputs = adict['input']
+    def get_prediction(self, adict, device):
+        inputs = adict['inputs'].to(device)
         outputs = self.model(inputs)
 
-        probs = torch.max(torch.softmax(outputs, dim=1))
-        outputs = torch.argmax(outputs, dim=1)
+        probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)
 
-        probs = probs.cpu().detach().item()
-        classid = outputs.cpu().detach().item()
-        classname = self.classnames[outputs]
+        probs = probs.cpu().detach().numpy()
+        classids = outputs.cpu().detach().numpy()
+
+        if self.classnames:
+            classnames = [self.classnames[int(clsid)] for clsid in classids]
+        else:
+            classnames = []
 
         return {
-            'class': classid,
-            'confidence': probs, 
-            'name': classname,
+            'labels': classids,
+            'confidences': probs, 
+            'names': classnames,
         }

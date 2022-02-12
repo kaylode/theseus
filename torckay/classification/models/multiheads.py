@@ -58,7 +58,7 @@ class MultiHeadModel(nn.Module):
         self.train_index = train_index
         self.txt_classnames = txt_classnames
         if txt_classnames is not None:
-            self.txt_classnames = self.load_classnames()
+            self.load_classnames()
 
         model = timm.create_model(name, pretrained=True)
         self.drop_rate = model.drop_rate
@@ -118,21 +118,23 @@ class MultiHeadModel(nn.Module):
         outputs = self.forward_head(x, self.train_index)
         return outputs
 
-    def get_prediction(self, adict):
-        inputs = adict['input']
+    def get_prediction(self, adict, device):
+        inputs = adict['inputs'].to(device)
         head_index = adict['head_index']
-        outputs = self.backbone(inputs)
-        outputs = self.heads[head_index](outputs)
+        outputs = self.forward_head(inputs, head_index)
 
-        probs = torch.max(torch.softmax(outputs, dim=1))
-        outputs = torch.argmax(outputs, dim=1)
+        probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)
 
-        probs = probs.cpu().detach().item()
-        classid = outputs.cpu().detach().item()
-        classname = self.classnames[head_index][outputs]
+        probs = probs.cpu().detach().numpy()
+        classids = outputs.cpu().detach().numpy()
+
+        if self.classnames:
+            classnames = [self.classnames[head_index][int(clsid)] for clsid in classids]
+        else:
+            classnames = []
 
         return {
-            'class': classid,
-            'confidence': probs, 
-            'name': classname,
+            'labels': classids,
+            'confidences': probs, 
+            'names': classnames,
         }
