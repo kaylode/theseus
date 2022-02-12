@@ -1,6 +1,6 @@
 global:
   debug: True
-  cfg_transform: configs/sample/transform.yaml
+  cfg_transform: configs/classification/transform.yaml
   save_dir: runs
   device: cuda:0
   use_fp16: True
@@ -68,7 +68,7 @@ data:
       args:
         image_dir: "/content/main/data/mapdasCLF/images/train"
         csv_path: "/content/main/data/mapdasCLF/annotations/mapdas_train.csv"
-        txt_classnames: "configs/sample/classes.txt"
+        txt_classnames: "configs/classification/classes.txt"
         test: False
     
     val:
@@ -76,7 +76,7 @@ data:
       args:
         image_dir: "/content/main/data/mapdasCLF/images/val"
         csv_path: "/content/main/data/mapdasCLF/annotations/mapdas_val.csv"
-        txt_classnames: "configs/sample/classes.txt"
+        txt_classnames: "configs/classification/classes.txt"
         test: True
 
   dataloader:
@@ -86,7 +86,7 @@ data:
         batch_size: 64
         train: True
         drop_last: True
-        shuffle: True
+        shuffle: False
     val:
       name: CSVLoader
       args:

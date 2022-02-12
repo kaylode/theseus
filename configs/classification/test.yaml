@@ -16,8 +16,8 @@ data:
   dataset:
     name: TestDataset
     args:
-      image_dir: "/content/1cls/cropped/0"
-      txt_classnames: "configs/sample/classes.txt"
+      image_dir: data/images
+      txt_classnames: configs/sample/classes.txt
 
   dataloader:
     name: DataLoader
