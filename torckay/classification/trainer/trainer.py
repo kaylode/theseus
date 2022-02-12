@@ -6,8 +6,8 @@ import torchvision
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from torckay.base.trainer.supervised_trainer import SupervisedTrainer
-from torckay.utilities.loading import load_state_dict, find_old_tflog
-from torckay.classification.augmentations.custom import Denormalize
+from torckay.utilities.loading import load_state_dict
+from torckay.base.augmentations.custom import Denormalize
 from torckay.classification.utilities.gradcam import GradCam, show_cam_on_image
 from torckay.utilities.visualization.visualizer import Visualizer
 from torckay.utilities.analysis.analyzer import ClassificationAnalyzer
