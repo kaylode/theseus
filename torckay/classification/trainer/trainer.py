@@ -16,10 +16,16 @@ from torckay.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class ClassificationTrainer(SupervisedTrainer):
+    """Trainer for classification tasks
+    
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def check_best(self, metric_dict):
+        """
+        Hook function, called after metrics are calculated
+        """
         if metric_dict['bl_acc'] > self.best_value:
             if self.iters > 0: # Have been training, else in evaluation-only mode or just sanity check
                 LOGGER.text(
@@ -33,6 +39,9 @@ class ClassificationTrainer(SupervisedTrainer):
                     self.visualize_pred()
 
     def save_checkpoint(self, outname='last'):
+        """
+        Save all information of the current iteration
+        """
         weights = {
             'model': self.model.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
@@ -46,7 +55,10 @@ class ClassificationTrainer(SupervisedTrainer):
            
         self.checkpoint.save(weights, outname)
 
-    def load_checkpoint(self, path):
+    def load_checkpoint(self, path:str):
+        """
+        Load all information the current iteration from checkpoint 
+        """
         LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
         state_dict = torch.load(path)
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
@@ -56,6 +68,10 @@ class ClassificationTrainer(SupervisedTrainer):
 
         
     def visualize_gt(self):
+        """
+        Visualize dataloader for sanity check 
+        """
+
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
         denom = Denormalize()
         batch = next(iter(self.trainloader))
@@ -110,8 +126,11 @@ class ClassificationTrainer(SupervisedTrainer):
         }])
 
 
-    @torch.enable_grad() #enable grad for GradCAM
+    @torch.enable_grad() #enable grad for CAM
     def visualize_pred(self):
+        r"""Visualize model prediction and CAM
+        
+        """
         # Vizualize Grad Class Activation Mapping and model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
@@ -222,6 +241,9 @@ class ClassificationTrainer(SupervisedTrainer):
         }])
 
     def analyze_gt(self):
+        """
+        Perform simple data analysis
+        """
         LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
         analyzer = ClassificationAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
@@ -257,6 +279,8 @@ class ClassificationTrainer(SupervisedTrainer):
             self.load_checkpoint(self.resume)
 
     def sanitycheck(self):
+        """Sanity check before training
+        """
         self.visualize_gt()
         self.analyze_gt()
         self.visualize_model()

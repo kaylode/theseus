@@ -1,12 +1,17 @@
 import torch
-from typing import Any, Dict
+from typing import Any, Dict, Optional, List
 from sklearn.metrics import confusion_matrix
 from torckay.base.metrics.metric_template import Metric
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-def make_cm_fig(cm, labels=None):
+def make_cm_fig(cm, labels: Optional[List] = None):
+    """
+    Make confusion matrix figure
+    labels: `Optional[List]`
+        classnames for visualization
+    """
     fig, ax = plt.subplots(1, figsize=(10,10))
 
     ax = sns.heatmap(cm, annot=False, 
@@ -70,7 +75,9 @@ class ConfusionMatrix(Metric):
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
-
+        """
+        Perform calculation based on prediction and targets
+        """
         # in torchvision models, pred is a dict[key=out, value=Tensor]
         targets = batch["targets"] 
 

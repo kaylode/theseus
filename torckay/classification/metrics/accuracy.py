@@ -5,23 +5,17 @@ from torckay.base.metrics.metric_template import Metric
 
 
 class Accuracy(Metric):
-
-    """Pixel accuracy metric
-
-    Segmentation multi classes metric
-
-    Args:
-        nclasses (int): number of classé
-        ignore_index (Optional[Any], optional): [description]. Defaults to None.
+    """Accuracy metric
     """
 
-    def __init__(self, ignore_index: Optional[Any] = None, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.ignore_index = ignore_index
         self.reset()
 
     def update(self, output: torch.Tensor, batch: Dict[str, Any]):
-
+        """
+        Perform calculation based on prediction and targets
+        """
         target = batch["targets"] 
         prediction = torch.argmax(output, dim=1)
         prediction = prediction.cpu().detach()

@@ -10,11 +10,17 @@ from torckay.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class SupervisedTrainer(BaseTrainer):
+    """Trainer for supervised tasks
+    
+    """
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
 
     def training_epoch(self):
+        """
+        Perform training one epoch
+        """
         self.model.train()
 
         running_loss = {}
@@ -24,6 +30,8 @@ class SupervisedTrainer(BaseTrainer):
         for i, batch in enumerate(self.trainloader):
             
             start_time = time.time()
+
+            # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
                 outputs = self.model.training_step(batch)
 
@@ -31,6 +39,7 @@ class SupervisedTrainer(BaseTrainer):
                 loss_dict = outputs['loss_dict']
                 loss /= self.accumulate_steps
 
+            # Backward loss
             self.scaler(loss, self.optimizer)
             
             if i % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
@@ -63,9 +72,12 @@ class SupervisedTrainer(BaseTrainer):
                     running_loss[key] = value
 
             running_time += end_time-start_time
+
+            # Calculate current iteration
             self.iters = self.start_iter + len(self.trainloader)*self.epoch + i + 1
+
+            # Logging
             if self.iters % self.print_per_iter == 0:
-                
                 for key in running_loss.keys():
                     running_loss[key] /= self.print_per_iter
                     running_loss[key] = np.round(running_loss[key], 5)
@@ -90,12 +102,16 @@ class SupervisedTrainer(BaseTrainer):
                 running_loss = {}
                 running_time = 0
 
+            # Saving checkpoint
             if (self.iters % self.save_per_iter == 0 or self.iters == self.num_iters - 1):
                 LOGGER.text(f'Save model at [{self.iters}|{self.num_iters}] to last.pth', LoggerObserver.INFO)
                 self.save_checkpoint()
 
     @torch.no_grad()   
     def evaluate_epoch(self):
+        """
+        Perform validation one epoch
+        """
         self.model.eval()
         epoch_loss = {}
 
@@ -103,6 +119,8 @@ class SupervisedTrainer(BaseTrainer):
         LOGGER.text('=============================EVALUATION===================================', LoggerObserver.INFO)
 
         start_time = time.time()
+
+        # Gradient scaler
         with amp.autocast(enabled=self.use_amp):
             for batch in tqdm(self.valloader):
                 outputs = self.model.evaluate_step(batch, self.metrics)
@@ -122,6 +140,7 @@ class SupervisedTrainer(BaseTrainer):
             metric_dict.update(metric.value())
             metric.reset()  
 
+        # Logging
         for key in epoch_loss.keys():
             epoch_loss[key] /= len(self.valloader)
             epoch_loss[key] = np.round(epoch_loss[key], 5)
@@ -159,6 +178,7 @@ class SupervisedTrainer(BaseTrainer):
 
         LOGGER.log(log_dict)
 
+        # Hook function
         self.check_best(metric_dict)
 
     def check_best(self, metric_dict):

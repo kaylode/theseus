@@ -5,7 +5,7 @@ from . import MODEL_REGISTRY
 
 @MODEL_REGISTRY.register()
 class ModelWithLoss(nn.Module):
-    """Add utilitarian functions for module to work with pipeline
+    """Wrapper for model with loss function
 
     Args:
         model (Module): Base Model without loss
@@ -42,9 +42,3 @@ class ModelWithLoss(nn.Module):
 
     def trainable_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
-    @classmethod
-    def from_cfg(cls, model, criterion, getter):
-        model = getter(model)
-        criterion = getter(criterion)
-        return cls(model, criterion)

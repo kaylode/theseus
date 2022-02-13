@@ -4,4 +4,4 @@ from .dataset import *
 from .dataloader import *
 
 DATASET_REGISTRY.register(CSVDataset)
-DATALOADER_REGISTRY.register(CSVLoader)
+DATALOADER_REGISTRY.register(BalanceSampler)

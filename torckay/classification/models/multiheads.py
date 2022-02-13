@@ -1,3 +1,4 @@
+from typing import Optional, List, Dict, Any
 from collections import OrderedDict
 import timm
 from timm.models.layers import SelectAdaptivePool2d
@@ -11,6 +12,9 @@ LOGGER = LoggerObserver.getLogger('main')
 
 
 class MultiHeads(nn.Module):
+    """
+    A sequential of neural networks
+    """
     def __init__(self, backbone, num_head_classes, forward_index) -> None:
         super().__init__()
         self.num_head_classes = num_head_classes
@@ -25,6 +29,7 @@ class MultiHeads(nn.Module):
                 self.heads[i].requires_grad = False
 
     def create_head(self, model, num_classes):
+        # From timm.convnext
         return nn.Sequential(OrderedDict([
                 ('global_pool', SelectAdaptivePool2d(pool_type='avg')),
                 ('norm', model.head.norm),
@@ -42,15 +47,28 @@ class MultiHeads(nn.Module):
 
 
 class MultiHeadModel(nn.Module):
-    """Some Information about BaseTimmModel"""
+    """Convolution model with multiple heads, with frozen backbone
+    
+    name: `str`
+        timm model name
+    num_head_classes: `List[int]`
+        number of classes for each head
+    train_index: `int`
+        head index requires training. This head will be used in forward function 
+    pretrained_backbone: `Optional[str]`
+        path to pretrained backbone weights
+    txt_classnames: `Optional[str]`
+        txt file contains classnames for inference
+
+    """
 
     def __init__(
         self,
-        name="efficientnet_b0",
-        pretrained_backbone=None,
-        num_head_classes=[1,1],
-        train_index=0,
-        txt_classnames=None,
+        name: str,
+        num_head_classes: List[int],
+        train_index: int,
+        pretrained_backbone: Optional[str] = None,
+        txt_classnames: Optional[str] = None,
         **kwargs
     ):
         super().__init__()
@@ -60,25 +78,30 @@ class MultiHeadModel(nn.Module):
         if txt_classnames is not None:
             self.load_classnames()
 
+        # Create model from timm
         model = timm.create_model(name, pretrained=True)
         self.drop_rate = model.drop_rate
         self.num_features = model.num_features
 
-        # Remove last head, freeze backbone
+        # Remove last head
         self.model = nn.Sequential()
         for n,m in list(model.named_children())[:-1]:
             self.model.add_module(n, m)
 
+        # Freeze backbone
         for param in self.model.parameters():
             param.requires_grad = False
 
+        # Load pretrained backbone
         if pretrained_backbone is not None:
             state_dict = torch.load(pretrained_backbone)
             load_state_dict(self, state_dict, 'model')
 
         self.feature_layer_name = list(self.model.named_children())[-1][0]
 
+        # Create multiheads
         heads = MultiHeads(model, num_head_classes, train_index)
+
         # Add heads to model
         self.model.add_module('heads', heads)
 
@@ -94,9 +117,10 @@ class MultiHeadModel(nn.Module):
             classnames = group.split()
             self.classnames.append(classnames)
 
-    def forward_features(self, x):
-        features = None
+    def forward_features(self, x: torch.Tensor):
 
+        # Use hook function to get output from intermediate layers
+        features = None
         def forward_features_hook(module_, input_, output_):
             nonlocal features
             features = output_
@@ -108,17 +132,22 @@ class MultiHeadModel(nn.Module):
         a_hook.remove()
         return features
 
-    def forward_head(self, x, head_index):
-        
+    def forward_head(self, x: torch.Tensor, head_index: int):
+        """
+        Forward through a single head
+        """
         features = self.forward_features(x)
         outputs = self.model.heads.forward_head(features, head_index)
         return outputs
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         outputs = self.forward_head(x, self.train_index)
         return outputs
 
-    def get_prediction(self, adict, device):
+    def get_prediction(self, adict: Dict[str, Any], device: torch.device):
+        """
+        Inference method
+        """
         inputs = adict['inputs'].to(device)
         head_index = adict['head_index']
         outputs = self.forward_head(inputs, head_index)

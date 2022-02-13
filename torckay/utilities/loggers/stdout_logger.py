@@ -42,7 +42,7 @@ class CustomFormatter(logging.Formatter):
 
 class StdoutLogger(LoggerSubscriber):
     """
-    Logger class
+    Logger class for showing text in prompt and file
     For more documents, look into https://docs.python.org/3/library/logging.html
     
     Usage:

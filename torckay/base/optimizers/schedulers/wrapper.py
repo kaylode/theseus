@@ -1,6 +1,4 @@
 import math
-
-from torckay.registry import Registry
 from torch.optim.lr_scheduler import (
     StepLR, CosineAnnealingLR, LambdaLR, 
     ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts)
@@ -8,7 +6,7 @@ from .cosine import CosineWithRestarts
 
 class SchedulerWrapper():
     """
-    Wrap scheduler
+    Wrap scheduler, factory design pattern
     """
     def __init__(self, optimizer, scheduler_name,  **kwargs) -> None:
 

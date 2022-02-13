@@ -15,7 +15,9 @@ class F1ScoreMetric(Metric):
         self.reset()
 
     def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
-
+        """
+        Perform calculation based on prediction and targets
+        """
         targets = batch["targets"] 
 
         outputs = torch.argmax(outputs,dim=1)

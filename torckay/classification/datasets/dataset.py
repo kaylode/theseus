@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from PIL import Image
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
 from torch import Tensor
@@ -12,17 +12,23 @@ from torckay.classification.augmentations.custom import RandomMixup, RandomCutmi
 class CSVDataset(torch.utils.data.Dataset):
     r"""CSVDataset multi-labels classification dataset
 
-
-    Attributes:
-        from_list(**args): Create dataset from list
-        from_folder(**args): Create dataset from folder path
-
+    image_dir: `str`
+        path to directory contains images
+    csv_path: `str`
+        path to csv file
+    txt_classnames: `str`
+        path to txt file contains classnames
+    transform: Optional[List]
+        transformatin functions
+    test: bool
+        whether the dataset is used for training or test
+        
     """
 
     def __init__(
         self,
-        image_dir: List[str],
-        csv_path: List[str],
+        image_dir: str,
+        csv_path: str,
         txt_classnames: str,
         transform: Optional[List] = None,
         test: bool = False,
@@ -45,16 +51,25 @@ class CSVDataset(torch.utils.data.Dataset):
             self.mixupcutmix = None
 
     def _load_data(self):
+        """
+        Read data from csv and load into memory
+        """
         self.fns = []
+
+        # Classes distribution (for balanced sampler)
         self.classes_dist = []
 
+        # Get classnames
         self.classes_idx = {}
         with open(self.txt_classnames, 'r') as f:
             self.classnames = f.read().splitlines()
         
+        # Mapping between classnames and indices
         for idx, classname in enumerate(self.classnames):
             self.classes_idx[classname] = idx
         self.num_classes = len(self.classnames)
+
+        # Load csv
         df = pd.read_csv(self.csv_path)
         for _, row in df.iterrows():
             image_name, label = row
@@ -62,8 +77,10 @@ class CSVDataset(torch.utils.data.Dataset):
             self.fns.append([image_path, label])
             self.classes_dist.append(self.classes_idx[label])
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor]:
-
+    def __getitem__(self, idx: int) -> Dict:
+        """
+        Get one item
+        """
         image_path, label_name = self.fns[idx]
         im = Image.open(image_path).convert('RGB')
         width, height = im.width, im.height
@@ -85,6 +102,9 @@ class CSVDataset(torch.utils.data.Dataset):
         return len(self.fns)
 
     def collate_fn(self, batch: List):
+        """
+        Collator for wrapping a batch
+        """
         imgs = torch.stack([s['input'] for s in batch])
         targets = torch.stack([torch.LongTensor(s['target']['labels']) for s in batch])
 

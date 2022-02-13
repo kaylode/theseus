@@ -14,7 +14,7 @@ from torckay.classification.augmentations import TRANSFORM_REGISTRY
 from torckay.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from torckay.utilities.loading import load_state_dict
-from torckay.utilities.loggers import LoggerObserver, StdoutLogger, ImageWriter
+from torckay.utilities.loggers import LoggerObserver, StdoutLogger
 from torckay.utilities.cuda import get_devices_info
 from torckay.utilities.getter import (get_instance, get_instance_recursively)
 

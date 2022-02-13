@@ -1,17 +1,27 @@
-from collections import OrderedDict
+from typing import Dict, List, Any, Optional
 import timm
 import torch
 import torch.nn as nn
 
 class BaseTimmModel(nn.Module):
-    """Some Information about BaseTimmModel"""
+    """Convolution models from timm
+    
+    name: `str`
+        timm model name
+    num_classes: `int`
+        number of classes
+    from_pretrained: `bool` 
+        whether to use timm pretrained
+    classnames: `Optional[List]`
+        list of classnames
+    """
 
     def __init__(
         self,
-        num_classes=1000,
-        name="efficientnet_b0",
-        from_pretrained=True,
-        classnames=None,
+        name: str,
+        num_classes: int = 1000,
+        from_pretrained: bool = True,
+        classnames: Optional[List] = None,
         **kwargs
     ):
         super().__init__()
@@ -27,11 +37,11 @@ class BaseTimmModel(nn.Module):
     def get_model(self):
         return self.model
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         outputs = self.model(x)
         return outputs
 
-    def get_prediction(self, adict, device):
+    def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         inputs = adict['inputs'].to(device)
         outputs = self.model(inputs)
 

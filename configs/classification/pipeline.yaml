@@ -81,14 +81,14 @@ data:
 
   dataloader:
     train:
-      name: CSVLoader
+      name: BalanceSampler
       args:
         batch_size: 64
         train: True
         drop_last: True
         shuffle: False
     val:
-      name: CSVLoader
+      name: BalanceSampler
       args:
         batch_size: 64
         train: False

@@ -4,6 +4,9 @@ import matplotlib as mpl
 
 
 class ImageWriter(LoggerSubscriber):
+    """Logger for writing images
+    
+    """
     def __init__(self, savedir) -> None:
         self.savedir = savedir
 

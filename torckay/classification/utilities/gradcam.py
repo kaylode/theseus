@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Optional
 
 from pytorch_grad_cam.base_cam import BaseCAM
 from pytorch_grad_cam import GradCAM, ScoreCAM, GradCAMPlusPlus, AblationCAM, XGradCAM, EigenCAM, FullGrad
@@ -28,10 +28,18 @@ def get_layer_recursively(model, layer_names):
 
 ## Modified base class with new method
 class CAMWrapper(BaseCAM):
+    r"""CAM Wrapper class, overrides some methods of BaseCAM
+    model: torch.nn.Module
+        model want to perform CAM visualization on
+    model_name: str
+        the model name
+    target_layers: List[torch.nn.Module]
+        target layers that need visualization
+    """
     def __init__(self,
         model: torch.nn.Module,
-        model_name: str = None,
-        target_layers: List[torch.nn.Module] = None,
+        model_name: Optional[str] = None,
+        target_layers: Optional[List[torch.nn.Module]] = None,
         **kwargs) -> None:
 
 

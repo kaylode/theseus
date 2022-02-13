@@ -14,6 +14,9 @@ def get_type(value):
     return LoggerObserver.SCALAR
 
 class LoggerObserver(object):
+    """Logger Oberserver Degisn Pattern
+    notifies every subscribers when .log() is called
+    """
     SCALAR = 'scalar'
     FIGURE = 'figure'
     TORCH_MODULE = 'torch_module'

@@ -1,4 +1,3 @@
-from typing import Dict
 from torch import nn
 from timm.loss import LabelSmoothingCrossEntropy
 
@@ -10,6 +9,9 @@ class CELoss(nn.Module):
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, pred, batch, device):
+        """
+        pred: torch.Tensor
+        """
         target = batch["targets"].to(device)
         loss = self.criterion(pred, target.view(-1).contiguous())
         loss_dict = {"L": loss.item()}
