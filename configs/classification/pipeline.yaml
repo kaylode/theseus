@@ -25,7 +25,7 @@ model:
   args:
     name: convnext_small
     from_pretrained: True
-    num_classes: 41
+    num_classes: 2
 
 
 loss:
@@ -42,6 +42,8 @@ metrics:
     args:
       average: weighted
   - name: ConfusionMatrix
+    args:
+  - name: ErrorCases
     args:
 
 optimizer:
@@ -64,18 +66,16 @@ scheduler:
 data: 
   dataset:
     train:
-      name: CSVDataset
+      name: ImageFolderDataset
       args:
-        image_dir: "/content/main/data/mapdasCLF/images/train"
-        csv_path: "/content/main/data/mapdasCLF/annotations/mapdas_train.csv"
+        image_dir: /content/main/data/dog-vs-cats/train
         txt_classnames: "configs/classification/classes.txt"
         test: False
     
     val:
-      name: CSVDataset
+      name: ImageFolderDataset
       args:
-        image_dir: "/content/main/data/mapdasCLF/images/val"
-        csv_path: "/content/main/data/mapdasCLF/annotations/mapdas_val.csv"
+        image_dir: /content/main/data/dog-vs-cats/val
         txt_classnames: "configs/classification/classes.txt"
         test: True
 
