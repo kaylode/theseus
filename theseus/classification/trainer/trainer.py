@@ -157,8 +157,13 @@ class ClassificationTrainer(SupervisedTrainer):
             input = input.unsqueeze(0)
             input = input.to(self.model.device)
             grayscale_cams, label_indices, scores = grad_cam(input, return_probs=True)
-            label = self.valloader.dataset.classnames[label_indices[0]]
-            target = self.valloader.dataset.classnames[target.item()]
+            
+            if self.valloader.dataset.classnames is not None:
+                label = self.valloader.dataset.classnames[label_indices[0]]
+                target = self.valloader.dataset.classnames[target.item()]
+            else:
+                label = label_indices[0]
+                target = target.item()
 
             if label == target:
                 color = [0,1,0]
