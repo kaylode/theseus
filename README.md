@@ -1,4 +1,4 @@
-# <p align="center"> :ship: Ship of Theseus :ship: </p>
+# <p align="center"> :sailboat: Ship of Theseus </p>
 
 > The ship wherein Theseus and the youth of Athens returned from Crete had thirty oars, and was preserved by the Athenians down even to the time of Demetrius Phalereus, for they took away the old planks as they decayed, putting in new and stronger timber in their places, insomuch that this ship became a standing example among the philosophers, for the logical question of things that grow; one side holding that the ship remained the same, and the other contending that it was not the same.
 > — Plutarch, Theseus
@@ -8,7 +8,7 @@
  <strong><i>[10/02/2022]</i></strong> SUPER POWER NINJA TURBO NEO ULTRA HYPER MEGA MULTI ALPHA META EXTRA UBER PREFIX -REFACTOR!!!! <a href="https://github.com/kaylode/custom-template/pull/7">#7</a> <br> 
 </details>
 
-# Instructions
+# :pencil: Instructions
 
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
@@ -35,6 +35,9 @@ python train.py \
 **Notice: There are no spaces between keys and values in -o flag**
 
 - Also, if you want to do inference, you need to write your own script. For example see ```configs/classification/infer.py```
+
+# :school_satchel: Resources
+- Sample colab notebooks for classification tasks: [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1mZmT1B5zI1j_0w1MbP-kq8_Tbcx_tIFq?usp=sharing)
 
 
 # :blue_book: References
