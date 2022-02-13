@@ -2,21 +2,21 @@ from typing import List, Optional, Tuple
 
 import matplotlib as mpl
 mpl.use("Agg")
-from torckay.opt import Opts
+from theseus.opt import Opts
 
 import os
 from datetime import datetime
 from tqdm import tqdm
 import torch
-from torckay.opt import Config
-from torckay.classification.models import MODEL_REGISTRY
-from torckay.classification.augmentations import TRANSFORM_REGISTRY
-from torckay.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.opt import Config
+from theseus.classification.models import MODEL_REGISTRY
+from theseus.classification.augmentations import TRANSFORM_REGISTRY
+from theseus.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from torckay.utilities.loading import load_state_dict
-from torckay.utilities.loggers import LoggerObserver, StdoutLogger
-from torckay.utilities.cuda import get_devices_info
-from torckay.utilities.getter import (get_instance, get_instance_recursively)
+from theseus.utilities.loading import load_state_dict
+from theseus.utilities.loggers import LoggerObserver, StdoutLogger
+from theseus.utilities.cuda import get_devices_info
+from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
 import os
 from PIL import Image

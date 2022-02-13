@@ -15,7 +15,7 @@
 2. Customize inherited trainer and pipeline to your need, such as what to do before/after training/validating step,...
 3. Modify configuration file
 
-*See ```torckay/classification``` for example*
+*See ```theseus/classification``` for example*
 
 ### To execute scripts with arguments
 - Run the script with `-c` flag with specified config file. Example:
