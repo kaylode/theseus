@@ -81,10 +81,13 @@ class Pipeline(object):
             dataset=self.val_dataset
         )
 
-        model = get_instance(self.opt["model"], registry=MODEL_REGISTRY, classnames=CLASSNAMES).to(self.device)
-        criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(
-            self.device
-        )
+        model = get_instance(
+          self.opt["model"], 
+          registry=MODEL_REGISTRY, 
+          classnames=CLASSNAMES,
+          num_classes=len(CLASSNAMES)).to(self.device)
+          
+        criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(self.device)
         self.model = ModelWithLoss(model, criterion, self.device)
 
         self.metrics = get_instance_recursively(

@@ -1,5 +1,6 @@
 import torch
 import torchvision
+import numpy as np
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
@@ -68,17 +69,20 @@ class SegmentationTrainer(SupervisedTrainer):
         """
 
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
-        denom = Denormalize()
+        visualizer = Visualizer()
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
+        masks = batch['targets'].squeeze()
 
         batch = []
-        for idx, inputs in enumerate(images):
-            img_show = denom(inputs)
+        for idx, (inputs, mask) in enumerate(zip(images, masks)):
+            img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
-            batch.append(img_cam)
+            mask = mask.repeat(3, 1, 1)
+            img_show = torch.hstack([img_cam, mask])
+            batch.append(img_show)
         batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
+        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
 
         fig = plt.figure(figsize=(8,8))
         plt.tight_layout(pad=0)
@@ -94,23 +98,24 @@ class SegmentationTrainer(SupervisedTrainer):
         }])
 
         
-
         batch = next(iter(self.valloader))
         images = batch["inputs"]
+        masks = batch['targets'].squeeze()
 
         batch = []
-        for idx, inputs in enumerate(images):
-            img_show = denom(inputs)
+        for idx, (inputs, mask) in enumerate(zip(images, masks)):
+            img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
-            batch.append(img_cam)
+            mask = mask.repeat(3, 1, 1)
+            img_show = torch.hstack([img_cam, mask])
+            batch.append(img_show)
         batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
+        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
 
         fig = plt.figure(figsize=(8,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
-
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
             'value': fig,
@@ -120,24 +125,52 @@ class SegmentationTrainer(SupervisedTrainer):
             }
         }])
 
+    @torch.no_grad()
     def visualize_pred(self):
         r"""Visualize model prediction 
         
         """
-        pass
+        
         # Vizualize model predictions
-        # LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
+        LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
-        # visualizer = Visualizer()
+        visualizer = Visualizer()
 
-        # denom = Denormalize()
-        # batch = next(iter(self.valloader))
-        # images = batch["inputs"]
-        # targets = batch["targets"]
+        self.model.eval()
 
-        # self.model.eval()
+        batch = next(iter(self.valloader))
+        images = batch["inputs"]
+        masks = batch['targets'].squeeze()
 
-        # model_name = self.model.model.name
+        preds = self.model.model.get_prediction(
+            {'inputs': images, 'thresh': 0.5}, self.model.device)['masks']
+
+        batch = []
+        for idx, (inputs, mask, pred) in enumerate(zip(images, masks, preds)):
+            img_show = visualizer.denormalize(inputs)
+            img_cam = TFF.to_tensor(img_show)
+            decode_mask = visualizer.decode_segmap(mask)
+            decode_mask = decode_mask.repeat(3, 1, 1)
+            pred = torch.LongTensor(pred).repeat(3, 1, 1)
+            img_show = torch.cat([img_cam, pred, decode_mask], dim=-1)
+            batch.append(img_show)
+        batch = torch.stack(batch, dim=0)
+        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+
+        fig = plt.figure(figsize=(8,8))
+        plt.tight_layout(pad=0)
+        plt.axis('off')
+        plt.title('Raw image - Prediction - Ground Truth')
+        plt.imshow(grid_img.permute(1, 2, 0))
+
+        LOGGER.log([{
+            'tag': "Validation/prediction",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
         
 
     @torch.no_grad()
@@ -178,3 +211,4 @@ class SegmentationTrainer(SupervisedTrainer):
         self.analyze_gt()
         self.visualize_model()
         self.evaluate_epoch()
+        self.visualize_pred()
