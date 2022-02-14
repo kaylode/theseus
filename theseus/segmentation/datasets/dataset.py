@@ -43,11 +43,11 @@ class SegmentationDataset(torch.utils.data.Dataset):
     
     
     def collate_fn(self, batch):
-        imgs = torch.stack([i['img'] for i in batch])
+        imgs = torch.stack([i['input'] for i in batch])
         masks = torch.stack([i['target']['mask'] for i in batch]).unsqueeze(1)
         return {
             'inputs': imgs,
-            'targets': masks.long()
+            'targets': masks.float()
         }
     
     def __len__(self) -> int:
