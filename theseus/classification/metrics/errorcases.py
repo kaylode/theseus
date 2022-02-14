@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from torchvision.transforms import functional as TFF
 from theseus.base.metrics.metric_template import Metric
 
-from theseus.base.augmentations.custom import Denormalize
 from theseus.utilities.visualization.visualizer import Visualizer
 
 class ErrorCases(Metric):
@@ -21,7 +20,6 @@ class ErrorCases(Metric):
     def __init__(self, max_samples: int = 64, classnames: Optional[List[str]]=None, **kwargs):
         super().__init__(**kwargs)
         self.visualizer = Visualizer()
-        self.denom = Denormalize()
 
         self.max_samples = max_samples
         self.classnames = classnames
@@ -59,7 +57,7 @@ class ErrorCases(Metric):
         """
         pred_batch = []
         for idx, (image, pred, target, prob) in enumerate(zip(self.images, self.preds, self.targets, self.probs)):
-            img_show = self.denom(image)
+            img_show = self.visualizer.denormalize(image)
             self.visualizer.set_image(img_show)
 
             if self.classnames:

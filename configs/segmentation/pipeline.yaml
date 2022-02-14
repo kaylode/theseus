@@ -1,0 +1,89 @@
+global:
+  debug: True
+  cfg_transform: configs/segmentation/transform.yaml
+  save_dir: runs
+  device: cuda:0
+  use_fp16: True
+  pretrained: null
+  resume: null
+  
+
+trainer:
+  name: SegmentationTrainer
+  args:
+    num_epochs: 100
+    total_accumulate_steps: null
+    clip_grad:  10.0
+    print_per_iter: 20
+    save_per_iter: 1000
+    evaluate_per_epoch :  1
+    visualize_when_val :  True
+
+
+model:
+  name: UNetWrapper
+  args:
+    name: unet
+    out_ch: 1
+
+
+loss:
+  name: BCEwithDiceLoss
+  args:
+
+metrics:
+  - name: PixelAccuracy
+    args:
+      thresh: 0.5
+  - name: DiceScore
+    args: 
+      thresh: 0.5
+
+optimizer:
+  name: AdamW
+  args:
+    lr: 0.001               # [adam: 1e-3 | sgd: 1e-2]
+    weight_decay: 0.0005
+    betas: [0.937, 0.999]
+
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: cosine2
+    t_initial: 7
+    t_mul: 0.9
+    eta_mul: 0.9
+    eta_min: 0.000001
+
+
+data: 
+  dataset:
+    train:
+      name: CSVDataset
+      args:
+        image_dir: /content/main/data/carvana-masking/images/train_hq
+        mask_dir:  /content/main/data/carvana-masking/images/train_masks
+        csv_path:  /content/main/data/carvana-masking/annotations/train.csv
+        txt_classnames: configs/segmentation/classes.txt
+    
+    val:
+      name: CSVDataset
+      args:
+        image_dir: /content/main/data/carvana-masking/images/train_hq
+        mask_dir:  /content/main/data/carvana-masking/images/val_masks
+        csv_path:  /content/main/data/carvana-masking/annotations/val.csv
+        txt_classnames: configs/segmentation/classes.txt
+
+  dataloader:
+    train:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 64
+        drop_last: True
+        shuffle: True
+    val:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 64
+        drop_last: False
+        shuffle: True

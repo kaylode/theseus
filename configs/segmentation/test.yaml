@@ -1,0 +1,26 @@
+global:
+  debug: True
+  cfg_transform: configs/sample/transform.yaml
+  save_dir: runs
+  device: cuda:0
+  weights: null
+  
+model:
+  name: UNetWrapper
+  args:
+    name: unet
+    out_ch: 1
+
+data: 
+  dataset:
+    name: TestDataset
+    args:
+      image_dir: data/images
+      txt_classnames: configs/sample/classes.txt
+
+  dataloader:
+    name: DataLoaderWithCollator
+    args:
+      batch_size: 64
+      drop_last: True
+      shuffle: True
