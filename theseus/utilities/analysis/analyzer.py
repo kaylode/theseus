@@ -2,6 +2,7 @@ import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 
 class Analyzer:
     def __init__(self):
@@ -89,3 +90,22 @@ class ClassificationAnalyzer(Analyzer):
         self.sample_dimension_dist(axs[0])
         self.class_dist(axs[1])
         return fig
+
+class SegmentationAnalyzer(ClassificationAnalyzer):
+    def __init__(self):
+        super().__init__()
+
+    def update_item(self, item):
+        mask = item['target']['mask']
+        width, height = item['ori_size']
+        
+        unique_ids = np.unique(mask.numpy())
+
+        for label in unique_ids:
+            self.instance_dict['id'].append(len(self.instance_dict['id'])+1)
+            self.instance_dict['image_id'].append(len(self.sample_dict['id'])+1)
+            self.instance_dict['class'].append(int(label))
+
+        self.sample_dict['id'].append(len(self.sample_dict['id'])+1)
+        self.sample_dict['width'].append(width)
+        self.sample_dict['height'].append(height)
