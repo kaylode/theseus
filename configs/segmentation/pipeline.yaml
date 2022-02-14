@@ -61,31 +61,29 @@ data:
     train:
       name: CSVDataset
       args:
-        image_dir: 
-        mask_dir:  
-        csv_path: 
-        txt_classnames: configs/classification/classes.txt
+        image_dir: /content/main/data/carvana-masking/images/train_hq
+        mask_dir:  /content/main/data/carvana-masking/images/train_masks
+        csv_path:  /content/main/data/carvana-masking/annotations/train.csv
+        txt_classnames: configs/segmentation/classes.txt
     
     val:
       name: CSVDataset
       args:
-        image_dir: 
-        mask_dir:  
-        csv_path: 
-        txt_classnames: configs/classification/classes.txt
+        image_dir: /content/main/data/carvana-masking/images/train_hq
+        mask_dir:  /content/main/data/carvana-masking/images/val_masks
+        csv_path:  /content/main/data/carvana-masking/annotations/val.csv
+        txt_classnames: configs/segmentation/classes.txt
 
   dataloader:
     train:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
         batch_size: 64
-        train: True
         drop_last: True
         shuffle: True
     val:
-      name: DataLoader
+      name: DataLoaderWithCollator
       args:
         batch_size: 64
-        train: False
         drop_last: False
         shuffle: True

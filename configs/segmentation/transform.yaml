@@ -1,32 +1,26 @@
 train:
-  name: TVCompose
+  name: AlbCompose
   args:
     transforms:
-      - name: TVResize
+      - name: AlbResize
         args:
-          size: [256, 256]
-      - name: TVRandomResizedCrop
-        args:
-          size: [224, 224]
-      - name:  TVRandAugment
-        args: 
-          num_ops: 2
-          magnitude: 9
-          num_magnitude_bins: 31
-      - name: TVToTensor
-      - name: TVNormalize
+          width: 256
+          height: 256
+      - name: AlbNormalize
         args:
           mean: [0.485, 0.456, 0.406]
           std: [0.229, 0.224, 0.225]
+      - name: AlbToTensorV2
 val:
-  name: TVCompose
+  name: AlbCompose
   args:
     transforms:
-      - name: TVResize
+      - name: AlbResize
         args:
-          size: [256, 256]
-      - name: TVToTensor
-      - name: TVNormalize
+          width: 256
+          height: 256
+      - name: AlbNormalize
         args:
           mean: [0.485, 0.456, 0.406]
           std: [0.229, 0.224, 0.225]
+      - name: AlbToTensorV2
