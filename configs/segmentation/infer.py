@@ -5,9 +5,12 @@ mpl.use("Agg")
 from theseus.opt import Opts
 
 import os
-from datetime import datetime
-from tqdm import tqdm
+import cv2
 import torch
+import numpy as np
+from PIL import Image
+from tqdm import tqdm
+from datetime import datetime
 from theseus.opt import Config
 from theseus.segmentation.models import MODEL_REGISTRY
 from theseus.segmentation.augmentations import TRANSFORM_REGISTRY
@@ -18,13 +21,10 @@ from theseus.utilities.loggers import LoggerObserver, StdoutLogger
 from theseus.utilities.cuda import get_devices_info
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
-import os
-from PIL import Image
-import pandas as pd
-from torch.utils.data import Dataset
+from theseus.utilities.visualization.visualizer import Visualizer
 
 @DATASET_REGISTRY.register()
-class TestDataset(Dataset):
+class TestDataset(torch.utils.data.Dataset):
     def __init__(self, image_dir, txt_classnames, transform=None):
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
@@ -49,8 +49,11 @@ class TestDataset(Dataset):
         im = Image.open(image_path).convert('RGB')
         width, height = im.width, im.height
 
+        im = np.array(im)
+
         if self.transform is not None: 
-            im = self.transform(im)
+            item = self.transform(image = im)
+            im = item['image']
 
         return {
             "input": im, 
@@ -109,13 +112,13 @@ class TestPipeline(object):
             opt['data']["dataloader"],
             registry=DATALOADER_REGISTRY,
             dataset=self.dataset,
-            collate_fn=self.dataset.collate_fn
         )
 
         self.model = get_instance(
-            opt["model"], 
-            registry=MODEL_REGISTRY, 
-            classnames=CLASSNAMES).to(self.device)
+          self.opt["model"], 
+          registry=MODEL_REGISTRY, 
+          classnames=CLASSNAMES,
+          num_classes=len(CLASSNAMES)).to(self.device)
 
         if self.weights:
             state_dict = torch.load(self.weights)
@@ -128,30 +131,27 @@ class TestPipeline(object):
         self.logger.text(f"Number of test sample: {len(self.dataset)}", level=LoggerObserver.INFO)
         self.logger.text(f"Everything will be saved to {self.savedir}", level=LoggerObserver.INFO)
 
+    @torch.no_grad()
     def inference(self):
         self.infocheck()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
 
-        df_dict = {
-            'filename': [],
-            'label': [],
-            'score': []
-        }
-        
+        visualizer = Visualizer()
+        self.model.eval()
+
         for idx, batch in enumerate(tqdm(self.dataloader)):
             img_names = batch['img_names']
+            batch.update({'thresh': 0.5})
+
             outputs = self.model.get_prediction(batch, self.device)
-            preds = outputs['names']
-            probs = outputs['confidences']
+            preds = outputs['masks']
 
-            for (filename, pred, prob) in zip(img_names, preds, probs):
-                df_dict['filename'].append(filename)
-                df_dict['label'].append(pred)
-                df_dict['score'].append(prob)
-
-        df = pd.DataFrame(df_dict)
-        savepath = os.path.join(self.savedir, 'prediction.csv')
-        df.to_csv(savepath, index=False)
+            for (filename, pred) in zip(img_names, preds):
+                decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
+                decode_pred = (decode_pred * 255).astype(np.uint8)
+                savepath = os.path.join(self.savedir, filename)
+                cv2.imwrite(savepath,decode_pred)                   
+                self.logger.text(f"Save image at {savepath}", level=LoggerObserver.INFO)
         
 
 if __name__ == '__main__':

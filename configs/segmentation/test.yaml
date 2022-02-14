@@ -6,11 +6,10 @@ global:
   weights: null
   
 model:
-  name: BaseTimmModel
+  name: UNetWrapper
   args:
-    name: convnext_small
-    from_pretrained: False
-    num_classes: 41
+    name: unet
+    out_ch: 1
 
 data: 
   dataset:
@@ -20,7 +19,7 @@ data:
       txt_classnames: configs/sample/classes.txt
 
   dataloader:
-    name: DataLoader
+    name: DataLoaderWithCollator
     args:
       batch_size: 64
       drop_last: True
