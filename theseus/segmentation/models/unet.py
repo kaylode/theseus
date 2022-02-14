@@ -23,6 +23,7 @@ class UNetWrapper(nn.Module):
     ):
         super().__init__()
         self.name = name
+        self.num_classes = num_classes
         self.model = create_model(name, out_ch=num_classes)
 
     def get_model(self):
@@ -34,9 +35,18 @@ class UNetWrapper(nn.Module):
 
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         inputs = adict['inputs'].to(device)
+        thresh = adict['thresh']
         outputs = self.model(inputs)
 
-        return {        }
+        if self.num_classes == 1:
+            predicts = (outputs > thresh).float()
+        else:
+            predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
+
+        predicts = predicts.detach().cpu().numpy()
+        return {
+            'masks': predicts
+        }
 
 class conv_block(nn.Module):
     """
