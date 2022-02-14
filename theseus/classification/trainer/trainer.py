@@ -73,13 +73,13 @@ class ClassificationTrainer(SupervisedTrainer):
         """
 
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
-        denom = Denormalize()
+        visualizer = Visualizer()
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
 
         batch = []
         for idx, inputs in enumerate(images):
-            img_show = denom(inputs)
+            img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
         batch = torch.stack(batch, dim=0)
@@ -105,7 +105,7 @@ class ClassificationTrainer(SupervisedTrainer):
 
         batch = []
         for idx, inputs in enumerate(images):
-            img_show = denom(inputs)
+            img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
         batch = torch.stack(batch, dim=0)
@@ -136,7 +136,6 @@ class ClassificationTrainer(SupervisedTrainer):
 
         visualizer = Visualizer()
 
-        denom = Denormalize()
         batch = next(iter(self.valloader))
         images = batch["inputs"]
         targets = batch["targets"]
@@ -152,7 +151,7 @@ class ClassificationTrainer(SupervisedTrainer):
         gradcam_batch = []
         pred_batch = []
         for idx, (input, target) in enumerate(zip(images, targets)):
-            img_show = denom(input)
+            img_show = visualizer.denormalize(input)
             visualizer.set_image(img_show)
             input = input.unsqueeze(0)
             input = input.to(self.model.device)
