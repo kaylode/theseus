@@ -16,11 +16,13 @@ class PixelAccuracy(Metric):
     def __init__(self, 
             num_classes: int, 
             thresh: Optional[float] = None, 
+            eps: float = 1e-6,
             **kwargs):
 
         self.thresh = thresh
         self.num_classes = num_classes
         self.pred_type = "multi" if num_classes > 1 else "binary"
+        self.eps = eps
 
         if self.pred_type == 'binary':
             assert thresh is not None, "Threshold should be specified for binary segmentation"
@@ -52,6 +54,7 @@ class PixelAccuracy(Metric):
         elif self.pred_type =='multi':
             predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
 
+        predicts = predicts.detach().cpu()
         one_hot_targets.scatter_(1, targets.long(), 1)
         one_hot_predicts.scatter_(1, predicts.long(), 1)
         

@@ -53,6 +53,8 @@ class DiceScore(Metric):
         elif self.pred_type =='multi':
             predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
 
+        predicts = predicts.detach().cpu()
+
         one_hot_targets.scatter_(1, targets.long(), 1)
         one_hot_predicts.scatter_(1, predicts.long(), 1)
         
