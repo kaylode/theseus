@@ -2,7 +2,7 @@ from theseus.base.losses import LOSS_REGISTRY
 
 from .ce_loss import *
 from .dice_loss import DiceLoss, BinaryDiceLoss
-from .bce_loss import *
+from .multi_loss import *
 
 LOSS_REGISTRY.register(CELoss)
 LOSS_REGISTRY.register(SmoothCELoss)

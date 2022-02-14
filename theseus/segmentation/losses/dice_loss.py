@@ -75,7 +75,7 @@ class DiceLoss(nn.Module):
 
         for i in range(target.shape[1]):
             if i != self.ignore_index:
-                dice_loss = dice(predict[:, i], target[:, i])
+                dice_loss, _ = dice(predict[:, i], {'targets': target[:, i]}, device)
                 if self.weight is not None:
                     assert self.weight.shape[0] == target.shape[1], \
                         'Expect weight shape [{}], get[{}]'.format(target.shape[1], self.weight.shape[0])
