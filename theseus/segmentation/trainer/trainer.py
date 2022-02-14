@@ -84,7 +84,7 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
 
-        fig = plt.figure(figsize=(8,8))
+        fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
@@ -113,7 +113,7 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
 
-        fig = plt.figure(figsize=(8,8))
+        fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img.permute(1, 2, 0))
@@ -159,7 +159,7 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
 
-        fig = plt.figure(figsize=(8,8))
+        fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.title('Raw image - Prediction - Ground Truth')
