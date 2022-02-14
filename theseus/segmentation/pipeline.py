@@ -87,7 +87,11 @@ class Pipeline(object):
         )
         self.model = ModelWithLoss(model, criterion, self.device)
 
-        self.metrics = get_instance_recursively(self.opt['metrics'], registry=METRIC_REGISTRY, classnames=CLASSNAMES)
+        self.metrics = get_instance_recursively(
+            self.opt['metrics'], 
+            registry=METRIC_REGISTRY, 
+            classnames=CLASSNAMES,
+            num_classes=len(CLASSNAMES))
 
         self.optimizer = get_instance(
             self.opt["optimizer"],
