@@ -1,8 +1,42 @@
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils.data
+from typing import Dict, List, Any, Optional
 import torch
+import torch.nn as nn
 
+class UNetWrapper(nn.Module):
+    """Wrapper model for UNet
+    
+    name: `str`
+        timm model name
+    num_classes: `int`
+        number of classes
+    from_pretrained: `bool` 
+        whether to use timm pretrained
+    classnames: `Optional[List]`
+        list of classnames
+    """
+
+    def __init__(
+        self,
+        name: str,
+        num_classes: int = 1000,
+        **kwargs
+    ):
+        super().__init__()
+        self.name = name
+        self.model = create_model(name, out_ch=num_classes)
+
+    def get_model(self):
+        return self.model
+
+    def forward(self, x: torch.Tensor):
+        outputs = self.model(x)
+        return outputs
+
+    def get_prediction(self, adict: Dict[str, Any], device: torch.device):
+        inputs = adict['inputs'].to(device)
+        outputs = self.model(inputs)
+
+        return {        }
 
 class conv_block(nn.Module):
     """
@@ -541,3 +575,15 @@ class NestedUNet(nn.Module):
 
         output = self.final(x0_4)
         return output
+
+
+model_dict = {
+    'unet': U_Net,
+    'r2_unet': R2U_Net,
+    'r2att_unet': R2AttU_Net,
+    'nested_unet': NestedUNet,
+}
+
+def create_model(name, **kwargs):
+    model = model_dict[name](**kwargs)
+    return model
