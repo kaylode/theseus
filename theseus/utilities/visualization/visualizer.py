@@ -207,7 +207,7 @@ class Visualizer():
         """
 
         if num_classes is None:
-            num_classes = int(np.max(segmap))
+            num_classes = int(np.max(segmap)) + 1
 
         tmp = segmap.astype(float)
         r = tmp.copy()

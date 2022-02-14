@@ -5,9 +5,8 @@ from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
-from theseus.base.augmentations.custom import Denormalize
 from theseus.utilities.visualization.visualizer import Visualizer
-
+from theseus.utilities.analysis.analyzer import Analyzer, SegmentationAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -77,9 +76,10 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = visualizer.denormalize(inputs)
-            img_cam = TFF.to_tensor(img_show)
-            mask = mask.repeat(3, 1, 1)
-            img_show = torch.hstack([img_cam, mask])
+            decode_mask = visualizer.decode_segmap(mask.numpy())
+            img_show = TFF.to_tensor(img_show)
+            decode_mask = TFF.to_tensor(decode_mask)
+            img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
@@ -105,9 +105,10 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = []
         for idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = visualizer.denormalize(inputs)
-            img_cam = TFF.to_tensor(img_show)
-            mask = mask.repeat(3, 1, 1)
-            img_show = torch.hstack([img_cam, mask])
+            decode_mask = visualizer.decode_segmap(mask.numpy())
+            img_show = TFF.to_tensor(img_show)
+            decode_mask = TFF.to_tensor(decode_mask)
+            img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
@@ -148,11 +149,12 @@ class SegmentationTrainer(SupervisedTrainer):
         batch = []
         for idx, (inputs, mask, pred) in enumerate(zip(images, masks, preds)):
             img_show = visualizer.denormalize(inputs)
+            decode_mask = visualizer.decode_segmap(mask.numpy())
+            decode_pred = visualizer.decode_segmap(pred)
             img_cam = TFF.to_tensor(img_show)
-            decode_mask = visualizer.decode_segmap(mask)
-            decode_mask = decode_mask.repeat(3, 1, 1)
-            pred = torch.LongTensor(pred).repeat(3, 1, 1)
-            img_show = torch.cat([img_cam, pred, decode_mask], dim=-1)
+            decode_mask = TFF.to_tensor(decode_mask)
+            decode_pred = TFF.to_tensor(decode_pred)
+            img_show = torch.cat([img_cam, decode_pred, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
         grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
@@ -193,7 +195,30 @@ class SegmentationTrainer(SupervisedTrainer):
         """
         Perform simple data analysis
         """
-        pass
+        LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
+        analyzer = SegmentationAnalyzer()
+        analyzer.add_dataset(self.trainloader.dataset)
+        fig = analyzer.analyze(figsize=(10,5))
+        LOGGER.log([{
+            'tag': "Sanitycheck/analysis/train",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
+
+        analyzer = SegmentationAnalyzer()
+        analyzer.add_dataset(self.valloader.dataset)
+        fig = analyzer.analyze(figsize=(10,5))
+        LOGGER.log([{
+            'tag': "Sanitycheck/analysis/val",
+            'value': fig,
+            'type': LoggerObserver.FIGURE,
+            'kwargs': {
+                'step': self.iters
+            }
+        }])
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
@@ -211,4 +236,3 @@ class SegmentationTrainer(SupervisedTrainer):
         self.analyze_gt()
         self.visualize_model()
         self.evaluate_epoch()
-        self.visualize_pred()

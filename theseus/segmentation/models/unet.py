@@ -43,7 +43,7 @@ class UNetWrapper(nn.Module):
         else:
             predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
 
-        predicts = predicts.detach().cpu().numpy()
+        predicts = predicts.detach().cpu().squeeze().numpy()
         return {
             'masks': predicts
         }
