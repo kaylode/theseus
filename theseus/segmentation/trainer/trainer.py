@@ -5,15 +5,13 @@ import matplotlib.pyplot as plt
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
 from theseus.base.augmentations.custom import Denormalize
-from theseus.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.utilities.analysis.analyzer import ClassificationAnalyzer
 
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
-class ClassificationTrainer(SupervisedTrainer):
-    """Trainer for classification tasks
+class SegmentationTrainer(SupervisedTrainer):
+    """Trainer for segmentation tasks
     
     """
     def __init__(self, **kwargs):
@@ -23,12 +21,12 @@ class ClassificationTrainer(SupervisedTrainer):
         """
         Hook function, called after metrics are calculated
         """
-        if metric_dict['bl_acc'] > self.best_value:
+        if metric_dict['dice'] > self.best_value:
             if self.iters > 0: # Have been training, else in evaluation-only mode or just sanity check
                 LOGGER.text(
-                    f"Evaluation improved from {self.best_value} to {metric_dict['bl_acc']}",
+                    f"Evaluation improved from {self.best_value} to {metric_dict['dice']}",
                     level=LoggerObserver.INFO)
-                self.best_value = metric_dict['bl_acc']
+                self.best_value = metric_dict['dice']
                 self.save_checkpoint('best')
             
             else:
@@ -122,110 +120,25 @@ class ClassificationTrainer(SupervisedTrainer):
             }
         }])
 
-
-    @torch.enable_grad() #enable grad for CAM
     def visualize_pred(self):
-        r"""Visualize model prediction and CAM
+        r"""Visualize model prediction 
         
         """
-        # Vizualize Grad Class Activation Mapping and model predictions
-        LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
+        pass
+        # Vizualize model predictions
+        # LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
-        visualizer = Visualizer()
+        # visualizer = Visualizer()
 
-        denom = Denormalize()
-        batch = next(iter(self.valloader))
-        images = batch["inputs"]
-        targets = batch["targets"]
+        # denom = Denormalize()
+        # batch = next(iter(self.valloader))
+        # images = batch["inputs"]
+        # targets = batch["targets"]
 
-        self.model.eval()
+        # self.model.eval()
 
-        model_name = self.model.model.name
-        cam = CAMWrapper.get_method(
-            name='gradcam', 
-            model=self.model.model.get_model(), 
-            model_name=model_name, use_cuda=True)
-
-        # Forward CAM batch
-        inputs = images.to(self.model.device)
-        grayscale_cams, pred_indices, scores = cam(inputs, return_probs=True)
-
-        gradcam_batch = []
-        pred_batch = []
-        for idx in range(len(images)):
-            grayscale_cam = grayscale_cams[idx, :]
-            pred = pred_indices[idx]
-            prob = scores[idx]
-            target = targets[idx].item()
-            img_show = denom(images[idx])
-            visualizer.set_image(img_show)
-
-            if self.valloader.dataset.classnames:
-                pred = self.valloader.dataset.classnames[pred]
-                target = self.valloader.dataset.classnames[target]
-   
-            if pred == target:
-                color = [0,1,0]
-            else:
-                color = [1,0,0]
-
-            visualizer.draw_label(
-                f"GT: {target}\nP: {pred}\nC: {prob:.4f}", 
-                fontColor=color, 
-                fontScale=0.8,
-                thickness=2,
-                outline=None,
-                offset=100
-            )
-            
-            img_cam = show_cam_on_image(img_show, grayscale_cam, use_rgb=True)
-
-            img_cam = TFF.to_tensor(img_cam)
-            gradcam_batch.append(img_cam)
-
-            pred_img = visualizer.get_image()
-            pred_img = TFF.to_tensor(pred_img)
-            pred_batch.append(pred_img)
-
-            if idx == 63: # limit number of images
-                break
-
-        gradcam_batch = torch.stack(gradcam_batch, dim=0)
-        pred_batch = torch.stack(pred_batch, dim=0)
-
-        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int((idx+1)/8), normalize=False)
-
-        fig = plt.figure(figsize=(8,8))
-        plt.tight_layout(pad=0)
-        plt.imshow(gradcam_grid_img.permute(1, 2, 0))
-        plt.axis("off")
-
-        LOGGER.log([{
-            'tag': "Validation/gradcam",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': self.iters
-            }
-        }])
-
-        pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
-        fig = plt.figure(figsize=(10,10))
-        plt.tight_layout(pad=0)
-        plt.imshow(pred_grid_img.permute(1, 2, 0))
-        plt.axis("off")
-
-        LOGGER.log([{
-            'tag': "Validation/prediction",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': self.iters
-            }
-        }])
-
-        # Zeroing gradients in optimizer for safety
-        self.optimizer.zero_grad()
+        # model_name = self.model.model.name
+        
 
     @torch.no_grad()
     def visualize_model(self):
@@ -247,30 +160,7 @@ class ClassificationTrainer(SupervisedTrainer):
         """
         Perform simple data analysis
         """
-        LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
-        analyzer = ClassificationAnalyzer()
-        analyzer.add_dataset(self.trainloader.dataset)
-        fig = analyzer.analyze(figsize=(10,5))
-        LOGGER.log([{
-            'tag': "Sanitycheck/analysis/train",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': self.iters
-            }
-        }])
-
-        analyzer = ClassificationAnalyzer()
-        analyzer.add_dataset(self.valloader.dataset)
-        fig = analyzer.analyze(figsize=(10,5))
-        LOGGER.log([{
-            'tag': "Sanitycheck/analysis/val",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': self.iters
-            }
-        }])
+        pass
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
