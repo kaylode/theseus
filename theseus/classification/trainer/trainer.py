@@ -146,23 +146,24 @@ class ClassificationTrainer(SupervisedTrainer):
         grad_cam = CAMWrapper.get_method(
             name='gradcam', 
             model=self.model.model.get_model(), 
-            model_name=model_name, use_cuda=True)
+            model_name=model_name, use_cuda=False)
 
+        grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
+            
         gradcam_batch = []
         pred_batch = []
-        for idx, (input, target) in enumerate(zip(images, targets)):
-            img_show = visualizer.denormalize(input)
+        for idx in range(len(grayscale_cams)):
+            image = images[idx]
+            target = targets[idx].item()
+            label = label_indices[idx]
+            grayscale_cam = grayscale_cams[idx, :]
+            score = scores[idx]
+
+            img_show = visualizer.denormalize(image)
             visualizer.set_image(img_show)
-            input = input.unsqueeze(0)
-            input = input.to(self.model.device)
-            grayscale_cams, label_indices, scores = grad_cam(input, return_probs=True)
-            
             if self.valloader.dataset.classnames is not None:
-                label = self.valloader.dataset.classnames[label_indices[0]]
-                target = self.valloader.dataset.classnames[target.item()]
-            else:
-                label = label_indices[0]
-                target = target.item()
+                label = self.valloader.dataset.classnames[label]
+                target = self.valloader.dataset.classnames[target]
 
             if label == target:
                 color = [0,1,0]
@@ -170,7 +171,7 @@ class ClassificationTrainer(SupervisedTrainer):
                 color = [1,0,0]
 
             visualizer.draw_label(
-                f"GT: {target}\nP: {label}\nC: {scores[0]:.4f}", 
+                f"GT: {target}\nP: {label}\nC: {score:.4f}", 
                 fontColor=color, 
                 fontScale=0.8,
                 thickness=2,
@@ -178,7 +179,6 @@ class ClassificationTrainer(SupervisedTrainer):
                 offset=100
             )
             
-            grayscale_cam = grayscale_cams[0, :]
             img_cam =show_cam_on_image(img_show, grayscale_cam, use_rgb=True)
 
             img_cam = TFF.to_tensor(img_cam)
