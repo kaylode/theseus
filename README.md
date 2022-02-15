@@ -1,5 +1,8 @@
 # SHREC'22 track: Pothole and crack detection on road pavement using RGB-D images 
 
+## Dataset
+
+- https://drive.google.com/drive/folders/1LFMWnjBxITs_j0cmLky_awIgcn8eroaA?usp=sharing
 
 ## Descriptions
 The aim of this SHREC'22 track is to evaluate the performance of automatic algorithms for the recognition of potholes and cracks on road surfaces. Road safety is one of the top priorities of any public administration as well as being a subject of constant public scrutiny at the local and national levels as road degradation is one of the main causes of accidents. Currently, the scheduling of inspections and maintenance is entrusted to specialized personnel who require specific training and operate expensive and bulky machinery. This proposal aims to automate the detection of road deterioration by enabling timely monitoring of large areas of road pavement through the use of the latest Deep Learning techniques. The goal is to segment and recognize images and videos, using a training set generated with RGB-D images. The track is organized by IMATI CNR .
