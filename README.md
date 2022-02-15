@@ -1,46 +1,21 @@
-# <p align="center"> :sailboat: Ship of Theseus </p>
+# SHREC'22 track: Pothole and crack detection on road pavement using RGB-D images 
 
-> The ship wherein Theseus and the youth of Athens returned from Crete had thirty oars, and was preserved by the Athenians down even to the time of Demetrius Phalereus, for they took away the old planks as they decayed, putting in new and stronger timber in their places, insomuch that this ship became a standing example among the philosophers, for the logical question of things that grow; one side holding that the ship remained the same, and the other contending that it was not the same.
-> — Plutarch, Theseus
 
--------------------------------------------------------
-<details close> <summary><strong>Dev logs</strong></summary>
- <strong><i>[14/02/2022]</i></strong> Add semantic segmentation template
- <strong><i>[10/02/2022]</i></strong> SUPER POWER NINJA TURBO NEO ULTRA HYPER MEGA MULTI ALPHA META EXTRA UBER PREFIX -REFACTOR!!!! <a href="https://github.com/kaylode/custom-template/pull/7">#7</a> <br> 
-</details>
+## Descriptions
+The aim of this SHREC'22 track is to evaluate the performance of automatic algorithms for the recognition of potholes and cracks on road surfaces. Road safety is one of the top priorities of any public administration as well as being a subject of constant public scrutiny at the local and national levels as road degradation is one of the main causes of accidents. Currently, the scheduling of inspections and maintenance is entrusted to specialized personnel who require specific training and operate expensive and bulky machinery. This proposal aims to automate the detection of road deterioration by enabling timely monitoring of large areas of road pavement through the use of the latest Deep Learning techniques. The goal is to segment and recognize images and videos, using a training set generated with RGB-D images. The track is organized by IMATI CNR .
 
-# :pencil: Instructions
+## Dataset, ground truth and evaluation
+Participants have at their disposal about 4k pairs of images (made of RGB+segmentation masks), taken from public, high quality datasets. In addition to these images, we provide RGB-D video clips from which participants can extract additional images to enrich the dataset. The disparity map of these videos is noisy and needs denoising before it can become a true segmentation mask. So (as often happens in real ML problems) training skills are not the only ones to determine ultimate success. The final aim of the task is to train neural network models capable of performing the semantic segmentation of road surface damage (potholes and cracks). The quality of the trained models will be evaluated both on a test set (about 500 RGB + masks pairs) held out and not shared with the participants, and on real videos captured "in the wild". The evaluation will be of two types: quantitative and qualitative, each with a 50% weight on the final evaluation score. The quantitative assessment will be based on standard metrics such as Dice multiclass and "weighted" pixel accuracy. The qualitative evaluation will be at the sole discretion of the panel of organizers of the challenge, which will evaluate (motivating them) the visual accuracy of the segmentation, its temporal stability, amount of false positives, false negatives, etc. On the off chance that two participants get the same final score (quantitative + qualitative), we will reward the network capable of inference with the highest FPS, and secondly, with the lowest memory footprint/img size. Each participant is allowed to send us up to 3 outcomes for each task.
+Registration and instructions for competitors
+Each participant is requested to register to the track by sending an email to Elia Moscoso Thompson (email: elia.moscoso@ge.imati.cnr.it) with the subject SHREC'22 track: Pothole and crack detection on road pavement using RGB-D images. Then, an answer will be sent to each participant with further instructions on how to download the models once the constest starts.
 
-### To adapt for personal project
-1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
-2. Customize inherited trainer and pipeline to your need, such as what to do before/after training/validating step,...
-3. Modify configuration file
+## Further information
 
-*See ```theseus/classification``` for example*
+To maximize the reproducibility of the experiments, participants are required to share with the organizers the trained models, the source code with which they trained the models, and a portion of standalone code that can be used to perform inference on an image or video.
+## Important dates [UPDATED - Jan 31th 2022]
 
-### To execute scripts with arguments
-- Run the script with `-c` flag with specified config file. Example:
-
-```
-python train.py -c pipeline.yaml
-```
-
-- To override arguments inside the .yaml file, use flag `-o` with key and value. For example, to train 50 epochs and resume training from checkpoints:
-
-```
-python train.py \
-    -c pipeline.yaml \
-    -o trainer.args.num_epochs=50 \
-    global.resume=checkpoint.pth
-```
-**Notice: There are no spaces between keys and values in -o flag**
-
-- Also, if you want to do inference, you need to write your own script. For example see ```configs/classification/infer.py```
-
-# :school_satchel: Resources
-- Example colab notebooks for classification tasks: [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1mZmT1B5zI1j_0w1MbP-kq8_Tbcx_tIFq?usp=sharing)
-- Example colab notebooks for semantic segmentation tasks: [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1VlR1JolMmEX2OtNLvzfnHhHAfI4lJ-Qo?usp=sharing)
-
-# :blue_book: References
-- This repo is inspired by https://github.com/vltanh/torchan <span style="color:yellow"> **Remember to give it a star** </span>.
-- The big refactor is mostly adapted from https://github.com/HCMUS-ROBOTICS/ssdf-nncore 's nncore, **which also deserves stars**.
+- February 1, 2022: a set of samples is released.
+- February 14-28, 2022: the dataset is available and the participants start to run their methods.
+- March 1, 2022: the participants submit up to 3 runs to the organizers and send to the organizers a summary of their method(s).
+- March 5, 2022: an abstract of the report is submitted to the participants.
+- March 15, 2022: submission of the track full report to the SHREC organizers.
