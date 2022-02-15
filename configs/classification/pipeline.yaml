@@ -1,0 +1,96 @@
+global:
+  debug: True
+  cfg_transform: configs/classification/transform.yaml
+  save_dir: runs
+  device: cuda:0
+  use_fp16: True
+  pretrained: null
+  resume: null
+  
+
+trainer:
+  name: ClassificationTrainer
+  args:
+    num_epochs: 100
+    total_accumulate_steps: null
+    clip_grad:  10.0
+    print_per_iter: 20
+    save_per_iter: 1000
+    evaluate_per_epoch :  1
+    visualize_when_val :  True
+
+
+model:
+  name: BaseTimmModel
+  args:
+    name: convnext_small
+    from_pretrained: True
+    num_classes: 2
+
+
+loss:
+  name: SmoothCELoss
+  args:
+    smoothing: 0.1
+
+metrics:
+  - name: Accuracy
+    args:
+  - name: BalancedAccuracyMetric
+    args: 
+  - name: F1ScoreMetric
+    args:
+      average: weighted
+  - name: ConfusionMatrix
+    args:
+  - name: ErrorCases
+    args:
+
+optimizer:
+  name: AdamW
+  args:
+    lr: 0.001               # [adam: 1e-3 | sgd: 1e-2]
+    weight_decay: 0.0005
+    betas: [0.937, 0.999]
+
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: cosine2
+    t_initial: 7
+    t_mul: 0.9
+    eta_mul: 0.9
+    eta_min: 0.000001
+
+
+data: 
+  dataset:
+    train:
+      name: ImageFolderDataset
+      args:
+        image_dir: /content/main/data/dog-vs-cats/train
+        txt_classnames: "configs/classification/classes.txt"
+        test: False
+    
+    val:
+      name: ImageFolderDataset
+      args:
+        image_dir: /content/main/data/dog-vs-cats/val
+        txt_classnames: "configs/classification/classes.txt"
+        test: True
+
+  dataloader:
+    train:
+      name: BalanceSampler
+      args:
+        batch_size: 64
+        train: True
+        drop_last: True
+        shuffle: False
+    val:
+      name: BalanceSampler
+      args:
+        batch_size: 64
+        train: False
+        drop_last: False
+        shuffle: True
