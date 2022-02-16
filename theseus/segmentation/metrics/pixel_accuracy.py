@@ -17,10 +17,12 @@ class PixelAccuracy(Metric):
             num_classes: int, 
             thresh: Optional[float] = None, 
             eps: float = 1e-6,
+            ignore_index: Optional[int] = None,
             **kwargs):
 
         self.thresh = thresh
         self.num_classes = num_classes
+        self.ignore_index = ignore_index
         self.pred_type = "multi" if num_classes > 1 else "binary"
         self.eps = eps
 
@@ -81,5 +83,10 @@ class PixelAccuracy(Metric):
         if self.pred_type == 'binary':
             scores = scores_each_class[1] # ignore background which is label 0
         else:
-            scores = sum(scores_each_class) / self.num_classes
+            if self.ignore_index is not None:
+                scores_each_class[self.ignore_index] = 0
+                scores = sum(scores_each_class) / (self.num_classes - 1)
+            else:
+                scores = sum(scores_each_class) / self.num_classes
+
         return {"pixel_acc" : scores}
