@@ -23,7 +23,7 @@ class SegmentationDataset(torch.utils.data.Dataset):
         """
         img_path, label_path = self.fns[idx]
         img = Image.open(img_path).convert('RGB')
-        mask = Image.open(label_path)
+        mask = Image.open(label_path).convert('L')
         width, height = img.width, img.height
         img = np.array(img)
         mask = np.array(mask)
@@ -32,6 +32,10 @@ class SegmentationDataset(torch.utils.data.Dataset):
             img, mask = item['image'], item['mask']
         
         target = {}
+
+        if np.max(mask) == 255:
+            mask = mask/255.0
+            
         target['mask'] = mask
 
         return {

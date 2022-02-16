@@ -13,7 +13,6 @@ from theseus.classification.trainer import TRAINER_REGISTRY
 from theseus.classification.metrics import METRIC_REGISTRY
 from theseus.classification.models import MODEL_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.loading import load_state_dict
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
 
