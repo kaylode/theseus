@@ -10,13 +10,13 @@ class BCEwithDiceLoss(nn.Module):
     """
     def __init__(self):
         super().__init__()
-        self.dice = BinaryDiceLoss()
-        self.ce = nn.BCEWithLogitsLoss()
+        self.dice = DiceLoss()
+        self.ce = CELoss()
 
     def forward(self, pred: torch.Tensor, batch: Dict[str, Any], device: torch.device):
         targets = batch['targets'].to(device)
         dice_loss, _ = self.dice(pred, batch, device)
-        ce_loss = self.ce(pred, targets)
+        ce_loss, _ = self.ce(pred, batch, device)
         total_loss = dice_loss + ce_loss
         loss_dict = {
           "DICE": dice_loss.item(),
