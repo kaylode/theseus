@@ -17,7 +17,7 @@ def get_instance_recursively(config, registry: Registry, **kwargs):
     if isinstance(config, dict):
         if 'name' in config.keys():
             if registry:
-                args = get_instance_recursively(config.get('args', {}), registry)
+                args = get_instance_recursively(config.get('args', {}), registry, **kwargs)
                 if args is None:
                     return registry.get(config['name'])(**kwargs)
                 if isinstance(args, list):
