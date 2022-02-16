@@ -206,20 +206,20 @@ class Visualizer():
             rgb image, with each color represent different class
         """
 
-        if num_classes is None:
-            num_classes = int(np.max(segmap)) + 1
-
         if len(segmap.shape) == 3: # NC channel, need argmax
             segmap = np.argmax(segmap, axis=0)
+
+        if num_classes is None:
+            num_classes = int(np.max(segmap)) + 1
 
         tmp = segmap.astype(np.uint8)
         r = tmp.copy()
         g = tmp.copy()
         b = tmp.copy()
         for l in range(0, num_classes):
-            r[tmp == l] = (color_list[l][0] * 255).astype(np.uint8)
-            g[tmp == l] =(color_list[l][1] * 255).astype(np.uint8)
-            b[tmp == l] = (color_list[l][2] * 255).astype(np.uint8)
+            r[tmp == l] = int(color_list[l][0] * 255)
+            g[tmp == l] = int(color_list[l][1] * 255)
+            b[tmp == l] = int(color_list[l][2] * 255)
 
         rgb = np.zeros((tmp.shape[0], tmp.shape[1], 3))
         rgb[:, :, 0] = r 

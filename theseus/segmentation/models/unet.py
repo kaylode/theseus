@@ -41,7 +41,7 @@ class UNetWrapper(nn.Module):
         if self.num_classes == 1:
             predicts = (outputs > thresh).float()
         else:
-            predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
+            predicts = torch.argmax(outputs, dim=1)
 
         predicts = predicts.detach().cpu().squeeze().numpy()
         return {
