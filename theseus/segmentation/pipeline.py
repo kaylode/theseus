@@ -13,7 +13,6 @@ from theseus.segmentation.trainer import TRAINER_REGISTRY
 from theseus.segmentation.metrics import METRIC_REGISTRY
 from theseus.segmentation.models import MODEL_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.loading import load_state_dict
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
 
@@ -55,13 +54,13 @@ class Pipeline(object):
             self.transform_cfg, registry=TRANSFORM_REGISTRY
         )
 
-        self.train_dataset = get_instance(
+        self.train_dataset = get_instance_recursively(
             opt['data']["dataset"]['train'],
             registry=DATASET_REGISTRY,
             transform=self.transform['train'],
         )
 
-        self.val_dataset = get_instance(
+        self.val_dataset = get_instance_recursively(
             opt['data']["dataset"]['val'],
             registry=DATASET_REGISTRY,
             transform=self.transform['val'],
