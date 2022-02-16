@@ -78,7 +78,7 @@ class SegmentationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             decode_mask = visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
+            decode_mask = TFF.to_tensor(decode_mask)/255.0
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
@@ -107,7 +107,7 @@ class SegmentationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             decode_mask = visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
+            decode_mask = TFF.to_tensor(decode_mask)/255.0
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
@@ -152,8 +152,8 @@ class SegmentationTrainer(SupervisedTrainer):
             decode_mask = visualizer.decode_segmap(mask.numpy())
             decode_pred = visualizer.decode_segmap(pred)
             img_cam = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
-            decode_pred = TFF.to_tensor(decode_pred)
+            decode_mask = TFF.to_tensor(decode_mask)/255.0
+            decode_pred = TFF.to_tensor(decode_pred)/255.0
             img_show = torch.cat([img_cam, decode_pred, decode_mask], dim=-1)
             batch.append(img_show)
         batch = torch.stack(batch, dim=0)
