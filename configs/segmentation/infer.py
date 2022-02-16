@@ -148,7 +148,6 @@ class TestPipeline(object):
 
             for (filename, pred) in zip(img_names, preds):
                 decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
-                decode_pred = (decode_pred * 255).astype(np.uint8)
                 savepath = os.path.join(self.savedir, filename)
                 cv2.imwrite(savepath,decode_pred)                   
                 self.logger.text(f"Save image at {savepath}", level=LoggerObserver.INFO)
