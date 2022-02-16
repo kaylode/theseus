@@ -217,9 +217,9 @@ class Visualizer():
         g = tmp.copy()
         b = tmp.copy()
         for l in range(0, num_classes):
-            r[tmp == l] = int(color_list[l][0] * 255)
+            b[tmp == l] = int(color_list[l][0] * 255)
             g[tmp == l] = int(color_list[l][1] * 255)
-            b[tmp == l] = int(color_list[l][2] * 255)
+            r[tmp == l] = int(color_list[l][2] * 255)
 
         rgb = np.zeros((tmp.shape[0], tmp.shape[1], 3))
         rgb[:, :, 0] = r 
