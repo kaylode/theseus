@@ -1,6 +1,9 @@
 from typing import Dict, List, Optional
 import os
+import torch
+import numpy as np
 import pandas as pd
+from PIL import Image
 from .dataset import SegmentationDataset
 
 class CSVDataset(SegmentationDataset):
@@ -54,3 +57,20 @@ class CSVDataset(SegmentationDataset):
             image_path = os.path.join(self.image_dir,img_name)
             mask_path = os.path.join(self.mask_dir, mask_name)
             self.fns.append([image_path, mask_path])
+
+    def _load_mask(self, label_path):
+        mask = Image.open(label_path).convert('RGB')
+        mask = np.array(mask)[:,:,::-1] # (H,W,3)
+        mask = np.argmax(mask, axis=-1)  # (H,W) with each pixel value represent one class
+
+        return mask 
+
+    def _encode_masks(self, masks):
+        """
+        Input masks from _load_mask(), but in shape [B, H, W]
+        Output should be one-hot encoding of segmentation masks [B, NC, H, W]
+        """
+        
+        one_hot = torch.nn.functional.one_hot(masks.long(), num_classes=self.num_classes) # (B,H,W,NC)
+        one_hot = one_hot.permute(0, 3, 1, 2) # (B,NC,H,W)
+        return one_hot.float()
