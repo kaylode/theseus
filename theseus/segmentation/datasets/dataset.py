@@ -27,14 +27,15 @@ class SegmentationDataset(torch.utils.data.Dataset):
         width, height = img.width, img.height
         img = np.array(img)
         mask = np.array(mask)
+        if np.max(mask) == 255:
+            mask = mask/255.0
+            
         if self.transform is not None:
             item = self.transform(image = img, mask = mask)
             img, mask = item['image'], item['mask']
         
         target = {}
 
-        if np.max(mask) == 255:
-            mask = mask/255.0
             
         target['mask'] = mask
 
