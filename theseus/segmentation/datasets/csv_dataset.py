@@ -5,6 +5,10 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from .dataset import SegmentationDataset
+from theseus.utilities.loggers.observer import LoggerObserver
+
+LOGGER = LoggerObserver.getLogger('main')
+
 
 class CSVDataset(SegmentationDataset):
     r"""CSVDataset multi-labels segmentation dataset
@@ -36,6 +40,7 @@ class CSVDataset(SegmentationDataset):
         self.csv_path = csv_path
         self.transform = transform
         self.txt_classnames = txt_classnames
+        self.classes_dist = []
         self._load_data()
 
     def _load_data(self):
@@ -57,6 +62,17 @@ class CSVDataset(SegmentationDataset):
             image_path = os.path.join(self.image_dir,img_name)
             mask_path = os.path.join(self.mask_dir, mask_name)
             self.fns.append([image_path, mask_path])
+
+    def _calculate_classes_dist(self):
+        LOGGER.text("Calculating class distribution...", LoggerObserver.DEBUG)
+        for _, mask_path in self.fns:
+            mask = self._load_mask(mask_path)
+            unique_ids = np.unique(mask).tolist()
+
+            # A hack, because classes distribute fewer for higher index
+            label = max(unique_ids)
+            self.classes_dist.append(label)
+
 
     def _load_mask(self, label_path):
         mask = Image.open(label_path).convert('RGB')
