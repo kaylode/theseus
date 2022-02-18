@@ -22,8 +22,14 @@ model:
     name: unet
     out_ch: 3
 loss:
-  name: CELoss
-  args: {}
+  name: MultiLoss
+  args:
+    weights: null
+    losses:
+      - name: CELoss
+        args: {}
+      - name: DiceLoss
+        args: {}
 metrics:
 - name: PixelAccuracy
   args:
