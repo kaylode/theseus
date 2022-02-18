@@ -1,25 +1,27 @@
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 import torch
 import torch.nn as nn
-from .dice_loss import DiceLoss, BinaryDiceLoss
-from .ce_loss import CELoss
 
-class BCEwithDiceLoss(nn.Module):
-    """Binary Cross-entropy loss merged with dice loss
+class MultiLoss(nn.Module):
+    """Wrapper class for combining multiple loss function 
     
     """
-    def __init__(self):
+    def __init__(self, losses: Iterable[nn.Module], weights=None, **kwargs):
         super().__init__()
-        self.dice = DiceLoss()
-        self.ce = CELoss()
+        self.losses = losses
+        self.weights = [1.0 for _ in range(len(losses))] if weights is None else weights
 
     def forward(self, pred: torch.Tensor, batch: Dict[str, Any], device: torch.device):
-        targets = batch['targets'].to(device)
-        dice_loss, _ = self.dice(pred, batch, device)
-        ce_loss, _ = self.ce(pred, batch, device)
-        total_loss = dice_loss + ce_loss
-        loss_dict = {
-          "DICE": dice_loss.item(),
-          "CE": ce_loss.item(),
-          "L": total_loss.item()}
-        return total_loss, loss_dict
+        """
+        Forward inputs and targets through multiple losses
+        """
+        total_loss = 0
+        total_loss_dict = {}
+
+        for weight, loss_fn in zip(self.weights, self.losses):
+          loss, loss_dict = loss_fn(pred, batch, device)
+          total_loss += (weight*loss)
+          total_loss_dict.update(loss_dict)
+
+        total_loss_dict.update({'Total': total_loss.item()})
+        return total_loss, total_loss_dict

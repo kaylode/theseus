@@ -44,7 +44,7 @@ class BinaryDiceLoss(nn.Module):
         elif self.reduction == 'sum':
             loss = loss.sum()
         
-        loss_dict = {"L": loss.item()}
+        loss_dict = {"DICE": loss.item()}
         return loss, loss_dict
 
 
@@ -61,7 +61,6 @@ class DiceLoss(nn.Module):
     """
     def __init__(self, weight=None, ignore_index=None, **kwargs):
         super(DiceLoss, self).__init__()
-        self.kwargs = kwargs
         self.weight = weight
         self.ignore_index = ignore_index
 
@@ -69,7 +68,7 @@ class DiceLoss(nn.Module):
         target = batch["targets"].to(device)
 
         assert predict.shape == target.shape, 'predict & target shape do not match'
-        dice = BinaryDiceLoss(**self.kwargs)
+        dice = BinaryDiceLoss()
         total_loss = 0
         predict = F.softmax(predict, dim=1)
 
@@ -84,5 +83,5 @@ class DiceLoss(nn.Module):
 
         loss = total_loss/target.shape[1]
 
-        loss_dict = {"L": loss.item()}
+        loss_dict = {"DICE": loss.item()}
         return loss, loss_dict

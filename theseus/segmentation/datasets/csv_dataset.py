@@ -40,7 +40,6 @@ class CSVDataset(SegmentationDataset):
         self.csv_path = csv_path
         self.transform = transform
         self.txt_classnames = txt_classnames
-        self.classes_dist = []
         self._load_data()
 
     def _load_data(self):
@@ -65,6 +64,7 @@ class CSVDataset(SegmentationDataset):
 
     def _calculate_classes_dist(self):
         LOGGER.text("Calculating class distribution...", LoggerObserver.DEBUG)
+        self.classes_dist = []
         for _, mask_path in self.fns:
             mask = self._load_mask(mask_path)
             unique_ids = np.unique(mask).tolist()
@@ -72,6 +72,7 @@ class CSVDataset(SegmentationDataset):
             # A hack, because classes distribute fewer for higher index
             label = max(unique_ids)
             self.classes_dist.append(label)
+        return self.classes_dist
 
 
     def _load_mask(self, label_path):

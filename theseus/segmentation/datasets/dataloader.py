@@ -24,26 +24,24 @@ class BalanceSampler(torch.utils.data.DataLoader):
         number of samples in one batch
     train: `bool`
         whether the dataloader is used for training or test
+
+    **Note**:   the dataset must have `_calculate_classes_dist()` method 
+                that return `classes_dist` 
     """
     def __init__(self, 
         dataset: torch.utils.data.Dataset, 
         batch_size: int, 
-        train: bool = True, 
         **kwargs):
 
-        assert hasattr(dataset, 'classes_dist'), 'Dataset must define classes distribution'
         if hasattr(dataset, 'collate_fn'):
             collate_fn = dataset.collate_fn
         else:
             collate_fn = None
 
-        # Only balancing for training dataloader    
-        if train:
-            dataset._calculate_classes_dist()
-            labels = torch.LongTensor(dataset.classes_dist).unsqueeze(1)
-            sampler = class_imbalance_sampler(labels)
-        else:
-            sampler = None
+        classes_dist = dataset._calculate_classes_dist()
+        labels = torch.LongTensor(classes_dist).unsqueeze(1)
+        sampler = class_imbalance_sampler(labels)
+        
             
         super(BalanceSampler, self).__init__(
             dataset,
