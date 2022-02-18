@@ -24,6 +24,9 @@ class BalanceSampler(torch.utils.data.DataLoader):
         number of samples in one batch
     train: `bool`
         whether the dataloader is used for training or test
+
+    **Note**:   the dataset must have `_calculate_classes_dist()` method 
+                that return `classes_dist` 
     """
     def __init__(self, 
         dataset: torch.utils.data.Dataset, 
@@ -39,8 +42,8 @@ class BalanceSampler(torch.utils.data.DataLoader):
 
         # Only balancing for training dataloader    
         if train:
-            dataset._calculate_classes_dist()
-            labels = torch.LongTensor(dataset.classes_dist).unsqueeze(1)
+            classes_dist = dataset._calculate_classes_dist()
+            labels = torch.LongTensor(classes_dist).unsqueeze(1)
             sampler = class_imbalance_sampler(labels)
         else:
             sampler = None
