@@ -9,7 +9,7 @@ class MultiLoss(nn.Module):
     def __init__(self, losses: Iterable[nn.Module], weights=None, **kwargs):
         super().__init__()
         self.losses = losses
-        self.weights = [1.0 for _ in range(len(losses))] if self.weights is None else weights
+        self.weights = [1.0 for _ in range(len(losses))] if weights is None else weights
 
     def forward(self, pred: torch.Tensor, batch: Dict[str, Any], device: torch.device):
         """
