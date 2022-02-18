@@ -187,7 +187,7 @@ class Visualizer():
         """
 
         if nrow is None:
-            nrow = int(np.ceil(np.sqrt(nrow)))
+            nrow = int(np.ceil(np.sqrt(len(batch))))
 
         batch = torch.stack(batch, dim=0) # (N, C, H, W)
         grid_img = torchvision.utils.make_grid(batch, nrow=nrow, normalize=normalize)
@@ -239,6 +239,6 @@ class Visualizer():
 
         segmap = segmap.astype(np.uint8)
         rgb = Image.fromarray(segmap, 'P')
-        rgb.putpalette(np.array(palette, dtype=np.uint8))
+        rgb.putpalette(palette)
 
         return np.array(rgb.convert('RGB'))
