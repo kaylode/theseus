@@ -85,16 +85,16 @@ class SegmentationTrainer(SupervisedTrainer):
         grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img)
 
         # segmentation color legends 
-        classes = self.valloader.dataset
+        classes = self.valloader.dataset.classnames
         patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
                                 label=classes[i]) for i in range(len(classes))]
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
                 fontsize='large')
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
             'tag': "Sanitycheck/batch/train",
@@ -121,11 +121,11 @@ class SegmentationTrainer(SupervisedTrainer):
         grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img)
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
                 fontsize='large')
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
@@ -169,17 +169,17 @@ class SegmentationTrainer(SupervisedTrainer):
         grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
         plt.title('Raw image - Prediction - Ground Truth')
         plt.imshow(grid_img)
 
         # segmentation color legends 
-        classes = self.valloader.dataset
+        classes = self.valloader.dataset.classnames
         patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
                                 label=classes[i]) for i in range(len(classes))]
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
                 fontsize='large')
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
             'tag': "Validation/prediction",
