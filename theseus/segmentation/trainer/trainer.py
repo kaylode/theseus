@@ -1,9 +1,12 @@
 import torch
+import numpy as np
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.visualization.visualizer import Visualizer
+from theseus.utilities.visualization.colors import color_list
 from theseus.utilities.analysis.analyzer import SegmentationAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
@@ -85,6 +88,14 @@ class SegmentationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img)
+
+        # segmentation color legends 
+        classes = self.valloader.dataset
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=classes[i]) for i in range(len(classes))]
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+                fontsize='large')
+
         LOGGER.log([{
             'tag': "Sanitycheck/batch/train",
             'value': fig,
@@ -113,6 +124,9 @@ class SegmentationTrainer(SupervisedTrainer):
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.imshow(grid_img)
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+                fontsize='large')
+
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
             'value': fig,
@@ -159,6 +173,13 @@ class SegmentationTrainer(SupervisedTrainer):
         plt.axis('off')
         plt.title('Raw image - Prediction - Ground Truth')
         plt.imshow(grid_img)
+
+        # segmentation color legends 
+        classes = self.valloader.dataset
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=classes[i]) for i in range(len(classes))]
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., 
+                fontsize='large')
 
         LOGGER.log([{
             'tag': "Validation/prediction",
