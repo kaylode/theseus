@@ -1,12 +1,10 @@
 import torch
-import torchvision
-import numpy as np
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.utilities.analysis.analyzer import Analyzer, SegmentationAnalyzer
+from theseus.utilities.analysis.analyzer import SegmentationAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -81,13 +79,12 @@ class SegmentationTrainer(SupervisedTrainer):
             decode_mask = TFF.to_tensor(decode_mask)/255.0
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
         LOGGER.log([{
             'tag': "Sanitycheck/batch/train",
             'value': fig,
@@ -110,13 +107,12 @@ class SegmentationTrainer(SupervisedTrainer):
             decode_mask = TFF.to_tensor(decode_mask)/255.0
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
             'value': fig,
@@ -156,14 +152,13 @@ class SegmentationTrainer(SupervisedTrainer):
             decode_pred = TFF.to_tensor(decode_pred)/255.0
             img_show = torch.cat([img_cam, decode_pred, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
         plt.tight_layout(pad=0)
         plt.axis('off')
         plt.title('Raw image - Prediction - Ground Truth')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
 
         LOGGER.log([{
             'tag': "Validation/prediction",
