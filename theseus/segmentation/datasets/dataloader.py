@@ -31,22 +31,17 @@ class BalanceSampler(torch.utils.data.DataLoader):
     def __init__(self, 
         dataset: torch.utils.data.Dataset, 
         batch_size: int, 
-        train: bool = True, 
         **kwargs):
 
-        assert hasattr(dataset, 'classes_dist'), 'Dataset must define classes distribution'
         if hasattr(dataset, 'collate_fn'):
             collate_fn = dataset.collate_fn
         else:
             collate_fn = None
 
-        # Only balancing for training dataloader    
-        if train:
-            classes_dist = dataset._calculate_classes_dist()
-            labels = torch.LongTensor(classes_dist).unsqueeze(1)
-            sampler = class_imbalance_sampler(labels)
-        else:
-            sampler = None
+        classes_dist = dataset._calculate_classes_dist()
+        labels = torch.LongTensor(classes_dist).unsqueeze(1)
+        sampler = class_imbalance_sampler(labels)
+        
             
         super(BalanceSampler, self).__init__(
             dataset,
