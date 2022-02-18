@@ -1,51 +1,46 @@
 global:
-  debug: True
+  debug: true
   cfg_transform: configs/segmentation/transform.yaml
-  save_dir: runs
+  save_dir: /content/main/runs
   device: cuda:0
-  use_fp16: True
+  use_fp16: true
   pretrained: null
   resume: null
-  
-
 trainer:
   name: SegmentationTrainer
   args:
-    num_epochs: 100
+    num_epochs: 50
     total_accumulate_steps: null
-    clip_grad:  10.0
+    clip_grad: 10.0
     print_per_iter: 20
     save_per_iter: 1000
-    evaluate_per_epoch :  1
-    visualize_when_val :  True
-
-
+    evaluate_per_epoch: 1
+    visualize_when_val: true
 model:
   name: UNetWrapper
   args:
     name: unet
-    out_ch: 1
-
-
+    out_ch: 3
 loss:
-  name: BCEwithDiceLoss
-  args:
-
+  name: CELoss
+  args: {}
 metrics:
-  - name: PixelAccuracy
-    args:
-      thresh: 0.5
-  - name: DiceScore
-    args: 
-      thresh: 0.5
-
+- name: PixelAccuracy
+  args:
+    ignore_index: 0
+    thresh: 0.5
+- name: DiceScore
+  args:
+    ignore_index: 0
+    thresh: 0.5
 optimizer:
   name: AdamW
   args:
-    lr: 0.001               # [adam: 1e-3 | sgd: 1e-2]
+    lr: 0.001
     weight_decay: 0.0005
-    betas: [0.937, 0.999]
-
+    betas:
+    - 0.937
+    - 0.999
 scheduler:
   name: SchedulerWrapper
   args:
@@ -53,37 +48,34 @@ scheduler:
     t_initial: 7
     t_mul: 0.9
     eta_mul: 0.9
-    eta_min: 0.000001
-
-
-data: 
+    eta_min: 1.0e-06
+data:
   dataset:
     train:
       name: CSVDataset
       args:
-        image_dir: /content/main/data/carvana-masking/images/train_hq
-        mask_dir:  /content/main/data/carvana-masking/images/train_masks
-        csv_path:  /content/main/data/carvana-masking/annotations/train.csv
+        image_dir: /content/main/data/shrec22-pothole/pothole-mix/training
+        mask_dir: /content/main/data/shrec22-pothole/pothole-mix/training
+        csv_path: /content/main/data/train.csv
         txt_classnames: configs/segmentation/classes.txt
-    
+
     val:
       name: CSVDataset
       args:
-        image_dir: /content/main/data/carvana-masking/images/train_hq
-        mask_dir:  /content/main/data/carvana-masking/images/val_masks
-        csv_path:  /content/main/data/carvana-masking/annotations/val.csv
+        image_dir: /content/main/data/shrec22-pothole/pothole-mix/validation
+        mask_dir: /content/main/data/shrec22-pothole/pothole-mix/validation
+        csv_path: /content/main/data/val.csv
         txt_classnames: configs/segmentation/classes.txt
-
   dataloader:
     train:
-      name: DataLoaderWithCollator
+      name: BalanceSampler
       args:
-        batch_size: 64
-        drop_last: True
-        shuffle: True
+        batch_size: 8
+        drop_last: false
+        shuffle: false
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 64
-        drop_last: False
-        shuffle: True
+        batch_size: 8
+        drop_last: false
+        shuffle: true
