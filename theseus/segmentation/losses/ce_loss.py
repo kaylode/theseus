@@ -5,13 +5,25 @@ from torch import nn
 class CELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, weight=None, ignore_index=None, **kwargs):
         super(CELoss, self).__init__()
+        self.weight = weight
+        if self.weight is not None:
+            self.weight = torch.FloatTensor(self.weight)
+        self.ignore_index = ignore_index
 
     def forward(self, pred, batch, device):
         target = batch["targets"].to(device)
 
-        loss = nn.functional.cross_entropy(pred, target)
+        if self.weight is not None:
+            self.weight = self.weight.to(device)
+
+        if self.ignore_index is not None:
+            target = torch.argmax(target, dim=1)
+            loss = nn.functional.cross_entropy(pred, target, weight=self.weight, ignore_index=self.ignore_index)
+        else:
+            loss = nn.functional.cross_entropy(pred, target, weight=self.weight)
+            
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
 

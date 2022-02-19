@@ -20,7 +20,6 @@ model:
   name: UNetWrapper
   args:
     name: unet
-    out_ch: 3
 loss:
   name: MultiLoss
   args:
@@ -34,11 +33,9 @@ metrics:
 - name: PixelAccuracy
   args:
     ignore_index: 0
-    thresh: 0.5
 - name: DiceScore
   args:
     ignore_index: 0
-    thresh: 0.5
 optimizer:
   name: AdamW
   args:
@@ -58,13 +55,14 @@ scheduler:
 data:
   dataset:
     train:
-      name: CSVDataset
+      name: CSVDatasetWithMosaic
       args:
         image_dir: /content/main/data/shrec22-pothole/pothole-mix/training
         mask_dir: /content/main/data/shrec22-pothole/pothole-mix/training
         csv_path: /content/main/data/train.csv
         txt_classnames: configs/segmentation/classes.txt
-
+        mosaic_size: 960 
+        mosaic_prob: 0.4
     val:
       name: CSVDataset
       args:
@@ -74,11 +72,11 @@ data:
         txt_classnames: configs/segmentation/classes.txt
   dataloader:
     train:
-      name: BalanceSampler
+      name: DataLoaderWithCollator
       args:
         batch_size: 8
         drop_last: false
-        shuffle: false
+        shuffle: true
     val:
       name: DataLoaderWithCollator
       args:

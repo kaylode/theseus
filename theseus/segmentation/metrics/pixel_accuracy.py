@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from theseus.base.metrics.metric_template import Metric
 
 class PixelAccuracy(Metric):
-    """Accuracy for each pixel comparision
+    """Accuracy for each pixel comparision, return Average Precision and Recall
     
     num_classes: `int` 
         number of classes
@@ -60,30 +60,45 @@ class PixelAccuracy(Metric):
         for cl in range(self.num_classes):
             cl_pred = one_hot_predicts[:,cl,:,:]
             cl_target = targets[:,cl,:,:]
-            score = self.binary_compute(cl_pred, cl_target)
-            self.scores_list[cl] += sum(score)
+            p, r = self.binary_compute(cl_pred, cl_target)
+            self.precisions[cl] += p
+            self.recalls[cl] += r
 
     def binary_compute(self, predict: torch.Tensor, target: torch.Tensor):
-        # predict: (batch, 1, W, H)
-        # targets: (batch, 1, W, H)
+        # predict: (batch, W, H)
+        # targets: (batch, W, H)
 
-        correct = (predict == target).sum((-2,-1))
-        total = target.shape[-1] * target.shape[-2]
-        return (correct + self.eps) *1.0 / (total +self.eps)
+        tp = torch.logical_and(predict, target).sum((-2,-1))
+        fp = predict.sum((-2,-1)) - tp
+        fn = target.sum((-2,-1)) - tp
+
+        precision = tp * 1.0 / (tp + fp + self.eps) 
+        recall = tp * 1.0 / (tp + fn + self.eps)
+
+        return sum(precision), sum(recall) # sum over batch
         
     def reset(self):
-        self.scores_list = np.zeros(self.num_classes)
+        self.precisions = np.zeros(self.num_classes)
+        self.recalls = np.zeros(self.num_classes)
         self.sample_size = 0
 
     def value(self):
-        scores_each_class = self.scores_list / self.sample_size #mean over number of samples
+        precision_each_class = self.precisions / self.sample_size #mean over number of samples
+        recall_each_class = self.recalls / self.sample_size #mean over number of samples
+
+        # Mean over classes
         if self.pred_type == 'binary':
-            scores = scores_each_class[1] # ignore background which is label 0
+            precision = precision_each_class[1] # ignore background which is label 0
+            recall = recall_each_class[1] # ignore background which is label 0
         else:
             if self.ignore_index is not None:
-                scores_each_class[self.ignore_index] = 0
-                scores = sum(scores_each_class) / (self.num_classes - 1)
-            else:
-                scores = sum(scores_each_class) / self.num_classes
+                precision_each_class[self.ignore_index] = 0
+                recall_each_class[self.ignore_index] = 0
 
-        return {"pixel_acc" : scores}
+                precision = sum(precision_each_class) / (self.num_classes - 1)
+                recall = sum(recall_each_class) / (self.num_classes - 1)
+            else:
+                precision = sum(precision_each_class) / self.num_classes
+                recall = sum(recall_each_class) / self.num_classes
+
+        return {"precision" : precision, "recall": recall}
