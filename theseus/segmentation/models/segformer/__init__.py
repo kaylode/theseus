@@ -12,7 +12,7 @@ https://github.com/sithu31296/semantic-segmentation/blob/main/semseg/models/segf
 """
 
 class SegFormer(nn.Module):
-    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19) -> None:
+    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19, **kwargs) -> None:
         super().__init__()
         self.num_classes = num_classes
         backbone_name, variant = backbone.split('-')

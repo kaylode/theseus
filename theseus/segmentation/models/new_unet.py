@@ -15,6 +15,7 @@ class BaseSegModel(nn.Module):
         num_classes: int = 1000,
         aux_params: Dict = None,
         **kwargs):
+        super().__init__()
 
         self.num_classes = num_classes
         self.model = smp.create_model(
