@@ -8,6 +8,8 @@ class CELoss(nn.Module):
     def __init__(self, weight=None, ignore_index=None, **kwargs):
         super(CELoss, self).__init__()
         self.weight = weight
+        if self.weight is not None:
+            self.weight = torch.FloatTensor(self.weight)
         self.ignore_index = ignore_index
 
     def forward(self, pred, batch, device):

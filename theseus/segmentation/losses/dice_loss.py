@@ -14,8 +14,8 @@ class DiceLoss(nn.Module):
         inputs = F.softmax(predict, dim=1)       
         
         #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
+        inputs = inputs.contiguous().view(-1)
+        targets = targets.contiguous().view(-1)
         
         intersection = (inputs * targets).sum()                            
         dice = (2.*intersection + self.eps)/(inputs.sum() + targets.sum() + self.eps)  
