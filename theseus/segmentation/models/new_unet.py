@@ -22,6 +22,7 @@ class BaseSegModel(nn.Module):
             arch = name,
             encoder_name = encoder_name,
             in_channels = 3,
+            weights = "imagenet",
             classes = num_classes, 
             aux_params = aux_params)
 
