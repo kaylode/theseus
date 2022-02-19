@@ -9,3 +9,4 @@ omegaconf
 pycocotools
 gdown==3.13.0
 grad-cam
+segmentation-models-pytorch
