@@ -68,9 +68,9 @@ class PixelAccuracy(Metric):
         # predict: (batch, W, H)
         # targets: (batch, W, H)
 
-        tp = torch.sum(target*predict, dim=(2, 3))
-        fn = torch.sum(target*(1-predict), dim=(2, 3))
-        fp = torch.sum((1-target)*predict, dim=(2, 3))
+        tp = torch.sum(target*predict, dim=(-1, -2))
+        fn = torch.sum(target*(1-predict), dim=(-1, -2))
+        fp = torch.sum((1-target)*predict, dim=(-1, -2))
 
         precision = tp * 1.0 / (tp + fp + self.eps) 
         recall = tp * 1.0 / (tp + fn + self.eps)
