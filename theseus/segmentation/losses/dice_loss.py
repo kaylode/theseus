@@ -22,6 +22,7 @@ class DiceLoss(nn.Module):
         dice_score = torch.sum(1 - dice_score, dim=-1)
 
         loss = dice_score / labels.shape[1]
-
+        loss = loss.mean()
+        
         loss_dict = {"DICE": loss.item()}
         return loss, loss_dict
