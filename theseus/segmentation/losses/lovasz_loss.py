@@ -78,4 +78,7 @@ class LovaszSoftmax(nn.Module):
         batch_size = predict.shape[0]
         for prb, lbl in zip(probas, targets):
             total_loss += lovasz_softmax_flat(prb, lbl, self.ignore_index, self.only_present)
-        return total_loss / batch_size
+        loss = total_loss / batch_size
+
+        loss_dict = {"LOVASZ": loss.item()}
+        return loss, loss_dict
