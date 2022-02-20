@@ -7,7 +7,7 @@ ensemble-boxes
 timm
 omegaconf
 pycocotools
-gdown
+gdown==4.3.0
 grad-cam
 tabulate
 segmentation-models-pytorch
