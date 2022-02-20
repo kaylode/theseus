@@ -1,5 +1,6 @@
 import torch
 from theseus.utilities.download import download_from_drive
+from theseus.utilities.loading import load_state_dict
 
 pretrained_urls = {
     'MiT-B1': "18PN_P3ajcJi_5Q2v8b4BP9O4VdNCpt6m",
@@ -16,6 +17,6 @@ def load_pretrained(model, name):
             cache=True)
 
         state_dict = torch.load(filepath)
-        model.load_state_dict(state_dict)
+        model = load_state_dict(model, state_dict)
 
     return model
