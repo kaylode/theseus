@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 import torch
 from torch import nn
 
@@ -48,4 +48,37 @@ class SmoothCELoss(nn.Module):
             loss /= batch_size
 
         loss_dict = {"CE": loss.item()}
+        return loss, loss_dict
+
+class OhemCELoss(nn.Module):
+    def __init__(self, ignore_label: int = 255, weight: List = None, thresh: float = 0.7, **kwargs) -> None:
+        super().__init__()
+
+        self.weight = weight
+        if self.weight is not None:
+            self.weight = torch.FloatTensor(self.weight)
+
+        self.ignore_label = ignore_label
+        self.thresh = -torch.log(torch.tensor(thresh, dtype=torch.float))
+        self.criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=ignore_label, reduction='none')
+
+    def forward(self, pred: torch.Tensor, batch: Dict, device: torch.device) -> torch.Tensor:
+        labels = batch["targets"].to(device)
+        labels = torch.argmax(labels, dim=1) 
+
+        if self.weight is not None:
+            self.criterion.weight = self.criterion.weight.to(device)
+
+        # preds in shape [B, C, H, W] and labels in shape [B, H, W]
+        n_min = labels[labels != self.ignore_label].numel() // 16
+
+        loss = self.criterion(pred, labels).view(-1)
+        loss_hard = loss[loss > self.thresh]
+
+        if loss_hard.numel() < n_min:
+            loss_hard, _ = loss.topk(n_min)
+        
+        loss = loss_hard.mean()
+        
+        loss_dict = {"OhemCE": loss.item()}
         return loss, loss_dict
