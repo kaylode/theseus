@@ -50,7 +50,7 @@ class SmoothCELoss(nn.Module):
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
 
-class OhemCrossEntropy(nn.Module):
+class OhemCELoss(nn.Module):
     def __init__(self, ignore_label: int = 255, weight: List = None, thresh: float = 0.7, **kwargs) -> None:
         super().__init__()
 
