@@ -6,19 +6,23 @@ from torch.nn import functional as F
 from .head import SegFormerHead
 from .backbone import MiT
 from .utils import trunc_normal_
+from .download import load_pretrained
 
 """
 https://github.com/sithu31296/semantic-segmentation/blob/main/semseg/models/segformer.py
 """
 
 class SegFormer(nn.Module):
-    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19, **kwargs) -> None:
+    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19, pretrained=True, **kwargs) -> None:
         super().__init__()
         self.num_classes = num_classes
         backbone_name, variant = backbone.split('-')
         self.backbone = MiT(variant)
         self.decode_head = SegFormerHead(self.backbone.channels, 256 if 'B0' in backbone or 'B1' in backbone else 768, num_classes)
         self.apply(self._init_weights)
+
+        if pretrained:
+            load_pretrained(self, backbone)
 
     def forward(self, x: Tensor) -> Tensor:
         y = self.backbone(x)
