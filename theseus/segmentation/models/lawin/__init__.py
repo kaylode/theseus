@@ -16,7 +16,7 @@ class Lawin(nn.Module):
     Notes::::: This implementation has larger params and FLOPs than the results reported in the paper.
     Will update the code and weights if the original author releases the full code.
     """
-    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19) -> None:
+    def __init__(self, backbone: str = 'MiT-B0', num_classes: int = 19, **kwargs) -> None:
         super().__init__()
         self.num_classes = num_classes
         backbone_name, variant = backbone.split('-')
