@@ -68,15 +68,15 @@ data:
     train:
       name: ImageFolderDataset
       args:
-        image_dir: /content/main/data/dog-vs-cats/train
-        txt_classnames: "configs/classification/classes.txt"
+        image_dir: data/dog-vs-cats/train
+        txt_classnames: configs/classification/classes.txt
         test: False
     
     val:
       name: ImageFolderDataset
       args:
-        image_dir: /content/main/data/dog-vs-cats/val
-        txt_classnames: "configs/classification/classes.txt"
+        image_dir: data/dog-vs-cats/val
+        txt_classnames: configs/classification/classes.txt
         test: True
 
   dataloader:
@@ -84,13 +84,11 @@ data:
       name: BalanceSampler
       args:
         batch_size: 64
-        train: True
         drop_last: True
         shuffle: False
     val:
-      name: BalanceSampler
+      name: DataLoaderWithCollator
       args:
         batch_size: 64
-        train: False
         drop_last: False
         shuffle: True

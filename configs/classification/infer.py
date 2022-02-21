@@ -19,56 +19,8 @@ from theseus.utilities.cuda import get_devices_info
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
 import os
-from PIL import Image
 import pandas as pd
-from torch.utils.data import Dataset
 
-@DATASET_REGISTRY.register()
-class TestDataset(Dataset):
-    def __init__(self, image_dir, txt_classnames, transform=None):
-        self.image_dir = image_dir
-        self.txt_classnames = txt_classnames
-        self.transform = transform
-        self.load_data()
-
-    def load_data(self):
-
-        with open(self.txt_classnames, 'r') as f:
-            self.classnames = f.read().splitlines()
-
-        self.fns = []
-        image_names = os.listdir(self.image_dir)
-        
-        for image_name in image_names:
-            image_path = os.path.join(self.image_dir, image_name)
-            self.fns.append(image_path)
-
-    def __getitem__(self, index):
-
-        image_path = self.fns[index]
-        im = Image.open(image_path).convert('RGB')
-        width, height = im.width, im.height
-
-        if self.transform is not None: 
-            im = self.transform(im)
-
-        return {
-            "input": im, 
-            'img_name': os.path.basename(image_path),
-            'ori_size': [width, height]
-        }
-
-    def __len__(self):
-        return len(self.fns)
-
-    def collate_fn(self, batch: List):
-        imgs = torch.stack([s['input'] for s in batch])
-        img_names = [s['img_name'] for s in batch]
-
-        return {
-            'inputs': imgs,
-            'img_names': img_names
-        }
 
 class TestPipeline(object):
     def __init__(

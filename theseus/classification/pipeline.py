@@ -54,13 +54,13 @@ class Pipeline(object):
             self.transform_cfg, registry=TRANSFORM_REGISTRY
         )
 
-        self.train_dataset = get_instance(
+        self.train_dataset = get_instance_recursively(
             opt['data']["dataset"]['train'],
             registry=DATASET_REGISTRY,
             transform=self.transform['train'],
         )
 
-        self.val_dataset = get_instance(
+        self.val_dataset = get_instance_recursively(
             opt['data']["dataset"]['val'],
             registry=DATASET_REGISTRY,
             transform=self.transform['val'],
@@ -80,13 +80,20 @@ class Pipeline(object):
             dataset=self.val_dataset
         )
 
-        model = get_instance(self.opt["model"], registry=MODEL_REGISTRY, classnames=CLASSNAMES).to(self.device)
+        model = get_instance(
+            self.opt["model"], 
+            registry=MODEL_REGISTRY, 
+            classnames=CLASSNAMES).to(self.device)
+
         criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(
             self.device
         )
         self.model = ModelWithLoss(model, criterion, self.device)
 
-        self.metrics = get_instance_recursively(self.opt['metrics'], registry=METRIC_REGISTRY, classnames=CLASSNAMES)
+        self.metrics = get_instance_recursively(
+            self.opt['metrics'], 
+            registry=METRIC_REGISTRY, 
+            classnames=CLASSNAMES)
 
         self.optimizer = get_instance(
             self.opt["optimizer"],

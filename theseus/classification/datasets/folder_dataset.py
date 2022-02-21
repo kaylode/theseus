@@ -1,10 +1,13 @@
 import os
+import pandas as pd
 from typing import List, Optional
 
 from torchvision.transforms import transforms as tf
 from theseus.classification.augmentations.custom import RandomMixup, RandomCutmix
-
+from theseus.utilities.loggers.observer import LoggerObserver
 from .dataset import ClassificationDataset
+
+LOGGER = LoggerObserver.getLogger('main')
 
 class ImageFolderDataset(ClassificationDataset):
     r"""ImageFolderDataset multi-labels classification dataset
@@ -64,7 +67,6 @@ class ImageFolderDataset(ClassificationDataset):
             self.classes_idx[classname] = idx
         self.num_classes = len(self.classnames)
 
-        # Load csv
         classnames = os.listdir(self.image_dir)
         for label in classnames:
             folder_name = os.path.join(self.image_dir, label)
@@ -72,4 +74,16 @@ class ImageFolderDataset(ClassificationDataset):
             for image_name in image_names:
                 image_path = os.path.join(folder_name, image_name)
                 self.fns.append([image_path, label])
-                self.classes_dist.append(self.classes_idx[label])
+    
+    def _calculate_classes_dist(self):
+        """
+        Calculate distribution of classes
+        """
+        LOGGER.text("Calculating class distribution...", LoggerObserver.DEBUG)
+        self.classes_dist = []
+
+        classnames = os.listdir(self.image_dir)
+        for label in classnames:
+            self.classes_dist.append(self.classes_idx[label])
+
+        return self.classes_dist

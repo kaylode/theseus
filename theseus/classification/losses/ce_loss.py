@@ -13,7 +13,7 @@ class CELoss(nn.Module):
     def forward(self, pred: torch.Tensor, batch: Dict[str, Any], device: torch.device):
         target = batch["targets"].to(device)
         loss = self.criterion(pred, target.view(-1).contiguous())
-        loss_dict = {"L": loss.item()}
+        loss_dict = {"CE": loss.item()}
         return loss, loss_dict
 
 class SmoothCELoss(nn.Module):
@@ -26,5 +26,5 @@ class SmoothCELoss(nn.Module):
     def forward(self, pred, batch, device):
         target = batch["targets"].to(device)
         loss = self.criterion(pred, target.view(-1).contiguous())
-        loss_dict = {"L": loss.item()}
+        loss_dict = {"CE": loss.item()}
         return loss, loss_dict

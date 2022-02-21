@@ -35,6 +35,9 @@ class BaseTimmModel(nn.Module):
             self.model = timm.create_model(name, pretrained=from_pretrained)
 
     def get_model(self):
+        """
+        Return the full architecture of the model, for visualization
+        """
         return self.model
 
     def forward(self, x: torch.Tensor):
@@ -42,6 +45,14 @@ class BaseTimmModel(nn.Module):
         return outputs
 
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
+        """
+        Inference using the model.
+
+        adict: `Dict[str, Any]`
+            dictionary of inputs
+        device: `torch.device`
+            current device 
+        """
         inputs = adict['inputs'].to(device)
         outputs = self.model(inputs)
 
