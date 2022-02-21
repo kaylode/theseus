@@ -5,7 +5,7 @@
 
 -------------------------------------------------------
 <details close> <summary><strong>Dev logs</strong></summary>
- <strong><i>[14/02/2022]</i></strong> Add semantic segmentation template
+ <strong><i>[14/02/2022]</i></strong> Add semantic segmentation template <br> 
  <strong><i>[10/02/2022]</i></strong> SUPER POWER NINJA TURBO NEO ULTRA HYPER MEGA MULTI ALPHA META EXTRA UBER PREFIX -REFACTOR!!!! <a href="https://github.com/kaylode/custom-template/pull/7">#7</a> <br> 
 </details>
 
