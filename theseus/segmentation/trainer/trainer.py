@@ -56,7 +56,7 @@ class SegmentationTrainer(SupervisedTrainer):
         Load all information the current iteration from checkpoint 
         """
         LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
-        state_dict = torch.load(path)
+        state_dict = torch.load(path, map_location='cpu')
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
@@ -200,7 +200,7 @@ class SegmentationTrainer(SupervisedTrainer):
         images = batch["inputs"].to(self.model.device)
         LOGGER.log([{
             'tag': "Sanitycheck/analysis/architecture",
-            'value': self.model.model,
+            'value': self.model.model.get_model(),
             'type': LoggerObserver.TORCH_MODULE,
             'kwargs': {
                 'inputs': images

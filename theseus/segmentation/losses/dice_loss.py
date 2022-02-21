@@ -1,3 +1,4 @@
+from typing import Dict, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,7 +14,7 @@ class DiceLoss(nn.Module):
         super(DiceLoss, self).__init__()
         self.eps = eps
 
-    def forward(self, predict, batch, device):
+    def forward(self, predict: torch.Tensor, batch: Dict, device: torch.device):
         targets = batch["targets"].to(device)
         prediction = F.softmax(predict, dim=1)  
 

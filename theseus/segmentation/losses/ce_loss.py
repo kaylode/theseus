@@ -51,6 +51,16 @@ class SmoothCELoss(nn.Module):
         return loss, loss_dict
 
 class OhemCELoss(nn.Module):
+    """
+    Cross-entropy loss with Oline Hard Example Mining.
+
+    ignore_label: `int` 
+        ignore index
+    weight: `List` 
+        weight for each class
+    thresh: `float`
+        threshold to consider hard negative
+    """
     def __init__(self, ignore_label: int = 255, weight: List = None, thresh: float = 0.7, **kwargs) -> None:
         super().__init__()
 
