@@ -1,4 +1,4 @@
-albumentations==0.5.2
+albumentations
 pyyaml>=5.1
 webcolors
 tensorboard
@@ -7,5 +7,7 @@ ensemble-boxes
 timm
 omegaconf
 pycocotools
-gdown==3.13.0
+gdown==4.3.0
 grad-cam
+tabulate
+segmentation-models-pytorch

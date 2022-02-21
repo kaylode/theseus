@@ -16,10 +16,12 @@ class DiceScore(Metric):
             num_classes: int, 
             eps: float = 1e-6, 
             thresh: Optional[float] = None,
+            ignore_index: Optional[int] = None,
             **kwawrgs):
 
         self.thresh = thresh
         self.num_classes = num_classes
+        self.ignore_index = ignore_index
         self.pred_type = "multi" if self.num_classes > 1 else "binary"
 
         if self.pred_type == 'binary':
@@ -39,28 +41,23 @@ class DiceScore(Metric):
         # targets: (batch, num_classes, W, H)
 
         targets = batch['targets']
-
+        assert len(targets.shape) == 4, "Wrong shape for targets"
+        assert len(outputs.shape) == 4, "Wrong shape for targets"
         self.sample_size += outputs.shape[0]
-        batch_size, _ , w, h = outputs.shape
-        if len(targets.shape) == 3:
-            targets = targets.unsqueeze(1)
-      
-        one_hot_targets = torch.zeros(batch_size, self.num_classes, h, w)
-        one_hot_predicts = torch.zeros(batch_size, self.num_classes, h, w)
         
         if self.pred_type == 'binary':
             predicts = (outputs > self.thresh).float()
         elif self.pred_type =='multi':
-            predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
+            predicts = torch.argmax(outputs, dim=1)
 
         predicts = predicts.detach().cpu()
-
-        one_hot_targets.scatter_(1, targets.long(), 1)
-        one_hot_predicts.scatter_(1, predicts.long(), 1)
+        one_hot_predicts = torch.nn.functional.one_hot(
+              predicts.long(), 
+              num_classes=self.num_classes).permute(0, 3, 1, 2)
         
         for cl in range(self.num_classes):
             cl_pred = one_hot_predicts[:,cl,:,:]
-            cl_target = one_hot_targets[:,cl,:,:]
+            cl_target = targets[:,cl,:,:]
             score = self.binary_compute(cl_pred, cl_target)
             self.scores_list[cl] += sum(score)
         
@@ -82,5 +79,9 @@ class DiceScore(Metric):
         if self.pred_type == 'binary':
             scores = scores_each_class[1] # ignore background which is label 0
         else:
-            scores = sum(scores_each_class) / self.num_classes
+            if self.ignore_index is not None:
+                scores_each_class[self.ignore_index] = 0
+                scores = sum(scores_each_class) / (self.num_classes - 1)
+            else:
+                scores = sum(scores_each_class) / self.num_classes
         return {"dice" : scores}

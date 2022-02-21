@@ -9,4 +9,4 @@ def download_from_drive(id_or_url, output, md5=None, quiet=False, cache=True):
     if not cache:
         return gdown.download(url, output, quiet=quiet)
     else:
-        return gdown.cached_download(url, cached=output, md5=md5, quiet=quiet)
+        return gdown.cached_download(url, md5=md5, quiet=quiet)

@@ -23,12 +23,9 @@ class SegmentationDataset(torch.utils.data.Dataset):
         """
         img_path, label_path = self.fns[idx]
         img = Image.open(img_path).convert('RGB')
-        mask = Image.open(label_path).convert('L')
         width, height = img.width, img.height
         img = np.array(img)
-        mask = np.array(mask)
-        if np.max(mask) == 255:
-            mask = mask/255.0
+        mask = self._load_mask(label_path)
             
         if self.transform is not None:
             item = self.transform(image = img, mask = mask)
@@ -49,10 +46,12 @@ class SegmentationDataset(torch.utils.data.Dataset):
     
     def collate_fn(self, batch):
         imgs = torch.stack([i['input'] for i in batch])
-        masks = torch.stack([i['target']['mask'] for i in batch]).unsqueeze(1)
+        masks = torch.stack([i['target']['mask'] for i in batch])
+        
+        masks = self._encode_masks(masks)
         return {
             'inputs': imgs,
-            'targets': masks.float()
+            'targets': masks
         }
     
     def __len__(self) -> int:

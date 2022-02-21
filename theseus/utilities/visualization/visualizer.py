@@ -1,6 +1,7 @@
 import cv2
 import torch
 import random
+import torchvision
 import numpy as np
 from PIL import Image
 from typing import Any, List, Optional, Tuple, Union
@@ -172,6 +173,27 @@ class Visualizer():
         """
         return image.numpy().squeeze().transpose((1,2,0))
 
+    def make_grid(self, batch: List[torch.Tensor], nrow: Optional[int]=None, normalize: bool=False) -> torch.Tensor:
+        """
+        Make grid from batch of image
+            batch: `List[torch.Tensor]`
+                batch of tensor image with shape (C,H,W)
+            nrow: `Optional[int]`
+                width size of grid
+            normalize: `bool`
+                whether to normalize the grid in range [0,1]
+            return: `torch.Tensor`
+                grid image with shape [H*ncol, W*nrow, C]
+        """
+
+        if nrow is None:
+            nrow = int(np.ceil(np.sqrt(len(batch))))
+
+        batch = torch.stack(batch, dim=0) # (N, C, H, W)
+        grid_img = torchvision.utils.make_grid(batch, nrow=nrow, normalize=normalize)
+
+        return grid_img.permute(1, 2, 0)
+
     def denormalize(self, 
             image: Union[torch.Tensor, np.ndarray], 
             std: List[float] = [0.485, 0.456, 0.406],
@@ -206,20 +228,17 @@ class Visualizer():
             rgb image, with each color represent different class
         """
 
+        if len(segmap.shape) == 3: # (NC, H, W), need argmax
+            segmap = np.argmax(segmap, axis=0)
+
         if num_classes is None:
             num_classes = int(np.max(segmap)) + 1
 
-        tmp = segmap.astype(float)
-        r = tmp.copy()
-        g = tmp.copy()
-        b = tmp.copy()
-        for l in range(0, num_classes):
-            r[tmp == l] = color_list[l][0]
-            g[tmp == l] = color_list[l][1]
-            b[tmp == l] = color_list[l][2]
+        palette = np.array(color_list[:num_classes])*255 
+        palette = palette[:, ::-1].astype(np.uint8)
 
-        rgb = np.zeros((tmp.shape[0], tmp.shape[1], 3))
-        rgb[:, :, 0] = r 
-        rgb[:, :, 1] = g 
-        rgb[:, :, 2] = b 
-        return rgb
+        segmap = segmap.astype(np.uint8)
+        rgb = Image.fromarray(segmap, 'P')
+        rgb.putpalette(palette)
+
+        return np.array(rgb.convert('RGB'))

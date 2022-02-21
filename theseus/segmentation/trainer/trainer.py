@@ -1,12 +1,13 @@
 import torch
-import torchvision
 import numpy as np
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.utilities.analysis.analyzer import Analyzer, SegmentationAnalyzer
+from theseus.utilities.visualization.colors import color_list
+from theseus.utilities.analysis.analyzer import SegmentationAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -78,16 +79,23 @@ class SegmentationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             decode_mask = visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
+            decode_mask = TFF.to_tensor(decode_mask/255.0)
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
+
+        # segmentation color legends 
+        classes = self.valloader.dataset.classnames
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=classes[i]) for i in range(len(classes))]
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
+                fontsize='large')
+        plt.tight_layout(pad=0)
+
         LOGGER.log([{
             'tag': "Sanitycheck/batch/train",
             'value': fig,
@@ -107,16 +115,18 @@ class SegmentationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             decode_mask = visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
+            decode_mask = TFF.to_tensor(decode_mask/255.0)
             img_show = torch.cat([img_show, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
+                fontsize='large')
+        plt.tight_layout(pad=0)
+
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
             'value': fig,
@@ -152,18 +162,24 @@ class SegmentationTrainer(SupervisedTrainer):
             decode_mask = visualizer.decode_segmap(mask.numpy())
             decode_pred = visualizer.decode_segmap(pred)
             img_cam = TFF.to_tensor(img_show)
-            decode_mask = TFF.to_tensor(decode_mask)
-            decode_pred = TFF.to_tensor(decode_pred)
+            decode_mask = TFF.to_tensor(decode_mask/255.0)
+            decode_pred = TFF.to_tensor(decode_pred/255.0)
             img_show = torch.cat([img_cam, decode_pred, decode_mask], dim=-1)
             batch.append(img_show)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=4, normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(16,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
         plt.title('Raw image - Prediction - Ground Truth')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
+
+        # segmentation color legends 
+        classes = self.valloader.dataset.classnames
+        patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
+                                label=classes[i]) for i in range(len(classes))]
+        plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
+                fontsize='large')
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
             'tag': "Validation/prediction",
