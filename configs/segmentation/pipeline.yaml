@@ -1,7 +1,7 @@
 global:
   debug: true
   cfg_transform: configs/segmentation/transform.yaml
-  save_dir: /content/main/runs
+  save_dir: runs
   device: cuda:0
   use_fp16: true
   pretrained: null
@@ -17,9 +17,10 @@ trainer:
     evaluate_per_epoch: 1
     visualize_when_val: true
 model:
-  name: UNetWrapper
+  name: BaseSegModel
   args:
-    name: unet
+    name: unetplusplus
+    encoder_name: efficientnet-b0
 loss:
   name: MultiLoss
   args:
@@ -57,18 +58,18 @@ data:
     train:
       name: CSVDatasetWithMosaic
       args:
-        image_dir: /content/main/data/shrec22-pothole/pothole-mix/training
-        mask_dir: /content/main/data/shrec22-pothole/pothole-mix/training
-        csv_path: /content/main/data/train.csv
+        image_dir: data/images/train
+        mask_dir: data/masks/train
+        csv_path: data/train.csv
         txt_classnames: configs/segmentation/classes.txt
         mosaic_size: 960 
         mosaic_prob: 0.4
     val:
       name: CSVDataset
       args:
-        image_dir: /content/main/data/shrec22-pothole/pothole-mix/validation
-        mask_dir: /content/main/data/shrec22-pothole/pothole-mix/validation
-        csv_path: /content/main/data/val.csv
+        image_dir: data/images/val
+        mask_dir: data/masks/val
+        csv_path: data/val.csv
         txt_classnames: configs/segmentation/classes.txt
   dataloader:
     train:
