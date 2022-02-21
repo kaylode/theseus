@@ -1,7 +1,11 @@
+import io
 import os
 import glob
+import torch
 import traceback
 import pandas as pd
+from PIL import Image
+from torchvision.transforms import ToTensor
 from torch.utils.tensorboard import SummaryWriter
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
@@ -35,11 +39,14 @@ class TensorboardLogger(LoggerSubscriber):
         """
         Write a matplotlib fig to tensorboard
         :param tags: (str) tag for log
-        :param value: (image) image to log
+        :param value: (image) image to log. torch.Tensor or plt.fire.Figure
         :param step: (int) logging step
         """
 
-        self.writer.add_figure(tag, value, global_step=step)
+        if isinstance(value, torch.Tensor):
+            self.writer.add_image(tag, value, global_step=step)
+        else:
+            self.writer.add_figure(tag, value, global_step=step)
 
     def log_torch_module(self, tag, value, inputs, **kwargs):
         """
@@ -54,11 +61,17 @@ class TensorboardLogger(LoggerSubscriber):
         Load tensorboard from log
         :param old_log: (str) path to previous log
         """
-        all_log = tflog2pandas(old_log)
+        all_logs, all_figs = tflog2pandas(old_log)
 
-        for _, row in all_log.iterrows():
+        for _, row in all_logs.iterrows():
             tag, value, step = row
-            self.writer.add_scalar(tag,value,step)
+            self.log_scalar(tag,value,step)
+
+        for _, row in all_figs.iterrows():
+            tag, value, step = row
+            image_result = Image.open(io.BytesIO(value))
+            image = ToTensor()(image_result)
+            self.log_figure(tag, image, step)
 
 
 def tflog2pandas(path: str) -> pd.DataFrame:
@@ -79,11 +92,13 @@ def tflog2pandas(path: str) -> pd.DataFrame:
         "histograms": 1,
     }
     runlog_data = pd.DataFrame({"metric": [], "value": [], "step": []})
+    runfig_data = pd.DataFrame({"name": [], "value": [], "step": []})
     try:
+
+        ## Scalar values
         event_acc = EventAccumulator(path, DEFAULT_SIZE_GUIDANCE)
         event_acc.Reload()
         tags = event_acc.Tags()["scalars"]
-        # tags = event_acc.Tags()["images"]
         for tag in tags:
             event_list = event_acc.Scalars(tag)
             values = list(map(lambda x: x.value, event_list))
@@ -91,11 +106,23 @@ def tflog2pandas(path: str) -> pd.DataFrame:
             r = {"metric": [tag] * len(step), "value": values, "step": step}
             r = pd.DataFrame(r)
             runlog_data = pd.concat([runlog_data, r])
+
+        ## Image values
+        tags = event_acc.Tags()["images"]
+        for tag in tags:
+            event_list = event_acc.Images(tag)
+            values = list(map(lambda x: x.encoded_image_string, event_list))
+            step = list(map(lambda x: x.step, event_list))
+
+            r = {"name": [tag] * len(step), "value": values, "step": step}
+            r = pd.DataFrame(r)
+            runfig_data = pd.concat([runfig_data, r])
+
     # Dirty catch of DataLossError
     except Exception:
         LOGGER.text("Event file possibly corrupt: {}".format(path), level=LoggerObserver.WARN)
         traceback.print_exc()
-    return runlog_data
+    return runlog_data, runfig_data
 
 def find_old_log(weight_path):
     """
