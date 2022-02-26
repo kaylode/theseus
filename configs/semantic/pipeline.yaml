@@ -7,7 +7,7 @@ global:
   pretrained: null
   resume: null
 trainer:
-  name: SegmentationTrainer
+  name: SemanticTrainer
   args:
     num_iterations: 50000
     total_accumulate_steps: null

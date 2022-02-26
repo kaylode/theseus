@@ -5,14 +5,14 @@ import torch
 import numpy as np
 import pandas as pd
 from PIL import Image
-from .dataset import SegmentationDataset
+from .dataset import SemanticDataset
 from theseus.semantic.augmentations.mosaic import Mosaic
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 
 
-class CSVDatasetWithMosaic(SegmentationDataset):
+class CSVDatasetWithMosaic(SemanticDataset):
     r"""CSVDataset multi-labels segmentation dataset
 
     Reads in .csv file with structure below:

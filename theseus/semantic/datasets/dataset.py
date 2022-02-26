@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from PIL import Image
 
-class SegmentationDataset(torch.utils.data.Dataset):
+class SemanticDataset(torch.utils.data.Dataset):
     r"""Base dataset for segmentation tasks
     """
     def __init__(self, **kwawrgs):

@@ -7,11 +7,11 @@ from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.visualization.colors import color_list
-from theseus.utilities.analysis.analyzer import SegmentationAnalyzer
+from theseus.utilities.analysis.analyzer import SemanticAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
-class SegmentationTrainer(SupervisedTrainer):
+class SemanticTrainer(SupervisedTrainer):
     """Trainer for segmentation tasks
     
     """
@@ -210,7 +210,7 @@ class SegmentationTrainer(SupervisedTrainer):
         Perform simple data analysis
         """
         LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
-        analyzer = SegmentationAnalyzer()
+        analyzer = SemanticAnalyzer()
         analyzer.add_dataset(self.trainloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
         LOGGER.log([{
@@ -222,7 +222,7 @@ class SegmentationTrainer(SupervisedTrainer):
             }
         }])
 
-        analyzer = SegmentationAnalyzer()
+        analyzer = SemanticAnalyzer()
         analyzer.add_dataset(self.valloader.dataset)
         fig = analyzer.analyze(figsize=(10,5))
         LOGGER.log([{
