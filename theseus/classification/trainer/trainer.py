@@ -138,7 +138,7 @@ class ClassificationTrainer(SupervisedTrainer):
         grad_cam = CAMWrapper.get_method(
             name='gradcam', 
             model=self.model.model.get_model(), 
-            model_name=model_name, use_cuda=self.model.model.is_cuda)
+            model_name=model_name, use_cuda=next(self.model.parameters()).is_cuda)
 
         grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
             
