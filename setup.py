@@ -18,5 +18,7 @@ setuptools.setup(
         "omegaconf",
         "gdown==3.13.0",
         "grad-cam",
+        "tabulate",
+        "segmentation-models-pytorch"
     ],
 )
