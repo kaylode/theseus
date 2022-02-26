@@ -14,17 +14,17 @@ class BaseTrainer():
         Path to directory for saving stuffs
     use_fp16: `bool`
         whether to use 16bit floating-point precision 
-    num_epochs: `int`
+    num_iterations: `int`
         total number of running epochs
     total_accumulate_steps: `int`
         gradient accumulation step. None means not use
     clip_grad: `float`
         Gradient clipping
-    print_per_iter: `int`
+    print_interval: `int`
         Logging cycle per iteration
-    save_per_iter: `int`
+    save_interval: `int`
         Save checkpoint per iteration
-    evaluate_per_epoch: `int`
+    evaluate_interval: `int`
         Number of epochs to perform validation
     visualize_when_val: `bool`
         whether to visualize predictions
@@ -36,11 +36,11 @@ class BaseTrainer():
     def __init__(self,
                 save_dir: str = 'runs',
                 use_fp16: bool = False, 
-                num_epochs: int = 100,
+                num_iterations: int = 10000,
                 clip_grad: float = 10.0,
-                print_per_iter: int = 100,
-                save_per_iter: int = 100,
-                evaluate_per_epoch: int = 1,
+                print_interval: int = 100,
+                save_interval: int = 100,
+                evaluate_interval: int = 1,
                 visualize_when_val: bool = True,
                 best_value: float = 0.0,
                 resume: str = Optional[None],
@@ -48,19 +48,17 @@ class BaseTrainer():
 
         self.save_dir = save_dir
         self.checkpoint = Checkpoint(os.path.join(self.save_dir, 'checkpoints'))
-        self.num_epochs = num_epochs
+        self.num_iterations = num_iterations
         self.use_amp = True if use_fp16 else False
         self.scaler = NativeScaler() if use_fp16 else False
         self.clip_grad = clip_grad
-        self.evaluate_per_epoch = evaluate_per_epoch
-        self.print_per_iter = print_per_iter
-        self.save_per_iter = save_per_iter
+        self.evaluate_interval = evaluate_interval
+        self.print_interval = print_interval
+        self.save_interval = save_interval
         self.visualize_when_val = visualize_when_val
         self.best_value = best_value
         self.resume = resume
-        self.epoch = 0
         self.iters = 0
-        self.start_iter = 0
         
     def fit(self): 
         
@@ -68,18 +66,15 @@ class BaseTrainer():
         self.on_start()
 
         LOGGER.text(f'===========================START TRAINING=================================', level=LoggerObserver.INFO)
-        for epoch in range(self.epoch, self.num_epochs):
+        while self.iters < self.num_iterations:
             try:
-                # Save current epoch
-                self.epoch = epoch
-
                 # Start training
                 self.training_epoch()
                 self.on_training_end()
 
                 # Start evaluation
-                if self.evaluate_per_epoch != 0:
-                    if epoch % self.evaluate_per_epoch == 0 and epoch+1 >= self.evaluate_per_epoch:
+                if self.evaluate_interval != 0:
+                    if self.iters % self.evaluate_interval == 0 and self.iters>0:
                         self.evaluate_epoch()
                     self.on_evaluate_end()
                 

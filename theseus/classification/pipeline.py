@@ -110,12 +110,13 @@ class Pipeline(object):
             state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            last_epoch = load_state_dict(last_epoch, state_dict, 'epoch')
+            iters = load_state_dict(iters, state_dict, 'iters')
+            last_epoch = iters//len(self.train_dataloader) - 1
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{
-                'num_epochs': self.opt["trainer"]['args']['num_epochs'],
+                'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
                 'trainset': self.train_dataset,
                 'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
                 'last_epoch': last_epoch,

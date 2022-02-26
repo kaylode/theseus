@@ -9,12 +9,12 @@ global:
 trainer:
   name: SegmentationTrainer
   args:
-    num_epochs: 50
+    num_iterations: 50000
     total_accumulate_steps: null
     clip_grad: 10.0
-    print_per_iter: 20
-    save_per_iter: 1000
-    evaluate_per_epoch: 1
+    print_interval: 20
+    save_interval: 1000
+    evaluate_interval: 1
     visualize_when_val: true
 model:
   name: BaseSegModel

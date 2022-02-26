@@ -65,13 +65,13 @@ class SupervisedTrainer(BaseTrainer):
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
                 outputs = self.model.training_step(batch)
-
                 loss = outputs['loss']
                 loss_dict = outputs['loss_dict']
 
             # Backward loss
             self.scaler(loss, self.optimizer)
             
+            # Optmizer step
             self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
 
             if not self.step_per_epoch:
@@ -102,24 +102,24 @@ class SupervisedTrainer(BaseTrainer):
             running_time += end_time-start_time
 
             # Calculate current iteration
-            self.iters = self.start_iter + len(self.trainloader)*self.epoch + i + 1
+            self.iters = self.iters + 1
 
             # Logging
-            if self.iters % self.print_per_iter == 0:
+            if self.iters % self.print_interval == 0:
                 for key in running_loss.keys():
-                    running_loss[key] /= self.print_per_iter
+                    running_loss[key] /= self.print_interval
                     running_loss[key] = np.round(running_loss[key], 5)
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
 
                 LOGGER.text(
-                    "[{}|{}] [{}|{}] || {} || Time: {:10.4f}s".format(
-                        self.epoch, self.num_epochs, self.iters, 
-                        self.num_iters,loss_string, running_time), 
+                    "[{}|{}] || {} || Time: {:10.4f}s".format(
+                        self.iters, self.num_iterations,
+                        loss_string, running_time), 
                     LoggerObserver.INFO)
                 
                 log_dict = [{
                     'tag': f"Training/{k} Loss",
-                    'value': v/self.print_per_iter,
+                    'value': v/self.print_interval,
                     'type': LoggerObserver.SCALAR,
                     'kwargs': {
                         'step': self.iters
@@ -131,8 +131,8 @@ class SupervisedTrainer(BaseTrainer):
                 running_time = 0
 
             # Saving checkpoint
-            if (self.iters % self.save_per_iter == 0 or self.iters == self.num_iters - 1):
-                LOGGER.text(f'Save model at [{self.iters}|{self.num_iters}] to last.pth', LoggerObserver.INFO)
+            if (self.iters % self.save_interval == 0 or self.iters == self.num_iterations - 1):
+                LOGGER.text(f'Save model at [{self.iters}|{self.num_iterations}] to last.pth', LoggerObserver.INFO)
                 self.save_checkpoint()
 
     @torch.no_grad()   
@@ -175,7 +175,7 @@ class SupervisedTrainer(BaseTrainer):
         loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
         LOGGER.text(
             "[{}|{}] || {} || Time: {:10.4f} s".format(
-                self.epoch, self.num_epochs, loss_string, running_time),
+                self.iters, self.num_iterations, loss_string, running_time),
         level=LoggerObserver.INFO)
 
         metric_string = ""
@@ -192,7 +192,7 @@ class SupervisedTrainer(BaseTrainer):
             'value': v/len(self.valloader),
             'type': LoggerObserver.SCALAR,
             'kwargs': {
-                'step': self.epoch
+                'step': self.iters
             }
         } for k,v in epoch_loss.items()]
 
@@ -200,7 +200,7 @@ class SupervisedTrainer(BaseTrainer):
             'tag': f"Validation/{k}",
             'value': v,
             'kwargs': {
-                'step': self.epoch
+                'step': self.iters
             }
         } for k,v in metric_dict.items()]
 
@@ -213,12 +213,9 @@ class SupervisedTrainer(BaseTrainer):
         return 
 
     def on_start(self):
-        # Total number of training iterations
-        self.num_iters = (self.num_epochs+1) * len(self.trainloader)
-
         # Init scheduler params
         if self.step_per_epoch:
-            self.scheduler.last_epoch = self.epoch - 1
+            self.scheduler.last_epoch = self.iters//len(self.trainloader) - 1
 
     def on_epoch_end(self):
         if self.step_per_epoch:
@@ -230,7 +227,7 @@ class SupervisedTrainer(BaseTrainer):
                 'value': lr,
                 'type': LoggerObserver.SCALAR,
                 'kwargs': {
-                    'step': self.epoch
+                    'step': self.iters
                 }
             }])
 
