@@ -10,7 +10,6 @@ trainer:
   name: SemanticTrainer
   args:
     num_iterations: 50000
-    total_accumulate_steps: null
     clip_grad: 10.0
     print_interval: 20
     save_interval: 1000
