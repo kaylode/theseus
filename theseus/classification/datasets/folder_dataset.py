@@ -72,7 +72,7 @@ class ImageFolderDataset(ClassificationDataset):
             folder_name = os.path.join(self.image_dir, label)
             image_names = os.listdir(folder_name)
             for image_name in image_names:
-                self.fns.append([image_name, label])
+                self.fns.append([os.path.join(folder_name, image_name), label])
     
     def _calculate_classes_dist(self):
         """

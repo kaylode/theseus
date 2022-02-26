@@ -196,8 +196,8 @@ class Visualizer():
 
     def denormalize(self, 
             image: Union[torch.Tensor, np.ndarray], 
-            std: List[float] = [0.485, 0.456, 0.406],
-            mean: List[float] = [0.229, 0.224, 0.225]) -> np.ndarray:
+            mean: List[float] = [0.485, 0.456, 0.406],
+            std: List[float] = [0.229, 0.224, 0.225]) -> np.ndarray:
         """
         Denormalize an image and return
         image: `torch.Tensor` or `np.ndarray`

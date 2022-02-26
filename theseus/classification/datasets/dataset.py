@@ -44,7 +44,7 @@ class ClassificationDataset(torch.utils.data.Dataset):
         return {
             "input": im, 
             'target': target,
-            'img_name': os.path.basename(image_path),
+            'img_name': image_name,
             'ori_size': [width, height]
         }
 
@@ -58,13 +58,11 @@ class ClassificationDataset(torch.utils.data.Dataset):
         imgs = torch.stack([s['input'] for s in batch])
         targets = torch.stack([torch.LongTensor(s['target']['labels']) for s in batch])
         img_names = [s['img_name'] for s in batch]
-
-        # if self.mixupcutmix is not None:
-        #     imgs, targets = self.mixupcutmix(imgs, targets.squeeze(1))
-        # targets = targets.float()
+        ori_sizes = [s['ori_size'] for s in batch]
 
         return {
             'inputs': imgs,
             'targets': targets,
-            'img_names': img_names
+            'img_names': img_names,
+            'ori_sizes': ori_sizes,
         }
