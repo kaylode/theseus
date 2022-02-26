@@ -32,10 +32,9 @@ class CSVDataset(ClassificationDataset):
         csv_path: str,
         txt_classnames: str,
         transform: Optional[List] = None,
-        test: bool = False,
         **kwargs
     ):
-        super(CSVDataset, self).__init__(test, **kwargs)
+        super(CSVDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.csv_path = csv_path

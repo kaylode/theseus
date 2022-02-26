@@ -35,23 +35,13 @@ class ImageFolderDataset(ClassificationDataset):
         image_dir: str,
         txt_classnames: str,
         transform: Optional[List] = None,
-        test: bool = False,
         **kwargs
     ):
-        super(ImageFolderDataset, self).__init__(test, **kwargs)
+        super(ImageFolderDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.transform = transform
         self._load_data()
-
-        if self.train:
-            # MixUp and CutMix
-            mixup_transforms = []
-            mixup_transforms.append(RandomMixup(self.num_classes, p=1.0, alpha=0.2))
-            mixup_transforms.append(RandomCutmix(self.num_classes, p=1.0, alpha=1.0))
-            self.mixupcutmix = tf.RandomChoice(mixup_transforms)
-        else:
-            self.mixupcutmix = None
 
     def _load_data(self):
         """
