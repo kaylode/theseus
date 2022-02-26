@@ -1,6 +1,6 @@
 global:
   debug: true
-  cfg_transform: configs/segmentation/transform.yaml
+  cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
   use_fp16: true
@@ -61,7 +61,7 @@ data:
         image_dir: data/images/train
         mask_dir: data/masks/train
         csv_path: data/train.csv
-        txt_classnames: configs/segmentation/classes.txt
+        txt_classnames: configs/semantic/classes.txt
         mosaic_size: 960 
         mosaic_prob: 0.4
     val:
@@ -70,7 +70,7 @@ data:
         image_dir: data/images/val
         mask_dir: data/masks/val
         csv_path: data/val.csv
-        txt_classnames: configs/segmentation/classes.txt
+        txt_classnames: configs/semantic/classes.txt
   dataloader:
     train:
       name: DataLoaderWithCollator

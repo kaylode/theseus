@@ -3,15 +3,15 @@ from datetime import datetime
 
 import os
 import torch
-from theseus.segmentation.models.wrapper import ModelWithLoss
+from theseus.semantic.models.wrapper import ModelWithLoss
 from theseus.opt import Config
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.segmentation.augmentations import TRANSFORM_REGISTRY
-from theseus.segmentation.losses import LOSS_REGISTRY
-from theseus.segmentation.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.segmentation.trainer import TRAINER_REGISTRY
-from theseus.segmentation.metrics import METRIC_REGISTRY
-from theseus.segmentation.models import MODEL_REGISTRY
+from theseus.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic.losses import LOSS_REGISTRY
+from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.semantic.trainer import TRAINER_REGISTRY
+from theseus.semantic.metrics import METRIC_REGISTRY
+from theseus.semantic.models import MODEL_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog

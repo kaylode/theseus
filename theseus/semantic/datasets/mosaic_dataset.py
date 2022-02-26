@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from .dataset import SegmentationDataset
-from theseus.segmentation.augmentations.mosaic import Mosaic
+from theseus.semantic.augmentations.mosaic import Mosaic
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')

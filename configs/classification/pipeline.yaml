@@ -12,7 +12,6 @@ trainer:
   name: ClassificationTrainer
   args:
     num_epochs: 100
-    total_accumulate_steps: null
     clip_grad:  10.0
     print_per_iter: 20
     save_per_iter: 1000
