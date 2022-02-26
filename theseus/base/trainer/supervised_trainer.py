@@ -12,10 +12,41 @@ LOGGER = LoggerObserver.getLogger("main")
 class SupervisedTrainer(BaseTrainer):
     """Trainer for supervised tasks
     
+    model : `torch.nn.Module`
+        Wrapper model with loss 
+    trainloader : `torch.utils.DataLoader`
+        DataLoader for training
+    valloader : `torch.utils.DataLoader`
+        DataLoader for validation
+    metrics: `List[Metric]`
+        list of metrics for evaluation
+    optimizer: `torch.optim.Optimizer`
+        optimizer for parameters update
+    scheduler: `torch.optim.lr_scheduler.Scheduler`
+        learning rate schedulers
+
     """
-    def __init__(self, **kwargs):
+    def __init__(
+        self, 
+        model, 
+        trainloader, 
+        valloader,
+        metrics,
+        optimizer,
+        scheduler,
+        **kwargs):
 
         super().__init__(**kwargs)
+
+        self.model = model
+        self.metrics = metrics 
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.trainloader = trainloader
+        self.valloader = valloader
+
+        self.step_per_epoch = self.scheduler.step_per_epoch
+
 
     def training_epoch(self):
         """
@@ -37,30 +68,27 @@ class SupervisedTrainer(BaseTrainer):
 
                 loss = outputs['loss']
                 loss_dict = outputs['loss_dict']
-                loss /= self.accumulate_steps
 
             # Backward loss
             self.scaler(loss, self.optimizer)
             
-            if i % self.accumulate_steps == 0 or i == len(self.trainloader)-1:
-                self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
+            self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
 
-                if not self.step_per_epoch:
-                    self.scheduler.step()
-                    lrl = [x['lr'] for x in self.optimizer.param_groups]
-                    lr = sum(lrl) / len(lrl)
+            if not self.step_per_epoch:
+                self.scheduler.step()
+                lrl = [x['lr'] for x in self.optimizer.param_groups]
+                lr = sum(lrl) / len(lrl)
 
-                    LOGGER.log([{
-                        'tag': 'Training/Learning rate',
-                        'value': lr,
-                        'type': LoggerObserver.SCALAR,
-                        'kwargs': {
-                            'step': self.iters
-                        }
-                    }])
+                LOGGER.log([{
+                    'tag': 'Training/Learning rate',
+                    'value': lr,
+                    'type': LoggerObserver.SCALAR,
+                    'kwargs': {
+                        'step': self.iters
+                    }
+                }])
 
-
-                self.optimizer.zero_grad()
+            self.optimizer.zero_grad()
 
             torch.cuda.synchronize()
             end_time = time.time()
@@ -183,3 +211,28 @@ class SupervisedTrainer(BaseTrainer):
 
     def check_best(self, metric_dict):
         return 
+
+    def on_start(self):
+        # Total number of training iterations
+        self.num_iters = (self.num_epochs+1) * len(self.trainloader)
+
+        # Init scheduler params
+        if self.step_per_epoch:
+            self.scheduler.last_epoch = self.epoch - 1
+
+    def on_epoch_end(self):
+        if self.step_per_epoch:
+            self.scheduler.step()
+            lrl = [x['lr'] for x in self.optimizer.param_groups]
+            lr = sum(lrl) / len(lrl)
+            LOGGER.log([{
+                'tag': 'Training/Learning rate',
+                'value': lr,
+                'type': LoggerObserver.SCALAR,
+                'kwargs': {
+                    'step': self.epoch
+                }
+            }])
+
+    def on_finish(self):
+        self.save_checkpoint()

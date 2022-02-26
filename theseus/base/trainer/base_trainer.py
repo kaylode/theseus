@@ -10,18 +10,6 @@ LOGGER = LoggerObserver.getLogger("main")
 class BaseTrainer():
     """Base class for trainer
 
-    model : `torch.nn.Module`
-        Wrapper model with loss 
-    trainloader : `torch.utils.DataLoader`
-        DataLoader for training
-    valloader : `torch.utils.DataLoader`
-        DataLoader for validation
-    metrics: `List[Metric]`
-        list of metrics for evaluation
-    optimizer: `torch.optim.Optimizer`
-        optimizer for parameters update
-    scheduler: `torch.optim.lr_scheduler.Scheduler`
-        learning rate schedulers
     save_dir: `str`
         Path to directory for saving stuffs
     use_fp16: `bool`
@@ -46,16 +34,9 @@ class BaseTrainer():
         Path to checkpoint for continue training
     """
     def __init__(self,
-                model, 
-                trainloader, 
-                valloader,
-                metrics,
-                optimizer,
-                scheduler,
                 save_dir: str = 'runs',
                 use_fp16: bool = False, 
                 num_epochs: int = 100,
-                total_accumulate_steps: Optional[int] = None,
                 clip_grad: float = 10.0,
                 print_per_iter: int = 100,
                 save_per_iter: int = 100,
@@ -65,25 +46,11 @@ class BaseTrainer():
                 resume: str = Optional[None],
                 ):
 
-
-        self.model = model
-        self.metrics = metrics 
-        self.optimizer = optimizer
-        self.scheduler = scheduler
-        self.trainloader = trainloader
-        self.valloader = valloader
-
         self.save_dir = save_dir
         self.checkpoint = Checkpoint(os.path.join(self.save_dir, 'checkpoints'))
         self.num_epochs = num_epochs
-        self.step_per_epoch = self.scheduler.step_per_epoch
         self.use_amp = True if use_fp16 else False
         self.scaler = NativeScaler() if use_fp16 else False
-
-        if total_accumulate_steps is None:
-            self.accumulate_steps = 1
-        else:
-            self.accumulate_steps = max(round(total_accumulate_steps / trainloader.batch_size), 1) 
         self.clip_grad = clip_grad
         self.evaluate_per_epoch = evaluate_per_epoch
         self.print_per_iter = print_per_iter
@@ -96,15 +63,9 @@ class BaseTrainer():
         self.start_iter = 0
         
     def fit(self): 
-        # Total number of training iterations
-        self.num_iters = (self.num_epochs+1) * len(self.trainloader)
         
         # On start callbacks
         self.on_start()
-
-        # Init scheduler params
-        if self.step_per_epoch:
-            self.scheduler.last_epoch = self.epoch - 1
 
         LOGGER.text(f'===========================START TRAINING=================================', level=LoggerObserver.INFO)
         for epoch in range(self.epoch, self.num_epochs):
@@ -157,18 +118,7 @@ class BaseTrainer():
         return
 
     def on_epoch_end(self):
-        if self.step_per_epoch:
-            self.scheduler.step()
-            lrl = [x['lr'] for x in self.optimizer.param_groups]
-            lr = sum(lrl) / len(lrl)
-            LOGGER.log([{
-                'tag': 'Training/Learning rate',
-                'value': lr,
-                'type': LoggerObserver.SCALAR,
-                'kwargs': {
-                    'step': self.epoch
-                }
-            }])
+        return
 
     def on_finish(self):
-        self.save_checkpoint()
+        return
