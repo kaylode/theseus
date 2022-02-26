@@ -1,8 +1,7 @@
 import torch
-from torchvision.transforms import transforms as tf
 from theseus.base.datasets.collator import BaseCollator
 from theseus.classification.augmentations.custom import RandomMixup, RandomCutmix
-
+import numpy as np
 
 class MixupCutmixCollator(BaseCollator):
     """Apply mixup and cutmix to a batch, temporarily supports classification only
@@ -14,16 +13,19 @@ class MixupCutmixCollator(BaseCollator):
         weight=[0.5, 0.5], **kwargs) -> None:
 
         assert sum(weight) <= 1.0, "Weight should be sum of 1.0"
-        mixup_transforms = []
-        mixup_transforms.append(RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha))
-        mixup_transforms.append(RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha))
-        mixup_transforms.append(tf.Lambda(lambda x: x)) # Identity transform
-        weight.append(1-sum(weight))
-        self.mixupcutmix = tf.RandomChoice(mixup_transforms, p=weight)
+        self.mixup_transforms = []
+        self.mixup_transforms.append(RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha))
+        self.mixup_transforms.append(RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha))
+        self.mixup_transforms.append(None)
+        self.weight = weight
+        self.weight.append(1.0-sum(weight))
 
     def __call__(self, batch):
-        imgs, targets = self.mixupcutmix(
-            batch['inputs'], batch['targets'].squeeze(1))
-        batch['inputs'] = imgs
-        batch['targets'] = targets
+
+        transform = np.random.choice(self.mixup_transforms, p=self.weight)
+        if transform is not None:
+            imgs, targets = transform(
+                batch['inputs'], batch['targets'].squeeze(1))
+            batch['inputs'] = imgs
+            batch['targets'] = targets
         return batch
