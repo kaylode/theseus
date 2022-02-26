@@ -9,6 +9,8 @@ class DataLoaderWithCollator(DataLoader):
             if isinstance(collate_fn, list):
                 collate_fn.insert(0, dataset.collate_fn)
                 collate_fn = ChainCollateWrapper(collate_fn)
+            else:
+                collate_fn = ChainCollateWrapper([dataset.collate_fn, collate_fn])
         else:
             collate_fn = dataset.collate_fn
 

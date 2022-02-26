@@ -9,11 +9,9 @@ class ClassificationDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        test: bool = False,
         **kwargs
     ):
         super(ClassificationDataset, self).__init__(**kwargs)
-        self.train = not (test)
         self.classes_idx = {}
         self.classnames = None
         self.transform = None

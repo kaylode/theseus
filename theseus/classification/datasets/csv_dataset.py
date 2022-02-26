@@ -1,10 +1,6 @@
-import os
-import numpy as np
 import pandas as pd
 from typing import List, Optional
 
-from torchvision.transforms import transforms as tf
-from theseus.classification.augmentations.custom import RandomMixup, RandomCutmix
 from theseus.utilities.loggers.observer import LoggerObserver
 from .dataset import ClassificationDataset
 
@@ -45,15 +41,6 @@ class CSVDataset(ClassificationDataset):
         self.csv_path = csv_path
         self.transform = transform
         self._load_data()
-
-        if self.train:
-            # MixUp and CutMix
-            mixup_transforms = []
-            mixup_transforms.append(RandomMixup(self.num_classes, p=1.0, alpha=0.2))
-            mixup_transforms.append(RandomCutmix(self.num_classes, p=1.0, alpha=1.0))
-            self.mixupcutmix = tf.RandomChoice(mixup_transforms)
-        else:
-            self.mixupcutmix = None
 
     def _load_data(self):
         """
