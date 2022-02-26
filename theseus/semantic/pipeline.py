@@ -68,13 +68,13 @@ class Pipeline(object):
 
         CLASSNAMES = self.val_dataset.classnames
 
-        self.train_dataloader = get_instance(
+        self.train_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['train'],
             registry=DATALOADER_REGISTRY,
             dataset=self.train_dataset,
         )
 
-        self.val_dataloader = get_instance(
+        self.val_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['val'],
             registry=DATALOADER_REGISTRY,
             dataset=self.val_dataset
