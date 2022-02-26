@@ -13,9 +13,12 @@ class MixupCutmixCollator(BaseCollator):
         mixup_alpha=0.2, cutmix_alpha=1.0, 
         weight=[0.5, 0.5], **kwargs) -> None:
 
+        assert sum(weight) <= 1.0, "Weight should be sum of 1.0"
         mixup_transforms = []
         mixup_transforms.append(RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha))
         mixup_transforms.append(RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha))
+        mixup_transforms.append(tf.Lambda(lambda x: x)) # Identity transform
+        weight.append(1-sum(weight))
         self.mixupcutmix = tf.RandomChoice(mixup_transforms, p=weight)
 
     def __call__(self, batch):
