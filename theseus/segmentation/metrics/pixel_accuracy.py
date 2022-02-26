@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from theseus.base.metrics.metric_template import Metric
 
 class PixelAccuracy(Metric):
-    """Accuracy for each pixel comparision
+    """Accuracy for each pixel comparision, return Average Precision and Recall
     
     num_classes: `int` 
         number of classes
@@ -17,10 +17,12 @@ class PixelAccuracy(Metric):
             num_classes: int, 
             thresh: Optional[float] = None, 
             eps: float = 1e-6,
+            ignore_index: Optional[int] = None,
             **kwargs):
 
         self.thresh = thresh
         self.num_classes = num_classes
+        self.ignore_index = ignore_index
         self.pred_type = "multi" if num_classes > 1 else "binary"
         self.eps = eps
 
@@ -40,46 +42,63 @@ class PixelAccuracy(Metric):
         # targets: (batch, num_classes, W, H)
 
         targets = batch['targets']
+        assert len(targets.shape) == 4, "Wrong shape for targets"
+        assert len(outputs.shape) == 4, "Wrong shape for targets"
         self.sample_size += outputs.shape[0]
-
-        batch_size, _ , w, h = outputs.shape
-        if len(targets.shape) == 3:
-            targets = targets.unsqueeze(1)
       
-        one_hot_targets = torch.zeros(batch_size, self.num_classes, h, w)
-        one_hot_predicts = torch.zeros(batch_size, self.num_classes, h, w)
-        
         if self.pred_type == 'binary':
             predicts = (outputs > self.thresh).float()
         elif self.pred_type =='multi':
-            predicts = torch.argmax(outputs, dim=1).unsqueeze(1)
+            predicts = torch.argmax(outputs, dim=1) 
 
         predicts = predicts.detach().cpu()
-        one_hot_targets.scatter_(1, targets.long(), 1)
-        one_hot_predicts.scatter_(1, predicts.long(), 1)
+
+        one_hot_predicts = torch.nn.functional.one_hot(
+              predicts.long(), 
+              num_classes=self.num_classes).permute(0, 3, 1, 2)
         
         for cl in range(self.num_classes):
             cl_pred = one_hot_predicts[:,cl,:,:]
-            cl_target = one_hot_targets[:,cl,:,:]
-            score = self.binary_compute(cl_pred, cl_target)
-            self.scores_list[cl] += sum(score)
+            cl_target = targets[:,cl,:,:]
+            p, r = self.binary_compute(cl_pred, cl_target)
+            self.precisions[cl] += p
+            self.recalls[cl] += r
 
     def binary_compute(self, predict: torch.Tensor, target: torch.Tensor):
-        # predict: (batch, 1, W, H)
-        # targets: (batch, 1, W, H)
+        # predict: (batch, W, H)
+        # targets: (batch, W, H)
 
-        correct = (predict == target).sum((-2,-1))
-        total = target.shape[-1] * target.shape[-2]
-        return (correct + self.eps) *1.0 / (total +self.eps)
+        tp = torch.sum(target*predict, dim=(-1, -2))
+        fn = torch.sum(target*(1-predict), dim=(-1, -2))
+        fp = torch.sum((1-target)*predict, dim=(-1, -2))
+
+        precision = tp * 1.0 / (tp + fp + self.eps) 
+        recall = tp * 1.0 / (tp + fn + self.eps)
+
+        return torch.sum(precision), torch.sum(recall) # sum over batch
         
     def reset(self):
-        self.scores_list = np.zeros(self.num_classes)
+        self.precisions = np.zeros(self.num_classes)
+        self.recalls = np.zeros(self.num_classes)
         self.sample_size = 0
 
     def value(self):
-        scores_each_class = self.scores_list / self.sample_size #mean over number of samples
+        precision_each_class = self.precisions / self.sample_size #mean over number of samples
+        recall_each_class = self.recalls / self.sample_size #mean over number of samples
+
+        # Mean over classes
         if self.pred_type == 'binary':
-            scores = scores_each_class[1] # ignore background which is label 0
+            precision = precision_each_class[1] # ignore background which is label 0
+            recall = recall_each_class[1] # ignore background which is label 0
         else:
-            scores = sum(scores_each_class) / self.num_classes
-        return {"pixel_acc" : scores}
+            if self.ignore_index is not None:
+                precision_each_class[self.ignore_index] = 0
+                recall_each_class[self.ignore_index] = 0
+
+                precision = sum(precision_each_class) / (self.num_classes - 1)
+                recall = sum(recall_each_class) / (self.num_classes - 1)
+            else:
+                precision = sum(precision_each_class) / self.num_classes
+                recall = sum(recall_each_class) / self.num_classes
+
+        return {"precision" : precision, "recall": recall}

@@ -3,8 +3,8 @@ import torch
 import numpy as np
 from theseus.base.metrics.metric_template import Metric
 
-class DiceScore(Metric):
-    """ Dice score metric for segmentation
+class mIOU(Metric):
+    """ Mean IOU metric for segmentation
     num_classes: `int`
         number of classes 
     eps: `float`
@@ -14,7 +14,7 @@ class DiceScore(Metric):
     """
     def __init__(self, 
             num_classes: int, 
-            smooth: int = 1, 
+            eps: float = 1e-6, 
             thresh: Optional[float] = None,
             ignore_index: Optional[int] = None,
             **kwawrgs):
@@ -29,7 +29,7 @@ class DiceScore(Metric):
         if self.num_classes == 1:
             self.num_classes+=1
 
-        self.smooth = smooth
+        self.eps = eps
 
         self.reset()
 
@@ -69,8 +69,8 @@ class DiceScore(Metric):
         intersect = torch.sum(target*predict, dim=(-1, -2))
         A = torch.sum(target, dim=(-1, -2))
         B = torch.sum(predict, dim=(-1, -2))
-        union = A + B
-        return (2. * intersect + self.smooth)  / (union + self.smooth)
+        union = A + B - intersect
+        return intersect / (union + self.eps)
         
     def reset(self):
         self.scores_list = np.zeros(self.num_classes)
@@ -86,4 +86,4 @@ class DiceScore(Metric):
                 scores = sum(scores_each_class) / (self.num_classes - 1)
             else:
                 scores = sum(scores_each_class) / self.num_classes
-        return {"dice" : scores}
+        return {"miou" : scores}

@@ -1,13 +1,8 @@
-import os
-import logging
-import cv2
 import torch
-import torchvision
 from torchvision.transforms import functional as TFF
 import matplotlib.pyplot as plt
 from theseus.base.trainer.supervised_trainer import SupervisedTrainer
 from theseus.utilities.loading import load_state_dict
-from theseus.base.augmentations.custom import Denormalize
 from theseus.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.analysis.analyzer import ClassificationAnalyzer
@@ -60,7 +55,7 @@ class ClassificationTrainer(SupervisedTrainer):
         Load all information the current iteration from checkpoint 
         """
         LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
-        state_dict = torch.load(path)
+        state_dict = torch.load(path, map_location='cpu')
         self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
         self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
@@ -74,6 +69,8 @@ class ClassificationTrainer(SupervisedTrainer):
 
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
         visualizer = Visualizer()
+
+        # Train batch
         batch = next(iter(self.trainloader))
         images = batch["inputs"]
 
@@ -82,13 +79,12 @@ class ClassificationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(8,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
+        plt.tight_layout(pad=0)
         LOGGER.log([{
             'tag': "Sanitycheck/batch/train",
             'value': fig,
@@ -98,8 +94,7 @@ class ClassificationTrainer(SupervisedTrainer):
             }
         }])
 
-        
-
+        # Validation batch
         batch = next(iter(self.valloader))
         images = batch["inputs"]
 
@@ -108,13 +103,12 @@ class ClassificationTrainer(SupervisedTrainer):
             img_show = visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
-        batch = torch.stack(batch, dim=0)
-        grid_img = torchvision.utils.make_grid(batch, nrow=int((idx+1)/8), normalize=False)
+        grid_img = visualizer.make_grid(batch)
 
         fig = plt.figure(figsize=(8,8))
-        plt.tight_layout(pad=0)
         plt.axis('off')
-        plt.imshow(grid_img.permute(1, 2, 0))
+        plt.imshow(grid_img)
+        plt.tight_layout(pad=0)
 
         LOGGER.log([{
             'tag': "Sanitycheck/batch/val",
@@ -190,17 +184,13 @@ class ClassificationTrainer(SupervisedTrainer):
 
             if idx == 63: # limit number of images
                 break
-
-        gradcam_batch = torch.stack(gradcam_batch, dim=0)
-        pred_batch = torch.stack(pred_batch, dim=0)
-
-        gradcam_grid_img = torchvision.utils.make_grid(gradcam_batch, nrow=int((idx+1)/8), normalize=False)
-
+        
+        # GradCAM images
+        gradcam_grid_img = visualizer.make_grid(gradcam_batch)
         fig = plt.figure(figsize=(8,8))
-        plt.tight_layout(pad=0)
-        plt.imshow(gradcam_grid_img.permute(1, 2, 0))
+        plt.imshow(gradcam_grid_img)
         plt.axis("off")
-
+        plt.tight_layout(pad=0)
         LOGGER.log([{
             'tag': "Validation/gradcam",
             'value': fig,
@@ -210,12 +200,12 @@ class ClassificationTrainer(SupervisedTrainer):
             }
         }])
 
-        pred_grid_img = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
+        # Prediction images
+        pred_grid_img = visualizer.make_grid(pred_batch)
         fig = plt.figure(figsize=(10,10))
-        plt.tight_layout(pad=0)
-        plt.imshow(pred_grid_img.permute(1, 2, 0))
+        plt.imshow(pred_grid_img)
         plt.axis("off")
-
+        plt.tight_layout(pad=0)
         LOGGER.log([{
             'tag': "Validation/prediction",
             'value': fig,
@@ -237,7 +227,7 @@ class ClassificationTrainer(SupervisedTrainer):
         images = batch["inputs"].to(self.model.device)
         LOGGER.log([{
             'tag': "Sanitycheck/analysis/architecture",
-            'value': self.model.model,
+            'value': self.model.model.get_model(),
             'type': LoggerObserver.TORCH_MODULE,
             'kwargs': {
                 'inputs': images

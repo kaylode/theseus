@@ -1,7 +1,7 @@
 import webcolors
 
 STANDARD_COLORS = [
-    'DarkGrey', 'Gold', 'LawnGreen', 'LightBlue' , 'Crimson', 'BlanchedAlmond', 'Bisque',
+    'DarkGrey', 'LawnGreen', 'Crimson', 'LightBlue' , 'Gold', 'BlanchedAlmond', 'Bisque',
     'Aquamarine', 'BlueViolet', 'BurlyWood', 'CadetBlue', 'AntiqueWhite','Azure', 
     'Chocolate', 'Coral', 'CornflowerBlue', 'Cornsilk', 'Crimson', 'Cyan',
     'DarkCyan', 'DarkGoldenRod',  'DarkKhaki', 'DarkOrange',

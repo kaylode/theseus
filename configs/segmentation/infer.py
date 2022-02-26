@@ -7,9 +7,6 @@ from theseus.opt import Opts
 import os
 import cv2
 import torch
-import numpy as np
-from PIL import Image
-from tqdm import tqdm
 from datetime import datetime
 from theseus.opt import Config
 from theseus.segmentation.models import MODEL_REGISTRY
@@ -22,55 +19,22 @@ from theseus.utilities.cuda import get_devices_info
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
 from theseus.utilities.visualization.visualizer import Visualizer
+from theseus.segmentation.datasets.csv_dataset import CSVDataset
 
 @DATASET_REGISTRY.register()
-class TestDataset(torch.utils.data.Dataset):
-    def __init__(self, image_dir, txt_classnames, transform=None):
-        self.image_dir = image_dir
-        self.txt_classnames = txt_classnames
-        self.transform = transform
-        self.load_data()
-
-    def load_data(self):
-
-        with open(self.txt_classnames, 'r') as f:
-            self.classnames = f.read().splitlines()
-
-        self.fns = []
-        image_names = os.listdir(self.image_dir)
-        
-        for image_name in image_names:
-            image_path = os.path.join(self.image_dir, image_name)
-            self.fns.append(image_path)
-
-    def __getitem__(self, index):
-
-        image_path = self.fns[index]
-        im = Image.open(image_path).convert('RGB')
-        width, height = im.width, im.height
-
-        im = np.array(im)
-
-        if self.transform is not None: 
-            item = self.transform(image = im)
-            im = item['image']
-
-        return {
-            "input": im, 
-            'img_name': os.path.basename(image_path),
-            'ori_size': [width, height]
-        }
-
-    def __len__(self):
-        return len(self.fns)
+class TestCSVDataset(CSVDataset):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def collate_fn(self, batch: List):
         imgs = torch.stack([s['input'] for s in batch])
         img_names = [s['img_name'] for s in batch]
+        ori_sizes = [s['ori_size'] for s in batch]
 
         return {
             'inputs': imgs,
-            'img_names': img_names
+            'img_names': img_names,
+            'ori_sizes': ori_sizes
         }
 
 class TestPipeline(object):
@@ -139,18 +103,35 @@ class TestPipeline(object):
         visualizer = Visualizer()
         self.model.eval()
 
-        for idx, batch in enumerate(tqdm(self.dataloader)):
+        saved_mask_dir = os.path.join(self.savedir, 'masks')
+        saved_overlay_dir = os.path.join(self.savedir, 'overlays')
+
+        os.makedirs(saved_mask_dir, exist_ok=True)
+        os.makedirs(saved_overlay_dir, exist_ok=True)
+
+        for idx, batch in enumerate(self.dataloader):
+            inputs = batch['inputs']
             img_names = batch['img_names']
-            batch.update({'thresh': 0.5})
+            ori_sizes = batch['ori_sizes']
 
             outputs = self.model.get_prediction(batch, self.device)
             preds = outputs['masks']
 
-            for (filename, pred) in zip(img_names, preds):
+            for (input, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
                 decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
-                decode_pred = (decode_pred * 255).astype(np.uint8)
-                savepath = os.path.join(self.savedir, filename)
-                cv2.imwrite(savepath,decode_pred)                   
+                resized_decode_mask = cv2.resize(decode_pred, ori_size)
+
+                # Save mask
+                savepath = os.path.join(saved_mask_dir, filename)
+                cv2.imwrite(savepath, resized_decode_mask)
+
+                # Save overlay
+                raw_image = visualizer.denormalize(input)   
+                ori_image = cv2.resize(raw_image, ori_size)
+                overlay = ori_image * 0.7 + resized_decode_mask * 0.3
+                savepath = os.path.join(saved_overlay_dir, filename)
+                cv2.imwrite(savepath, overlay)
+
                 self.logger.text(f"Save image at {savepath}", level=LoggerObserver.INFO)
         
 

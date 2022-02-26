@@ -4,16 +4,15 @@ global:
   save_dir: runs
   device: cuda:0
   weights: null
-  
 model:
-  name: UNetWrapper
+  name: BaseSegModel
   args:
-    name: unet
-    out_ch: 1
+    name: unetplusplus
+    encoder_name: efficientnet-b0
 
 data: 
   dataset:
-    name: TestDataset
+    name: TestCSVDataset
     args:
       image_dir: data/images
       txt_classnames: configs/sample/classes.txt

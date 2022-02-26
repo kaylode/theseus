@@ -1,6 +1,6 @@
 from theseus.base.models import MODEL_REGISTRY
 
-from .unet import UNetWrapper
+from .segmodels import BaseSegModel
 from .wrapper import ModelWithLoss
 
-MODEL_REGISTRY.register(UNetWrapper)
+MODEL_REGISTRY.register(BaseSegModel)

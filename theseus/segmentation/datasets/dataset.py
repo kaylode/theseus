@@ -12,6 +12,8 @@ class SegmentationDataset(torch.utils.data.Dataset):
         self.num_classes = 0
         self.classnames = None
         self.transform = None
+        self.image_dir = None 
+        self.mask_dir = None 
         self.fns = []
 
     def _load_data(self):
@@ -21,14 +23,13 @@ class SegmentationDataset(torch.utils.data.Dataset):
         """
         Get one item
         """
-        img_path, label_path = self.fns[idx]
+        img_name, mask_name = self.fns[idx]
+        img_path = os.path.join(self.image_dir, img_name)
+        label_path = os.path.join(self.mask_dir, mask_name)
         img = Image.open(img_path).convert('RGB')
-        mask = Image.open(label_path).convert('L')
         width, height = img.width, img.height
         img = np.array(img)
-        mask = np.array(mask)
-        if np.max(mask) == 255:
-            mask = mask/255.0
+        mask = self._load_mask(label_path)
             
         if self.transform is not None:
             item = self.transform(image = img, mask = mask)
@@ -42,17 +43,23 @@ class SegmentationDataset(torch.utils.data.Dataset):
         return {
             "input": img, 
             'target': target,
-            'img_name': os.path.basename(img_path),
+            'img_name': img_name,
             'ori_size': [width, height]
         }
     
     
     def collate_fn(self, batch):
         imgs = torch.stack([i['input'] for i in batch])
-        masks = torch.stack([i['target']['mask'] for i in batch]).unsqueeze(1)
+        masks = torch.stack([i['target']['mask'] for i in batch])
+        img_names = [i['img_name'] for i in batch]
+        ori_sizes = [i['ori_size'] for i in batch]
+        
+        masks = self._encode_masks(masks)
         return {
             'inputs': imgs,
-            'targets': masks.float()
+            'targets': masks,
+            'img_names': img_names,
+            'ori_sizes': ori_sizes
         }
     
     def __len__(self) -> int:
