@@ -112,7 +112,7 @@ class Pipeline(object):
             state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            iters = load_state_dict(iters, state_dict, 'iters')
+            iters = load_state_dict(None, state_dict, 'iters')
             last_epoch = iters//len(self.train_dataloader) - 1
 
         self.scheduler = get_instance(

@@ -72,8 +72,7 @@ class CSVDataset(ClassificationDataset):
         df = pd.read_csv(self.csv_path)
         for _, row in df.iterrows():
             image_name, label = row
-            image_path = os.path.join(self.image_dir, image_name)
-            self.fns.append([image_path, label])
+            self.fns.append([image_name, label])
 
     def _calculate_classes_dist(self):
         """

@@ -27,7 +27,9 @@ class ClassificationDataset(torch.utils.data.Dataset):
         """
         Get one item
         """
-        image_path, label_name = self.fns[idx]
+        image_name, label_name = self.fns[idx]
+        image_path = os.path.join(self.image_dir, image_name)
+
         im = Image.open(image_path).convert('RGB')
         width, height = im.width, im.height
         class_idx = self.classes_idx[label_name]
