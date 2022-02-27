@@ -1,3 +1,4 @@
+from typing import List
 import torch
 from theseus.base.datasets.collator import BaseCollator
 from theseus.classification.augmentations.custom import RandomMixup, RandomCutmix
@@ -9,10 +10,10 @@ class MixupCutmixCollator(BaseCollator):
     def __init__(
         self, 
         dataset: torch.utils.data.Dataset, 
-        mixup_alpha=0.2, cutmix_alpha=1.0, 
-        weight=[0.5, 0.5], **kwargs) -> None:
+        mixup_alpha: float=0.2, cutmix_alpha: float=1.0, 
+        weight: List[float]=[0.5, 0.5], **kwargs) -> None:
 
-        assert sum(weight) <= 1.0, "Weight should be sum of 1.0"
+        assert sum(weight) <= 1.0, "Sum of weight should be smaller than 1.0"
         self.mixup_transforms = []
         self.mixup_transforms.append(RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha))
         self.mixup_transforms.append(RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha))
