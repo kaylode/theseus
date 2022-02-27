@@ -11,6 +11,8 @@ def get_type(value):
         return LoggerObserver.FIGURE
     if isinstance(value, str):
         return LoggerObserver.TEXT
+    if isinstance(value, torch.Tensor):
+        return LoggerObserver.EMBED
     return LoggerObserver.SCALAR
 
 class LoggerObserver(object):
@@ -21,6 +23,7 @@ class LoggerObserver(object):
     FIGURE = 'figure'
     TORCH_MODULE = 'torch_module'
     TEXT = 'text'
+    EMBED = 'embedding'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -82,6 +85,13 @@ class LoggerObserver(object):
 
                 if type == LoggerObserver.TEXT:
                     subscriber.log_text(
+                        tag=tag,
+                        value=value,
+                        **kwargs
+                    )
+
+                if type == LoggerObserver.EMBED:
+                    subscriber.log_embedding(
                         tag=tag,
                         value=value,
                         **kwargs
