@@ -1,13 +1,11 @@
 global:
-  debug: True
+  debug: true
   cfg_transform: configs/classification/transform.yaml
-  save_dir: runs
+  save_dir: /content/main/runs
   device: cuda:0
-  use_fp16: True
+  use_fp16: true
   pretrained: null
   resume: null
-  
-
 trainer:
   name: ClassificationTrainer
   args:
@@ -17,41 +15,34 @@ trainer:
     save_interval: 1000
     evaluate_interval :  1
     visualize_when_val :  True
-
-
 model:
   name: BaseTimmModel
   args:
     name: convnext_small
-    from_pretrained: True
+    from_pretrained: true
     num_classes: 2
-
-
 loss:
-  name: SmoothCELoss
-  args:
-    smoothing: 0.1
-
+  name: CELoss
 metrics:
-  - name: Accuracy
-    args:
-  - name: BalancedAccuracyMetric
-    args: 
-  - name: F1ScoreMetric
-    args:
-      average: weighted
-  - name: ConfusionMatrix
-    args:
-  - name: ErrorCases
-    args:
-
+- name: Accuracy
+  args: null
+- name: BalancedAccuracyMetric
+  args: null
+- name: F1ScoreMetric
+  args:
+    average: weighted
+- name: ConfusionMatrix
+  args: null
+- name: ErrorCases
+  args:
 optimizer:
   name: AdamW
   args:
-    lr: 0.001               # [adam: 1e-3 | sgd: 1e-2]
+    lr: 0.001
     weight_decay: 0.0005
-    betas: [0.937, 0.999]
-
+    betas:
+    - 0.937
+    - 0.999
 scheduler:
   name: SchedulerWrapper
   args:
@@ -59,35 +50,38 @@ scheduler:
     t_initial: 7
     t_mul: 0.9
     eta_mul: 0.9
-    eta_min: 0.000001
-
-
-data: 
+    eta_min: 1.0e-06
+data:
   dataset:
     train:
       name: ImageFolderDataset
       args:
-        image_dir: data/dog-vs-cats/train
+        image_dir: /content/main/data/dog-vs-cats/train
         txt_classnames: configs/classification/classes.txt
-        test: False
-    
     val:
       name: ImageFolderDataset
       args:
-        image_dir: data/dog-vs-cats/val
+        image_dir: /content/main/data/dog-vs-cats/val
         txt_classnames: configs/classification/classes.txt
-        test: True
-
   dataloader:
     train:
-      name: BalanceSampler
+      name: DataLoaderWithCollator
       args:
-        batch_size: 64
-        drop_last: True
-        shuffle: False
+        batch_size: 32
+        drop_last: true
+        shuffle: false
+        collate_fn:
+            name: MixupCutmixCollator
+            args:
+              mixup_alpha: 0.4
+              cutmix_alpha: 1.0
+              weight: [0.2, 0.2]
+        sampler:
+            name: BalanceSampler
+            args:
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 64
-        drop_last: False
-        shuffle: True
+        batch_size: 32
+        drop_last: false
+        shuffle: true
