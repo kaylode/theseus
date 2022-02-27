@@ -112,9 +112,9 @@ class SupervisedTrainer(BaseTrainer):
                 loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
 
                 LOGGER.text(
-                    "[{}|{}] || {} || Time: {:10.4f}s".format(
+                    "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
                         self.iters, self.num_iterations,
-                        loss_string, running_time), 
+                        loss_string, self.print_interval/running_time), 
                     LoggerObserver.INFO)
                 
                 log_dict = [{
@@ -125,6 +125,16 @@ class SupervisedTrainer(BaseTrainer):
                         'step': self.iters
                     }
                 } for k,v in running_loss.items()]
+
+
+                log_dict.append({
+                    'tag': f"Training/Iterations per second",
+                    'value': self.print_interval/running_time,
+                    'type': LoggerObserver.SCALAR,
+                    'kwargs': {
+                        'step': self.iters
+                    }
+                })
                 LOGGER.log(log_dict)
 
                 running_loss = {}
@@ -174,8 +184,8 @@ class SupervisedTrainer(BaseTrainer):
             epoch_loss[key] = np.round(epoch_loss[key], 5)
         loss_string = '{}'.format(epoch_loss)[1:-1].replace("'",'').replace(",",' ||')
         LOGGER.text(
-            "[{}|{}] || {} || Time: {:10.4f} s".format(
-                self.iters, self.num_iterations, loss_string, running_time),
+            "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
+                self.iters, self.num_iterations, loss_string, len(self.valloader)/running_time),
         level=LoggerObserver.INFO)
 
         metric_string = ""
