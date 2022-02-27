@@ -74,10 +74,8 @@ class CSVDataset(SemanticDataset):
 
 
     def _load_mask(self, label_path):
-        mask = Image.open(label_path).convert('RGB')
-        mask = np.array(mask)[:,:,::-1] # (H,W,3)
-        mask = np.argmax(mask, axis=-1)  # (H,W) with each pixel value represent one class
-
+        mask = Image.open(label_path).convert('L')
+        mask = np.array(mask)  # (H,W) with each pixel value represent one class
         return mask 
 
     def _encode_masks(self, masks):
