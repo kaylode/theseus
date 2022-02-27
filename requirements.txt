@@ -10,4 +10,4 @@ gdown>=4.4.0
 grad-cam
 tabulate
 segmentation-models-pytorch
-opencv-python-headless==4.1.2.30 
+opencv-python-headless==4.2.0.32 
