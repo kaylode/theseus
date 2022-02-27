@@ -25,7 +25,7 @@ class ErrorCases(Metric):
         self.classnames = classnames
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -33,6 +33,7 @@ class ErrorCases(Metric):
         if len(self.images) >= self.max_samples:
             return
 
+        outputs = outputs["outputs"]
         images = batch["inputs"]
         targets = batch["targets"] 
         probs, outputs = torch.max(torch.softmax(outputs,dim=-1), dim=-1)

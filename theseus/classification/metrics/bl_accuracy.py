@@ -21,10 +21,11 @@ class BalancedAccuracyMetric(Metric):
         super().__init__(**kwargs)
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
+        outputs = outputs["outputs"] 
         targets = batch["targets"] 
         outputs = torch.argmax(outputs,dim=1)
         outputs = outputs.detach().cpu()
