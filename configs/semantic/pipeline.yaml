@@ -1,20 +1,19 @@
 global:
   debug: true
-  cfg_transform: configs/segmentation/transform.yaml
+  cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
   use_fp16: true
   pretrained: null
   resume: null
 trainer:
-  name: SegmentationTrainer
+  name: SemanticTrainer
   args:
-    num_epochs: 50
-    total_accumulate_steps: null
+    num_iterations: 50000
     clip_grad: 10.0
-    print_per_iter: 20
-    save_per_iter: 1000
-    evaluate_per_epoch: 1
+    print_interval: 20
+    save_interval: 1000
+    evaluate_interval: 1
     visualize_when_val: true
 model:
   name: BaseSegModel
@@ -61,7 +60,7 @@ data:
         image_dir: data/images/train
         mask_dir: data/masks/train
         csv_path: data/train.csv
-        txt_classnames: configs/segmentation/classes.txt
+        txt_classnames: configs/semantic/classes.txt
         mosaic_size: 960 
         mosaic_prob: 0.4
     val:
@@ -70,7 +69,7 @@ data:
         image_dir: data/images/val
         mask_dir: data/masks/val
         csv_path: data/val.csv
-        txt_classnames: configs/segmentation/classes.txt
+        txt_classnames: configs/semantic/classes.txt
   dataloader:
     train:
       name: DataLoaderWithCollator

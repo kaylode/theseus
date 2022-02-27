@@ -9,9 +9,9 @@ import cv2
 import torch
 from datetime import datetime
 from theseus.opt import Config
-from theseus.segmentation.models import MODEL_REGISTRY
-from theseus.segmentation.augmentations import TRANSFORM_REGISTRY
-from theseus.segmentation.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.semantic.models import MODEL_REGISTRY
+from theseus.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.loggers import LoggerObserver, StdoutLogger
@@ -19,7 +19,7 @@ from theseus.utilities.cuda import get_devices_info
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.segmentation.datasets.csv_dataset import CSVDataset
+from theseus.semantic.datasets.csv_dataset import CSVDataset
 
 @DATASET_REGISTRY.register()
 class TestCSVDataset(CSVDataset):

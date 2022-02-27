@@ -5,3 +5,7 @@ from .folder_dataset import *
 
 DATASET_REGISTRY.register(CSVDataset)
 DATASET_REGISTRY.register(ImageFolderDataset)
+
+from .collator import MixupCutmixCollator
+
+DATALOADER_REGISTRY.register(MixupCutmixCollator)

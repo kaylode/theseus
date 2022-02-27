@@ -40,7 +40,6 @@ class ClassificationTrainer(SupervisedTrainer):
         weights = {
             'model': self.model.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
-            'epoch': self.epoch,
             'iters': self.iters,
             'best_value': self.best_value,
         }
@@ -56,8 +55,7 @@ class ClassificationTrainer(SupervisedTrainer):
         """
         LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
         state_dict = torch.load(path, map_location='cpu')
-        self.epoch = load_state_dict(self.epoch, state_dict, 'epoch')
-        self.start_iter = load_state_dict(self.start_iter, state_dict, 'iters')
+        self.iters = load_state_dict(self.iters, state_dict, 'iters')
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
         self.scaler = load_state_dict(self.scaler, state_dict, self.scaler.state_dict_key)
 
@@ -140,7 +138,7 @@ class ClassificationTrainer(SupervisedTrainer):
         grad_cam = CAMWrapper.get_method(
             name='gradcam', 
             model=self.model.model.get_model(), 
-            model_name=model_name, use_cuda=False)
+            model_name=model_name, use_cuda=next(self.model.parameters()).is_cuda)
 
         grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
             

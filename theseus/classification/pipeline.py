@@ -68,13 +68,13 @@ class Pipeline(object):
 
         CLASSNAMES = self.val_dataset.classnames
 
-        self.train_dataloader = get_instance(
+        self.train_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['train'],
             registry=DATALOADER_REGISTRY,
             dataset=self.train_dataset,
         )
 
-        self.val_dataloader = get_instance(
+        self.val_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['val'],
             registry=DATALOADER_REGISTRY,
             dataset=self.val_dataset
@@ -85,9 +85,10 @@ class Pipeline(object):
             registry=MODEL_REGISTRY, 
             classnames=CLASSNAMES).to(self.device)
 
-        criterion = get_instance(self.opt["loss"], registry=LOSS_REGISTRY).to(
-            self.device
-        )
+        criterion = get_instance_recursively(
+            self.opt["loss"], 
+            registry=LOSS_REGISTRY).to(self.device)
+            
         self.model = ModelWithLoss(model, criterion, self.device)
 
         self.metrics = get_instance_recursively(
@@ -110,12 +111,13 @@ class Pipeline(object):
             state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            last_epoch = load_state_dict(last_epoch, state_dict, 'epoch')
+            iters = load_state_dict(None, state_dict, 'iters')
+            last_epoch = iters//len(self.train_dataloader) - 1
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{
-                'num_epochs': self.opt["trainer"]['args']['num_epochs'],
+                'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
                 'trainset': self.train_dataset,
                 'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
                 'last_epoch': last_epoch,

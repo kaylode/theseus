@@ -3,15 +3,15 @@ from datetime import datetime
 
 import os
 import torch
-from theseus.segmentation.models.wrapper import ModelWithLoss
+from theseus.semantic.models.wrapper import ModelWithLoss
 from theseus.opt import Config
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.segmentation.augmentations import TRANSFORM_REGISTRY
-from theseus.segmentation.losses import LOSS_REGISTRY
-from theseus.segmentation.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
-from theseus.segmentation.trainer import TRAINER_REGISTRY
-from theseus.segmentation.metrics import METRIC_REGISTRY
-from theseus.segmentation.models import MODEL_REGISTRY
+from theseus.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.semantic.losses import LOSS_REGISTRY
+from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.semantic.trainer import TRAINER_REGISTRY
+from theseus.semantic.metrics import METRIC_REGISTRY
+from theseus.semantic.models import MODEL_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
@@ -68,13 +68,13 @@ class Pipeline(object):
 
         CLASSNAMES = self.val_dataset.classnames
 
-        self.train_dataloader = get_instance(
+        self.train_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['train'],
             registry=DATALOADER_REGISTRY,
             dataset=self.train_dataset,
         )
 
-        self.val_dataloader = get_instance(
+        self.val_dataloader = get_instance_recursively(
             opt['data']["dataloader"]['val'],
             registry=DATALOADER_REGISTRY,
             dataset=self.val_dataset
@@ -112,12 +112,13 @@ class Pipeline(object):
             state_dict = torch.load(self.resume)
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
-            last_epoch = load_state_dict(last_epoch, state_dict, 'epoch')
+            iters = load_state_dict(None, state_dict, 'iters')
+            last_epoch = iters//len(self.train_dataloader) - 1
 
         self.scheduler = get_instance(
             self.opt["scheduler"], registry=SCHEDULER_REGISTRY, optimizer=self.optimizer,
             **{
-                'num_epochs': self.opt["trainer"]['args']['num_epochs'],
+                'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
                 'trainset': self.train_dataset,
                 'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
                 'last_epoch': last_epoch,

@@ -91,7 +91,7 @@ class ClassificationAnalyzer(Analyzer):
         self.class_dist(axs[1])
         return fig
 
-class SegmentationAnalyzer(ClassificationAnalyzer):
+class SemanticAnalyzer(ClassificationAnalyzer):
     def __init__(self):
         super().__init__()
 

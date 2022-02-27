@@ -31,7 +31,7 @@ python train.py -c pipeline.yaml
 ```
 python train.py \
     -c pipeline.yaml \
-    -o trainer.args.num_epochs=50 \
+    -o trainer.args.num_iterations=5000 \
     global.resume=checkpoint.pth
 ```
 **Notice: There are no spaces between keys and values in -o flag**
