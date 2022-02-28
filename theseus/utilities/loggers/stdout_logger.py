@@ -98,7 +98,7 @@ class StdoutLogger(LoggerSubscriber):
             self.level = logging.INFO
         self.logger.setLevel(self.level)
 
-    def log_text(self, tag, value, level, **kwargs):
+    def log_text(self, tag, value, level=logging.DEBUG, **kwargs):
         if level == logging.WARN:
             self.logger.warn(value)
 

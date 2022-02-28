@@ -2,14 +2,20 @@ import os
 import torch
 from typing import Any, Dict, Optional, List
 from theseus.base.metrics.metric_template import Metric
+import cv2
 import numpy as np
 import hashlib
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.loggers import LoggerObserver
 
+# To fix tensorflow bug on Google Colab
+import tensorflow as tf
+import tensorboard as tb
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+
 class EmbeddingProjection(Metric):
     """
-    Confusion Matrix metric for classification
+    Visualize embedding project for classification
     """
     def __init__(self, save_dir='.temp', has_labels=False, **kwargs):
         super().__init__(**kwargs)
@@ -31,11 +37,9 @@ class EmbeddingProjection(Metric):
         img_names = batch['img_names']
 
         for i in range(len(features)):
-            filename = hashlib.md5(img_names[i]).hexdigest()
-            image = inputs[i]
-            img_show = self.visualizer.denormalize(image)
-            self.visualizer.set_image(img_show)
-            pred_img = self.visualizer.get_image()
+            filename = hashlib.md5(img_names[i].encode('utf-8')).hexdigest()
+            pred_img = self.visualizer.denormalize(inputs[i])
+            pred_img = cv2.resize(pred_img, dsize=(64,64), interpolation=cv2.INTER_CUBIC)
 
             embedding_path = self.save_dir + r"/" + filename + '_feat.npy' 
             image_path = self.save_dir + r"/" + filename + '_img.npy'
@@ -60,20 +64,21 @@ class EmbeddingProjection(Metric):
         
         all_embeddings = [np.load(embedding_path) for embedding_path in self.embeddings]
         all_images = [np.load(image_path) for image_path in self.imgs]
-        all_images = [np.moveaxis(a, 2, 0) for a in all_images] # (HWC) -> (CHW)
+        all_images = [a.transpose(2,0,1) for a in all_images] # (HWC) -> (CHW)
 
         ## Stack into tensors
-        all_embeddings = torch.Tensor(all_embeddings)
-        all_images = torch.Tensor(all_images)
+        all_embeddings = torch.from_numpy(np.stack(all_embeddings, axis=0))
+        all_images = torch.from_numpy(np.stack(all_images, axis=0))
 
         ## Log to tensorboard
-        self.logger.log({
+        self.logger.log([{
             'tag': f"Validation/projection",
             'value': all_embeddings,
+            'type': LoggerObserver.EMBED,
             'kwargs': {
                 'label_img': all_images, 
                 'metadata': self.labels
             }
-        })
+        }])
 
         return {'projection': "Embedding projection generated"}
