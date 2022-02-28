@@ -32,6 +32,7 @@ class EmbeddingProjection(Metric):
         Perform calculation based on prediction and targets
         """
         features = outputs["features"].detach().cpu().numpy() 
+        predictions = torch.argmax(outputs['outputs'].detach().cpu(), dim=1).numpy().tolist()
         inputs = batch["inputs"] 
         targets = batch["targets"].numpy().tolist()
         img_names = batch['img_names']
@@ -48,6 +49,7 @@ class EmbeddingProjection(Metric):
 
             self.embeddings.append(embedding_path)
             self.imgs.append(image_path)
+            self.predictions.append(predictions[i])
 
             if self.has_labels:
                 self.labels.append(targets[i])
@@ -55,6 +57,7 @@ class EmbeddingProjection(Metric):
     def reset(self):
         self.embeddings = []
         self.imgs = []
+        self.predictions = []
         if self.has_labels:
             self.labels = []
         else:
@@ -70,14 +73,24 @@ class EmbeddingProjection(Metric):
         all_embeddings = torch.from_numpy(np.stack(all_embeddings, axis=0))
         all_images = torch.from_numpy(np.stack(all_images, axis=0))
 
+        ## Metadata, in column style
+        if self.has_labels:
+            metadata = [a for a in zip(self.labels, self.predictions)]
+            metadata_header = ['ground truth', 'prediction']
+        else:
+            metadata = self.predictions
+            metadata_header = ['prediction']
+
         ## Log to tensorboard
         self.logger.log([{
             'tag': f"Validation/projection",
             'value': all_embeddings,
             'type': LoggerObserver.EMBED,
             'kwargs': {
+                'step': 0,
                 'label_img': all_images, 
-                'metadata': self.labels
+                'metadata': metadata,
+                'metadata_header': metadata_header
             }
         }])
 
