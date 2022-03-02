@@ -74,11 +74,12 @@ class ConfusionMatrix(Metric):
         self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
         # in torchvision models, pred is a dict[key=out, value=Tensor]
+        outputs = outputs["outputs"] 
         targets = batch["targets"] 
 
         outputs = torch.argmax(outputs,dim=1)

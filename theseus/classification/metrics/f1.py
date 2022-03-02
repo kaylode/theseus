@@ -14,11 +14,12 @@ class F1ScoreMetric(Metric):
         self.average = average
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]):
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
         targets = batch["targets"] 
+        outputs = outputs["outputs"] 
 
         outputs = torch.argmax(outputs,dim=1)
         outputs = outputs.detach().cpu()

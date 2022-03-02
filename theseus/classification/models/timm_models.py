@@ -2,6 +2,7 @@ from typing import Dict, List, Any, Optional
 import timm
 import torch
 import torch.nn as nn
+from theseus.utilities.hooks import postfix_hook
 
 class BaseTimmModel(nn.Module):
     """Convolution models from timm
@@ -34,6 +35,23 @@ class BaseTimmModel(nn.Module):
         else:
             self.model = timm.create_model(name, pretrained=from_pretrained)
 
+        # Register a postfix hook to extract model features when forward
+        self.model.forward_features = postfix_hook(
+            self.model.forward_features, self.get_feature_hook)
+        
+        self.features = None
+        self.pooling = torch.nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten()
+        )
+
+    def get_feature_hook(self, parameter):
+        """
+        A hook function to extract features, only a workaround
+        """
+        self.features = self.pooling(parameter)
+        return parameter
+
     def get_model(self):
         """
         Return the full architecture of the model, for visualization
@@ -41,8 +59,12 @@ class BaseTimmModel(nn.Module):
         return self.model
 
     def forward(self, x: torch.Tensor):
+        self.features = None # Clear current features
         outputs = self.model(x)
-        return outputs
+        return {
+            'outputs': outputs,
+            'features': self.features
+        }
 
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         """

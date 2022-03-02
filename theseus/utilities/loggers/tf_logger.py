@@ -56,6 +56,21 @@ class TensorboardLogger(LoggerSubscriber):
         """
         self.writer.add_graph(value, inputs)
 
+    def log_embedding(self, tag, value, label_img=None, step=0, metadata=None, metadata_header=None, **kwargs):
+        """
+        Write a embedding projection to tensorboard
+        :param value: (torch.Tensor) embedding (N, D)
+        :param label_img: (torch.Tensor) normalized image tensors (N, 3, H, W)
+        :param metadata: (List) list of coresponding labels
+        """
+        self.writer.add_embedding(
+            tag=tag,
+            mat=value, 
+            label_img = label_img, 
+            metadata=metadata, 
+            metadata_header = metadata_header,
+            global_step=step)
+
     def load(self, old_log):
         """
         Load tensorboard from log

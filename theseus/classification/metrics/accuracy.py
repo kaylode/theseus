@@ -12,10 +12,11 @@ class Accuracy(Metric):
         super().__init__(**kwargs)
         self.reset()
 
-    def update(self, output: torch.Tensor, batch: Dict[str, Any]):
+    def update(self, output: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
+        output = output["outputs"] 
         target = batch["targets"] 
         prediction = torch.argmax(output, dim=1)
         prediction = prediction.cpu().detach()
