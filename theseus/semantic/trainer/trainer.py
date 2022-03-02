@@ -134,6 +134,10 @@ class SemanticTrainer(SupervisedTrainer):
             }
         }])
 
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
+
     @torch.no_grad()
     def visualize_pred(self):
         r"""Visualize model prediction 
@@ -187,6 +191,10 @@ class SemanticTrainer(SupervisedTrainer):
                 'step': self.iters
             }
         }])
+
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
         
 
     @torch.no_grad()
@@ -233,6 +241,10 @@ class SemanticTrainer(SupervisedTrainer):
                 'step': self.iters
             }
         }])
+
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
 
     def on_evaluate_end(self):
         if self.visualize_when_val:

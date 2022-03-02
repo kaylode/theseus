@@ -117,6 +117,10 @@ class ClassificationTrainer(SupervisedTrainer):
             }
         }])
 
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
+
 
     @torch.enable_grad() #enable grad for CAM
     def visualize_pred(self):
@@ -213,6 +217,10 @@ class ClassificationTrainer(SupervisedTrainer):
             }
         }])
 
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
+
         # Zeroing gradients in optimizer for safety
         self.optimizer.zero_grad()
 
@@ -260,6 +268,10 @@ class ClassificationTrainer(SupervisedTrainer):
                 'step': self.iters
             }
         }])
+
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
+        plt.close()
 
     def on_evaluate_end(self):
         if self.visualize_when_val:
