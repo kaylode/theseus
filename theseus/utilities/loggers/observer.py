@@ -3,6 +3,7 @@ import logging
 import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
+from .stdout_logger import StdoutLogger
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -42,6 +43,11 @@ class LoggerObserver(object):
     def __init__(self, name) -> None:
         self.subscriber = []
         self.name = name
+
+        # Init with a stdout logger
+        logger = StdoutLogger(__name__, debug=True)
+        self.subscribe(logger)
+        
         LoggerObserver.instances[name] = self
 
     @classmethod

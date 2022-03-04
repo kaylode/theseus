@@ -9,16 +9,18 @@ setuptools.setup(
         "numpy",
         "torch",
         "tensorboard",
-        "albumentations",
+        "albumentations>=1.1.0",
         "torchvision",
         "tqdm",
-        "timm",
+        "timm>=0.5.4",
         "pyyaml>=5.1",
         "webcolors",
         "omegaconf",
-        "gdown==3.13.0",
+        "gdown>=4.4.0",
         "grad-cam",
         "tabulate",
-        "segmentation-models-pytorch"
+        "segmentation-models-pytorch",
+        "opencv-python-headless==4.2.0.32" 
+        
     ],
 )

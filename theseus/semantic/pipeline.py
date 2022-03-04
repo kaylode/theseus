@@ -13,7 +13,7 @@ from theseus.semantic.trainer import TRAINER_REGISTRY
 from theseus.semantic.metrics import METRIC_REGISTRY
 from theseus.semantic.models import MODEL_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, StdoutLogger, ImageWriter
+from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, FileLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
 
 from theseus.utilities.cuda import get_devices_info
@@ -37,8 +37,8 @@ class Pipeline(object):
         self.debug = opt['global']['debug']
         self.logger = LoggerObserver.getLogger("main") 
 
-        stdout_logger = StdoutLogger(__name__, self.savedir, debug=self.debug)
-        self.logger.subscribe(stdout_logger)
+        file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
+        self.logger.subscribe(file_logger)
         self.logger.text(self.opt, level=LoggerObserver.INFO)
 
         self.use_fp16 = opt['global']['use_fp16']

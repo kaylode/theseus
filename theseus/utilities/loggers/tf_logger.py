@@ -88,6 +88,9 @@ class TensorboardLogger(LoggerSubscriber):
             image = ToTensor()(image_result)
             self.log_figure(tag, image, step)
 
+    def __del__(self):
+        self.writer.close()
+
 
 def tflog2pandas(path: str) -> pd.DataFrame:
     """convert single tensorflow log file to pandas DataFrame

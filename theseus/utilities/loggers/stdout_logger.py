@@ -40,23 +40,21 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-class StdoutLogger(LoggerSubscriber):
+class BaseTextLogger(LoggerSubscriber):
     """
     Logger class for showing text in prompt and file
     For more documents, look into https://docs.python.org/3/library/logging.html
     
     Usage:
-        from modules.logger import StdoutLogger
-        LOGGER = StdoutLogger.init_logger(__name__)
+        from modules.logger import BaseTextLogger
+        LOGGER = BaseTextLogger.init_logger(__name__)
 
     """
 
     date_format = '%d-%m-%y %H:%M:%S'
     message_format = '[%(asctime)s][%(filename)s::%(lineno)d][%(levelname)s]: %(message)s'
     color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(filename)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
-    def __init__(self, name, logdir, debug=False):
-        self.logdir = logdir
-        self.filename = f'{self.logdir}/log.txt'
+    def __init__(self, name, debug=False):
 
         if debug:
             self.level = logging.DEBUG        
@@ -69,22 +67,14 @@ class StdoutLogger(LoggerSubscriber):
 
         # Create handlers
         handlers = self.init_handlers()
+        if not isinstance(handlers, list):
+            handlers = [handlers]
 
         # Add handlers
         self.add_handlers(self.logger, handlers=handlers)
 
     def init_handlers(self):
-        # Create one file logger and one stream logger
-        stream_handler = logging.StreamHandler()
-        file_handler = logging.FileHandler(self.filename)
-        
-        # Create formatters and add it to handlers
-        format = logging.Formatter(StdoutLogger.message_format, datefmt=StdoutLogger.date_format)
-        custom_format = CustomFormatter(StdoutLogger.color_message_format, date_format=StdoutLogger.date_format)
-        stream_handler.setFormatter(custom_format)
-        file_handler.setFormatter(format)
-        
-        return stream_handler, file_handler
+        raise NotImplementedError
 
     def add_handlers(self, logger, handlers):
         # Add handlers to the logger
@@ -111,3 +101,53 @@ class StdoutLogger(LoggerSubscriber):
         if level == logging.DEBUG:
             self.logger.debug(value)
         
+
+class FileLogger(BaseTextLogger):
+    """
+    Logger class for showing text in prompt and file
+    For more documents, look into https://docs.python.org/3/library/logging.html
+    
+    Usage:
+        from modules.logger import FileLogger
+        LOGGER = FileLogger.init_logger(__name__)
+
+    """
+
+    def __init__(self, name, logdir, debug=False):
+        self.logdir = logdir
+        self.filename = f'{self.logdir}/log.txt'
+        super().__init__(name, debug)
+
+    def init_handlers(self):
+        # Create one file logger and one stream logger
+        file_handler = logging.FileHandler(self.filename)
+        
+        # Create formatters and add it to handlers
+        format = logging.Formatter(FileLogger.message_format, datefmt=FileLogger.date_format)
+        file_handler.setFormatter(format)
+        
+        return file_handler
+
+class StdoutLogger(BaseTextLogger):
+    """
+    Logger class for showing text in prompt and file
+    For more documents, look into https://docs.python.org/3/library/logging.html
+    
+    Usage:
+        from modules.logger import StdoutLogger
+        LOGGER = StdoutLogger.init_logger(__name__)
+
+    """
+
+    def __init__(self, name, debug=False):
+        super().__init__(name, debug)
+
+    def init_handlers(self):
+        # Create one file logger and one stream logger
+        stream_handler = logging.StreamHandler()
+        
+        # Create formatters and add it to handlers
+        custom_format = CustomFormatter(StdoutLogger.color_message_format, date_format=StdoutLogger.date_format)
+        stream_handler.setFormatter(custom_format)
+        
+        return stream_handler
