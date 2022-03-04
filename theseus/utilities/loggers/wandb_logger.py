@@ -1,4 +1,7 @@
-import wandb
+try:
+    import wandb
+except ModuleNotFoundError:
+    pass
 import torch
 from theseus.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
 LOGGER = LoggerObserver.getLogger('main')
