@@ -1,5 +1,5 @@
 try:
-    import wandb
+    import theseus.utilities.loggers.wandb_logger as wandb_logger
 except ModuleNotFoundError:
     pass
 import torch
@@ -16,12 +16,12 @@ class WandbLogger(LoggerSubscriber):
         self.username = username
         self.resume = resume
         
-        wandb.init(entity=username, project=project_name, resume=resume)
-        wandb.watch_called = False
+        wandb_logger.init(entity=username, project=project_name, resume=resume)
+        wandb_logger.watch_called = False
 
     def load_state_dict(self, path):
-        if wandb.run.resumed:
-            state_dict = torch.load(wandb.restore(path))
+        if wandb_logger.run.resumed:
+            state_dict = torch.load(wandb_logger.restore(path))
             return state_dict
         else:
             return None
@@ -34,7 +34,7 @@ class WandbLogger(LoggerSubscriber):
         :param step: (int) logging step
         """
 
-        wandb.log({tag: value}, step=step)
+        wandb_logger.log({tag: value}, step=step)
 
     def log_figure(self, tag, value, step, **kwargs):
         """
@@ -46,12 +46,12 @@ class WandbLogger(LoggerSubscriber):
 
 
         if isinstance(value, torch.Tensor):
-            image = wandb.Image(value)
-            wandb.log({
+            image = wandb_logger.Image(value)
+            wandb_logger.log({
                tag: image
             }, step=step)
         else:
-            wandb.log({
+            wandb_logger.log({
                tag: value
             }, step=step)
 
@@ -61,7 +61,7 @@ class WandbLogger(LoggerSubscriber):
         :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
-        wandb.watch(value, log="all")
+        wandb_logger.watch(value, log="all")
 
     def __del__(self):
-        wandb.finish()
+        wandb_logger.finish()
