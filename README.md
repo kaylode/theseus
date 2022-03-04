@@ -12,6 +12,9 @@
 
 # :pencil: Instructions
 
+### Installation
+- Go to root folder, run `pip install -e .`
+
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
 2. Customize inherited trainer and pipeline to your need, such as what to do before/after training/validating step,...
