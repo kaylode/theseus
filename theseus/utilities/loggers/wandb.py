@@ -8,11 +8,12 @@ class WandbLogger(LoggerSubscriber):
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, name:str, resume:bool = False):
-        self.name = name
+    def __init__(self, username:str, project_name:str, resume:bool = False):
+        self.project_name = project_name
+        self.username = username
         self.resume = resume
         
-        wandb.init(entity="wandb", project=name, resume=resume)
+        wandb.init(entity=username, project=project_name, resume=resume)
         wandb.watch_called = False
 
     def load_state_dict(self, path):

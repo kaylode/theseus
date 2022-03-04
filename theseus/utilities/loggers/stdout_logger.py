@@ -68,7 +68,7 @@ class BaseTextLogger(LoggerSubscriber):
         # Create handlers
         handlers = self.init_handlers()
         if not isinstance(handlers, list):
-            handlers = list(handlers)
+            handlers = [handlers]
 
         # Add handlers
         self.add_handlers(self.logger, handlers=handlers)
