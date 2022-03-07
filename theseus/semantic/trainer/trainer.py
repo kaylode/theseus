@@ -9,6 +9,7 @@ from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.visualization.colors import color_list
 from theseus.utilities.analysis.analyzer import SemanticAnalyzer
 from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.utilities.cuda import move_to
 LOGGER = LoggerObserver.getLogger("main")
 
 class SemanticTrainer(SupervisedTrainer):
@@ -203,7 +204,7 @@ class SemanticTrainer(SupervisedTrainer):
         LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
 
         batch = next(iter(self.valloader))
-        images = batch["inputs"].to(self.model.device)
+        images = move_to(batch["inputs"], self.model.device)
         LOGGER.log([{
             'tag': "Sanitycheck/analysis/architecture",
             'value': self.model.model.get_model(),

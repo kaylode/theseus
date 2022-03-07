@@ -16,7 +16,7 @@ from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, FileLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
 
-from theseus.utilities.cuda import get_devices_info
+from theseus.utilities.cuda import get_devices_info, move_to, get_device
 
 
 
@@ -46,7 +46,7 @@ class Pipeline(object):
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
 
         self.device_name = opt['global']['device']
-        self.device = torch.device(self.device_name)
+        self.device = get_device(self.device_name)
         self.resume = opt['global']['resume']
         self.pretrained = opt['global']['pretrained']
 
@@ -84,11 +84,14 @@ class Pipeline(object):
           self.opt["model"], 
           registry=MODEL_REGISTRY, 
           classnames=CLASSNAMES,
-          num_classes=len(CLASSNAMES)).to(self.device)
+          num_classes=len(CLASSNAMES))
+        model = move_to(model, self.device)
           
         criterion = get_instance_recursively(
             self.opt["loss"], 
-            registry=LOSS_REGISTRY).to(self.device)
+            registry=LOSS_REGISTRY)
+        criterion = move_to(criterion, self.device)
+
         self.model = ModelWithLoss(model, criterion, self.device)
 
         self.metrics = get_instance_recursively(

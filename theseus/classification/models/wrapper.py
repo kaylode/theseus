@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from theseus.utilities.cuda import move_to
 
 class ModelWithLoss(nn.Module):
     """Add utilitarian functions for module to work with pipeline
@@ -17,7 +18,7 @@ class ModelWithLoss(nn.Module):
         self.device = device
 
     def forward(self, batch, metrics=None):
-        outputs = self.model(batch["inputs"].to(self.device))
+        outputs = self.model(move_to(batch["inputs"], self.device))
         loss, loss_dict = self.criterion(outputs, batch, self.device)
 
         if metrics is not None:

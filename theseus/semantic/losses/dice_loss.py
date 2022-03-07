@@ -2,6 +2,7 @@ from typing import Dict, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from theseus.utilities.cuda import move_to
 
 class DiceLoss(nn.Module):
     """Dice loss, need one hot encode input
@@ -15,7 +16,7 @@ class DiceLoss(nn.Module):
         self.eps = eps
 
     def forward(self, predict: torch.Tensor, batch: Dict, device: torch.device):
-        targets = batch["targets"].to(device)
+        targets = move_to(batch["targets"], device)
         prediction = F.softmax(predict, dim=1)  
 
         # have to use contiguous since they may from a torch.view op

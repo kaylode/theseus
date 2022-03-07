@@ -15,7 +15,7 @@ from theseus.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTR
 
 from theseus.utilities.loading import load_state_dict
 from theseus.utilities.loggers import LoggerObserver, StdoutLogger
-from theseus.utilities.cuda import get_devices_info
+from theseus.utilities.cuda import get_devices_info, move_to, get_device
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
 import os
@@ -42,7 +42,7 @@ class TestPipeline(object):
 
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
         self.device_name = opt['global']['device']
-        self.device = torch.device(self.device_name)
+        self.device = get_device(self.device_name)
 
         self.weights = opt['global']['weights']
 
@@ -67,7 +67,9 @@ class TestPipeline(object):
         self.model = get_instance(
             opt["model"], 
             registry=MODEL_REGISTRY, 
-            classnames=CLASSNAMES).to(self.device)
+            classnames=CLASSNAMES)
+            
+        self.model = move_to(self.model, self.device)
 
         if self.weights:
             state_dict = torch.load(self.weights)

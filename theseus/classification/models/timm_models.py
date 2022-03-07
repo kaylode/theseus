@@ -3,6 +3,7 @@ import timm
 import torch
 import torch.nn as nn
 from theseus.utilities.hooks import postfix_hook
+from theseus.utilities.cuda import move_to
 
 class BaseTimmModel(nn.Module):
     """Convolution models from timm
@@ -75,7 +76,7 @@ class BaseTimmModel(nn.Module):
         device: `torch.device`
             current device 
         """
-        inputs = adict['inputs'].to(device)
+        inputs = move_to(adict['inputs'], device)
         outputs = self.model(inputs)
 
         probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)

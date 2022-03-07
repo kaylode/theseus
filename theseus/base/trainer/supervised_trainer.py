@@ -44,6 +44,7 @@ class SupervisedTrainer(BaseTrainer):
         self.scheduler = scheduler
         self.trainloader = trainloader
         self.valloader = valloader
+        self.use_cuda = next(self.model.parameters()).is_cuda
 
         self.step_per_epoch = self.scheduler.step_per_epoch
 
@@ -90,7 +91,9 @@ class SupervisedTrainer(BaseTrainer):
 
             self.optimizer.zero_grad()
 
-            torch.cuda.synchronize()
+            if self.use_cuda:
+                torch.cuda.synchronize()
+
             end_time = time.time()
 
             for (key,value) in loss_dict.items():

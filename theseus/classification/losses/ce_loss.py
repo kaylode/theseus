@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 import torch
 from torch import nn
 from timm.loss import LabelSmoothingCrossEntropy
+from theseus.utilities.cuda import move_to
 
 class CELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
@@ -13,7 +14,7 @@ class CELoss(nn.Module):
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
 
         pred = outputs["outputs"]
-        target = batch["targets"].to(device)
+        target = move_to(batch["targets"], device)
         if pred.shape == target.shape:
             loss = self.criterion(pred, target)
         else:
@@ -30,7 +31,7 @@ class SmoothCELoss(nn.Module):
 
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         pred = outputs['outputs']
-        target = batch["targets"].to(device)
+        target = move_to(batch["targets"], device)
         loss = self.criterion(pred, target.view(-1).contiguous())
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict

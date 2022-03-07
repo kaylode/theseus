@@ -6,7 +6,7 @@ Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from theseus.utilities.cuda import move_to
 
 def lovasz_grad(gt_sorted):
     """
@@ -70,7 +70,7 @@ class LovaszSoftmax(nn.Module):
         self.only_present = only_present
 
     def forward(self, predict, batch, device):
-        targets = batch['targets'].to(device)
+        targets = move_to(batch['targets'], device)
         targets = torch.argmax(targets, dim=1)
 
         probas = F.softmax(predict, dim=1)
