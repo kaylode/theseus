@@ -2,6 +2,7 @@ from typing import Dict, Any
 import torch
 import torch.nn as nn
 import segmentation_models_pytorch as smp
+from theseus.utilities.cuda import move_to
 
 """
 Source: https://github.com/qubvel/segmentation_models.pytorch
@@ -57,7 +58,7 @@ class BaseSegModel(nn.Module):
         device: `torch.device`
             current device 
         """
-        inputs = adict['inputs'].to(device)
+        inputs = move_to(adict['inputs'], device)
         outputs = self.model(inputs)
 
         if self.num_classes == 1:

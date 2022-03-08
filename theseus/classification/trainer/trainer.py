@@ -6,7 +6,7 @@ from theseus.utilities.loading import load_state_dict
 from theseus.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.analysis.analyzer import ClassificationAnalyzer
-
+from theseus.utilities.cuda import move_to
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -230,7 +230,7 @@ class ClassificationTrainer(SupervisedTrainer):
         LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
 
         batch = next(iter(self.valloader))
-        images = batch["inputs"].to(self.model.device)
+        images = move_to(batch["inputs"], self.model.device)
         LOGGER.log([{
             'tag': "Sanitycheck/analysis/architecture",
             'value': self.model.model.get_model(),
