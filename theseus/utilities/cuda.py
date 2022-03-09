@@ -3,7 +3,7 @@ Hacked together by / Copyright 2020 Ross Wightman
 """
 import torch
 from typing import Any
-from loggers.observer import LoggerObserver
+from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 
@@ -37,7 +37,7 @@ def move_to(obj: Any, device: torch.device):
     Returns:
         type(obj) -- same object but moved to specified device
     """
-    if torch.is_tensor(obj):
+    if torch.is_tensor(obj) or isinstance(obj, torch.nn.Module):
         return obj.to(device)
     elif isinstance(obj, dict):
         res = {k: move_to(v, device) for k, v in obj.items()}
