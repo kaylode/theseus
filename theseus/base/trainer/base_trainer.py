@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 import os
 from theseus.utilities.loggers.cp_logger import Checkpoint
 from theseus.base.optimizers.scalers import NativeScaler
-
+from theseus.base.callbacks import CallbacksList, DefaultCallbacks
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -44,6 +44,7 @@ class BaseTrainer():
                 visualize_when_val: bool = True,
                 best_value: float = 0.0,
                 resume: str = Optional[None],
+                callbacks: CallbacksList = CallbacksList([DefaultCallbacks])
                 ):
 
         self.save_dir = save_dir
@@ -59,13 +60,14 @@ class BaseTrainer():
         self.best_value = best_value
         self.resume = resume
         self.iters = 0
+        self.callbacks = callbacks
+        self.callbacks.set_params(self)
         
     def fit(self): 
         
         # On start callbacks
-        self.on_start()
+        self.callbacks.run('on_start')
 
-        LOGGER.text(f'===========================START TRAINING=================================', level=LoggerObserver.INFO)
         while self.iters < self.num_iterations:
             try:
                 # Start training
@@ -85,8 +87,9 @@ class BaseTrainer():
                 break
         
         # On training finish callbacks
-        self.on_finish()
-        LOGGER.text("Training Completed!", level=LoggerObserver.INFO)
+        
+        self.callbacks.run('on_finish')
+
 
     def sanity_check(self):
         raise NotImplementedError
