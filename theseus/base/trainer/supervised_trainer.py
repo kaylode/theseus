@@ -54,14 +54,10 @@ class SupervisedTrainer(BaseTrainer):
         Perform training one epoch
         """
         self.model.train()
-
-        running_loss = {}
-        running_time = 0
-
+        self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
-            
-            start_time = time.time()
+            self.callbacks.run('on_train_batch_start', {'batch': batch})
 
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
@@ -74,79 +70,30 @@ class SupervisedTrainer(BaseTrainer):
             
             # Optmizer step
             self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
-
             if not self.step_per_epoch:
                 self.scheduler.step()
-                lrl = [x['lr'] for x in self.optimizer.param_groups]
-                lr = sum(lrl) / len(lrl)
-
-                LOGGER.log([{
-                    'tag': 'Training/Learning rate',
-                    'value': lr,
-                    'type': LoggerObserver.SCALAR,
-                    'kwargs': {
-                        'step': self.iters
-                    }
-                }])
-
             self.optimizer.zero_grad()
 
             if self.use_cuda:
                 torch.cuda.synchronize()
 
-            end_time = time.time()
-
-            for (key,value) in loss_dict.items():
-                if key in running_loss.keys():
-                    running_loss[key] += value
-                else:
-                    running_loss[key] = value
-
-            running_time += end_time-start_time
-
             # Calculate current iteration
             self.iters = self.iters + 1
 
-            # Logging
-            if self.iters % self.print_interval == 0:
-                for key in running_loss.keys():
-                    running_loss[key] /= self.print_interval
-                    running_loss[key] = np.round(running_loss[key], 5)
-                loss_string = '{}'.format(running_loss)[1:-1].replace("'",'').replace(",",' ||')
+            # Get learning rate
+            lrl = [x['lr'] for x in self.optimizer.param_groups]
+            lr = sum(lrl) / len(lrl)
 
-                LOGGER.text(
-                    "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
-                        self.iters, self.num_iterations,
-                        loss_string, self.print_interval/running_time), 
-                    LoggerObserver.INFO)
-                
-                log_dict = [{
-                    'tag': f"Training/{k} Loss",
-                    'value': v/self.print_interval,
-                    'type': LoggerObserver.SCALAR,
-                    'kwargs': {
-                        'step': self.iters
-                    }
-                } for k,v in running_loss.items()]
+            self.callbacks.run('on_train_batch_end', {
+                'loss_dict': loss_dict,
+                'iters': self.iters,
+                'num_iterations': self.num_iterations,
+                'lr': lr
+            })
 
 
-                log_dict.append({
-                    'tag': f"Training/Iterations per second",
-                    'value': self.print_interval/running_time,
-                    'type': LoggerObserver.SCALAR,
-                    'kwargs': {
-                        'step': self.iters
-                    }
-                })
-                LOGGER.log(log_dict)
-
-                running_loss = {}
-                running_time = 0
-
-            # Saving checkpoint
-            if (self.iters % self.save_interval == 0 or self.iters == self.num_iterations - 1):
-                LOGGER.text(f'Save model at [{self.iters}|{self.num_iterations}] to last.pth', LoggerObserver.INFO)
-                self.save_checkpoint()
+        self.callbacks.run('on_train_epoch_end')
+        
 
     @torch.no_grad()   
     def evaluate_epoch(self):
