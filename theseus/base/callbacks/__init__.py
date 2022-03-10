@@ -1,2 +1,2 @@
 from .base_callbacks import Callbacks, CallbacksList
-from .default_callbacks import DefaultCallbacks
+from .logger_callbacks import LoggerCallbacks

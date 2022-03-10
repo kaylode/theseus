@@ -12,10 +12,11 @@ hook_names = [
 
     'on_train_epoch_start', 'on_train_epoch_end',
     'on_train_batch_start', 'on_train_batch_end',
-    'optimizer_step',
+    'on_train_step',
 
-    'on_val_start', 'on_val_end',
+    'on_val_epoch_start', 'on_val_epoch_end',
     'on_val_batch_start', 'on_val_batch_end',
+    'on_val_step',
 ]
 
 class Callbacks:
