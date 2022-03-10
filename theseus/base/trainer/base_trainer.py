@@ -44,7 +44,7 @@ class BaseTrainer():
                 visualize_when_val: bool = True,
                 best_value: float = 0.0,
                 resume: str = Optional[None],
-                callbacks: CallbacksList = CallbacksList([DefaultCallbacks])
+                callbacks: CallbacksList = CallbacksList([DefaultCallbacks()])
                 ):
 
         self.save_dir = save_dir

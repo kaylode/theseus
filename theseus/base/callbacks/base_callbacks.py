@@ -30,7 +30,7 @@ class Callbacks:
             k: None for k in hook_names
         }
 
-        self._name = self.__class__.__name__
+        self.name = self.__class__.__name__
         self.params = None
         self.self_register()
 
@@ -40,7 +40,7 @@ class Callbacks:
     def _do_register(self, name: str, func: Any, overide: bool = False) -> None:
         assert (
             name in self._hooks.keys()
-        ), f"Method named '{name}' cannot be used as hook in {self._name}"
+        ), f"Method named '{name}' cannot be used as hook in {self.name}"
 
         assert (
             self._hooks[name] is None or overide
@@ -106,13 +106,14 @@ class CallbacksList:
             k: [] for k in hook_names
         }
         self._registered_callback_names = []
+        self._registered_callbacks = []
         self.params = None
         self.stop_training = False  # set True to interrupt training
         self.register_callbacks(callbacks)
 
     def set_params(self, params):
-        for item in self._callbacks.values():
-            item['callback'].set_params(params)
+        for item in self._registered_callbacks:
+            item.set_params(params)
 
     def register_callbacks(self, callbacks: List[Callbacks]):
         """
@@ -120,16 +121,17 @@ class CallbacksList:
         """
         # Register all callbacks
         for callback in callbacks:
-            if callback._name not in self._registered_callback_names:
+            if callback.name not in self._registered_callback_names:
                 for method_name, method_call in callback._hooks.items():
                     if method_call is not None:
                         self.register_action(
                             method_name, 
-                            name='.'.join([callback._name, method_name]),
+                            name='.'.join([callback.name, method_name]),
                             callback=method_call)
-                self._registered_callback_names.append(callback._name)
+                self._registered_callback_names.append(callback.name)
+                self._registered_callbacks.append(callback)
             else:
-                print(f"Duplicate callback named {callback._name} found.")
+                print(f"Duplicate callback named {callback.name} found.")
 
     def register_action(self, hook, name='', callback=None):
         """
@@ -155,7 +157,7 @@ class CallbacksList:
         else:
             return self._callbacks
 
-    def run(self, hook, params: Dict):
+    def run(self, hook, params: Dict=None):
         """
         Loop through the registered actions and fire all callbacks
         Args:
