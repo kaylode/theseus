@@ -22,10 +22,12 @@ class CheckpointCallbacks(Callbacks):
         iteration cycle to save checkpoint
     best_key: `str`
         save best based on metric key
+    resume: `str`
+        path to .pth to resume checkpoints
 
     """
 
-    def __init__(self, save_dir: str='runs', save_interval: int=10, best_key:str = None, **kwargs) -> None:
+    def __init__(self, save_dir: str='runs', save_interval: int=10, best_key:str = None, resume: str = None, **kwargs) -> None:
         super().__init__()
 
         self.best_value = 0
@@ -33,6 +35,7 @@ class CheckpointCallbacks(Callbacks):
         self.save_dir = save_dir
         self.save_interval = save_interval
         self.checkpoint = Checkpoint(osp.join(self.save_dir, 'checkpoints')) 
+        self.resume = resume
 
     def load_checkpoint(self, path, trainer):
         """
@@ -64,9 +67,8 @@ class CheckpointCallbacks(Callbacks):
         """
         Before going to the main loop
         """
-        resume = self.params['trainer'].resume
-        if resume is not None:
-            self.load_checkpoint(resume, self.params['trainer'])
+        if self.resume is not None:
+            self.load_checkpoint(self.resume, self.params['trainer'])
 
     def on_train_batch_end(self, logs:Dict=None):
         """
