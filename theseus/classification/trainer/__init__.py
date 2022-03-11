@@ -1,5 +1,4 @@
 from theseus.base.trainer import TRAINER_REGISTRY 
+from theseus.classification.trainer.callbacks.visualize_callbacks import VisualizerCallbacks
 
-from .trainer import ClassificationTrainer
-
-TRAINER_REGISTRY.register(ClassificationTrainer)
+TRAINER_REGISTRY.register(VisualizerCallbacks)
