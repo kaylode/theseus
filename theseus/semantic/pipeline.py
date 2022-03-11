@@ -12,9 +12,10 @@ from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 from theseus.semantic.trainer import TRAINER_REGISTRY
 from theseus.semantic.metrics import METRIC_REGISTRY
 from theseus.semantic.models import MODEL_REGISTRY
+from theseus.semantic.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, FileLogger, ImageWriter
-from theseus.utilities.loading import load_state_dict, find_old_tflog
+from theseus.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
+from theseus.utilities.loading import load_state_dict
 
 from theseus.utilities.cuda import get_devices_info, move_to, get_device
 
@@ -137,9 +138,16 @@ class Pipeline(object):
             optimizer=self.optimizer,
             scheduler=self.scheduler,
             use_fp16=self.use_fp16,
-            save_dir=self.savedir,
-            resume=self.resume,
+            debug=self.debug,
             registry=TRAINER_REGISTRY,
+            callbacks=get_instance_recursively(
+                self.opt["callbacks"],
+                print_interval=self.opt["trainer"]['args']['print_interval'],
+                save_interval=self.opt["trainer"]['args']['save_interval'],
+                save_dir=self.savedir,
+                resume=self.resume,
+                registry=CALLBACKS_REGISTRY
+            )
         )
 
     def infocheck(self):
@@ -159,18 +167,6 @@ class Pipeline(object):
 
         self.opt.save_yaml(os.path.join(self.savedir, 'pipeline.yaml'))
         self.transform_cfg.save_yaml(os.path.join(self.savedir, 'transform.yaml'))
-
-        tf_logger = TensorboardLogger(self.savedir)
-        if self.resume is not None:
-            tf_logger.load(find_old_tflog(
-                os.path.dirname(os.path.dirname(self.resume))
-            ))
-        self.logger.subscribe(tf_logger)
-
-        if self.debug:
-            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
-            self.trainer.sanitycheck()
-
 
     def fit(self):
         self.initiate()
