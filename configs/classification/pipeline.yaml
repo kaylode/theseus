@@ -11,7 +11,7 @@ trainer:
   args:
     num_iterations: 10000
     clip_grad:  10.0
-    evaluate_interval :  1
+    evaluate_interval:  1
     print_interval: 20
     save_interval: 1000
 callbacks:
@@ -21,6 +21,8 @@ callbacks:
     args:
       best_key: bl_acc
   - name: VisualizerCallbacks
+    args: null
+  - name: TensorboardCallbacks
     args: null
 model:
   name: BaseTimmModel
