@@ -57,8 +57,9 @@ class CheckpointCallbacks(Callbacks):
         """
         Before going to the main loop
         """
-        resume = logs['resume']
-        self.load_checkpoint(resume, self.params['trainer'])
+        resume = self.params['trainer'].resume
+        if resume is not None:
+            self.load_checkpoint(resume, self.params['trainer'])
 
     def on_train_batch_end(self, logs:Dict=None):
         """
@@ -74,7 +75,7 @@ class CheckpointCallbacks(Callbacks):
             LOGGER.text(f'Save model at [{iters}|{num_iterations}] to last.pth', LoggerObserver.INFO)
 
 
-    def on_val_batch_end(self, logs:Dict=None):
+    def on_val_epoch_end(self, logs:Dict=None):
         """
         On validation batch (iteration) end
         """

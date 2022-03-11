@@ -164,6 +164,10 @@ class VisualizerCallbacks(Callbacks):
         valloader = self.params['trainer'].valloader
         optimizer = self.params['trainer'].optimizer
 
+        # Zeroing gradients in model and optimizer for supress warning
+        optimizer.zero_grad()
+        model.zero_grad()
+
         # Vizualize Grad Class Activation Mapping and model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
@@ -255,5 +259,6 @@ class VisualizerCallbacks(Callbacks):
         plt.clf()   # Clear figure
         plt.close()
 
-        # Zeroing gradients in optimizer for safety
+        # Zeroing gradients in model and optimizer for safety
         optimizer.zero_grad()
+        model.zero_grad()

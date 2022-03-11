@@ -49,7 +49,9 @@ class BaseTrainer():
         
         # Sanity check if debug is set
         if self.debug:
-            self.callbacks.run('sanitycheck')
+            self.callbacks.run('sanitycheck', {
+                'iters': self.iters
+            })
 
         # On start callbacks
         self.callbacks.run('on_start')

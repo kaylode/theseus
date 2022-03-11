@@ -44,12 +44,6 @@ class LoggerCallbacks(Callbacks):
         Before going to the training loop
         """
         self.running_loss = {}
-        self.running_time = 0
-
-    def on_train_batch_start(self, logs: Dict=None):
-        """
-        Before beginning a batch
-        """
         self.running_time = time.time()
 
     def on_train_batch_end(self, logs: Dict=None):
@@ -119,6 +113,8 @@ class LoggerCallbacks(Callbacks):
 
             
             LOGGER.log(log_dict)
+
+            # Start new interval
             self.running_loss = {}
             self.running_time = time.time()
 
@@ -127,25 +123,15 @@ class LoggerCallbacks(Callbacks):
         Before main validation loops
         """
         LOGGER.text('=============================EVALUATION===================================', LoggerObserver.INFO)
-        self.running_time =  0
-        self.running_loss = {}
-
-    def on_val_batch_start(self, logs: Dict=None):
-        """
-        Before starting the batch
-        """
         self.running_time = time.time()
-
+        self.running_loss = {}
 
     def on_val_batch_end(self, logs: Dict=None):
         """
         After finish a batch
         """
 
-        lr = logs['lr']
-        iters = logs['iters']
         loss_dict = logs['loss_dict']
-        num_iterations = logs['num_iterations']
 
         # Update batch loss
         for (key,value) in loss_dict.items():
@@ -159,7 +145,6 @@ class LoggerCallbacks(Callbacks):
         After finish validation
         """
 
-        lr = logs['lr']
         iters = logs['iters']
         metric_dict = logs['metric_dict']
         num_iterations = logs['num_iterations']
@@ -200,7 +185,7 @@ class LoggerCallbacks(Callbacks):
             'tag': f"Validation/{k}",
             'value': v,
             'kwargs': {
-                'step': self.iters
+                'step': iters
             }
         } for k,v in metric_dict.items()]
 
