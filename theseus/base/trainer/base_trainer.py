@@ -25,9 +25,9 @@ class BaseTrainer():
                 num_iterations: int = 10000,
                 clip_grad: float = 10.0,
                 evaluate_interval: int = 1,
-                resume: str = Optional[None],
                 callbacks: List[Callbacks] = [LoggerCallbacks(), CheckpointCallbacks()],
-                debug: bool = False
+                debug: bool = False,
+                **kwargs
                 ):
 
         self.num_iterations = num_iterations
@@ -35,7 +35,6 @@ class BaseTrainer():
         self.scaler = NativeScaler() if use_fp16 else False
         self.clip_grad = clip_grad
         self.evaluate_interval = evaluate_interval
-        self.resume = resume
         self.iters = 0
         self.debug = debug
 
