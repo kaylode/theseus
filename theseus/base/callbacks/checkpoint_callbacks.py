@@ -70,6 +70,18 @@ class CheckpointCallbacks(Callbacks):
         if self.resume is not None:
             self.load_checkpoint(self.resume, self.params['trainer'])
 
+    def on_finish(self, logs: Dict=None):
+        """
+        After finish training
+        """
+
+        iters = logs['iters']
+        num_iterations = logs['num_iterations']
+        
+        self.save_checkpoint(self.params['trainer'], iters=iters)
+        LOGGER.text(f'Save model at [{iters}|{num_iterations}] to last.pth', LoggerObserver.INFO)
+        
+
     def on_train_batch_end(self, logs:Dict=None):
         """
         On training batch (iteration) end

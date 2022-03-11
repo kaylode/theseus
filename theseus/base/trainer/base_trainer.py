@@ -75,4 +75,7 @@ class BaseTrainer():
                 break
         
         # On finish callbacks
-        self.callbacks.run('on_finish')
+        self.callbacks.run('on_finish', {
+            'iters': self.iters,
+            'num_iterations': self.num_iterations
+        })
