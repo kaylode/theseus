@@ -7,14 +7,21 @@ global:
   pretrained: null
   resume: null
 trainer:
-  name: ClassificationTrainer
+  name: SupervisedTrainer
   args:
     num_iterations: 10000
     clip_grad:  10.0
+    evaluate_interval :  1
     print_interval: 20
     save_interval: 1000
-    evaluate_interval :  1
-    visualize_when_val :  True
+callbacks:
+  - name: LoggerCallbacks
+    args: null 
+  - name: CheckpointCallbacks
+    args:
+      best_key: bl_acc
+  - name: VisualizerCallbacks
+    args: null
 model:
   name: BaseTimmModel
   args:

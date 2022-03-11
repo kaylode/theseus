@@ -1,6 +1,4 @@
 from typing import List, Dict
-import time
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from torchvision.transforms import functional as TFF
@@ -17,13 +15,13 @@ LOGGER = LoggerObserver.getLogger("main")
 class VisualizerCallbacks(Callbacks):
     """
     Callbacks for visualizing stuff during training
-
     Features:
         - Visualize datasets; plot model architecture, analyze datasets in sanity check
         - Visualize prediction at every end of validation
+
     """
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__()
 
         self.visualizer = Visualizer()

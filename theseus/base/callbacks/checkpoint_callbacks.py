@@ -11,14 +11,21 @@ LOGGER = LoggerObserver.getLogger("main")
 class CheckpointCallbacks(Callbacks):
     """
     Callbacks for saving checkpoints.
-
     Features:
         - Load checkpoint at start
         - Save checkpoint every save_interval
         - Save checkpoint if metric value is improving
+
+    save_dir: `str`
+        save directory
+    save_interval: `int`
+        iteration cycle to save checkpoint
+    best_key: `str`
+        save best based on metric key
+
     """
 
-    def __init__(self, save_dir: str='runs', save_interval: int=10, best_key:str = None) -> None:
+    def __init__(self, save_dir: str='runs', save_interval: int=10, best_key:str = None, **kwargs) -> None:
         super().__init__()
 
         self.best_value = 0

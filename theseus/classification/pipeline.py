@@ -141,6 +141,9 @@ class Pipeline(object):
             registry=TRAINER_REGISTRY,
             callbacks=get_instance_recursively(
                 self.opt["callbacks"],
+                print_interval=self.opt["trainer"]['args']['print_interval'],
+                save_interval=self.opt["trainer"]['args']['save_interval'],
+                save_dir=self.savedir,
                 registry=CALLBACKS_REGISTRY
             )
         )

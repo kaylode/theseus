@@ -9,12 +9,14 @@ LOGGER = LoggerObserver.getLogger("main")
 class LoggerCallbacks(Callbacks):
     """
     Callbacks for logging running loss/metric/time while training
-
     Features:
         - Only do logging
+        
+    print_interval: `int`
+        iteration cycle to log out
     """
 
-    def __init__(self, print_interval: int = 10) -> None:
+    def __init__(self, print_interval: int = 10, **kwargs) -> None:
         super().__init__()
 
         self.running_time = 0
