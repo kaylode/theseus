@@ -63,6 +63,14 @@ class CheckpointCallbacks(Callbacks):
            
         self.checkpoint.save(weights, outname)
 
+    def sanitycheck(self, logs: Dict=None):
+        """
+        Sanitycheck before starting. Run only when debug=True
+        """
+        if self.resume is not None:
+            self.load_checkpoint(self.resume, self.params['trainer'])
+            self.resume=None # Turn off so that on_start would not be called
+
     def on_start(self, logs: Dict=None):
         """
         Before going to the main loop
@@ -77,7 +85,7 @@ class CheckpointCallbacks(Callbacks):
 
         iters = logs['iters']
         num_iterations = logs['num_iterations']
-        
+
         self.save_checkpoint(self.params['trainer'], iters=iters)
         LOGGER.text(f'Save model at [{iters}|{num_iterations}] to last.pth', LoggerObserver.INFO)
         

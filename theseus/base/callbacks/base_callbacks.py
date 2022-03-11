@@ -164,8 +164,7 @@ class CallbacksList:
         Loop through the registered actions and fire all callbacks
         Args:
             hook The name of the hook to check, defaults to all
-            args Arguments to receive from YOLOv5
-            kwargs Keyword Arguments to receive from YOLOv5
+            params: dict with parameters
         """
 
         assert hook in self._callbacks.keys(), f"hook {hook} not found in callbacks in {self._callbacks.keys()}"
