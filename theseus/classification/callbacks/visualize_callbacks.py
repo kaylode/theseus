@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision.transforms import functional as TFF
 
-from theseus.base.trainer.callbacks.base_callbacks import Callbacks
+from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver
 from theseus.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 from theseus.utilities.visualization.visualizer import Visualizer

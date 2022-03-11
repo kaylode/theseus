@@ -1,5 +1,5 @@
 from typing import List, Dict
-from theseus.base.trainer.callbacks.base_callbacks import Callbacks
+from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver
 import time
 import numpy as np

@@ -12,6 +12,7 @@ from theseus.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTR
 from theseus.classification.trainer import TRAINER_REGISTRY
 from theseus.classification.metrics import METRIC_REGISTRY
 from theseus.classification.models import MODEL_REGISTRY
+from theseus.classification.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.loggers import LoggerObserver, TensorboardLogger, FileLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict, find_old_tflog
@@ -126,7 +127,7 @@ class Pipeline(object):
             }
         )
 
-        self.trainer = get_instance_recursively(
+        self.trainer = get_instance(
             self.opt["trainer"],
             model=self.model,
             trainloader=self.train_dataloader,
@@ -138,6 +139,10 @@ class Pipeline(object):
             resume=self.resume,
             debug=self.debug,
             registry=TRAINER_REGISTRY,
+            callbacks=get_instance_recursively(
+                self.opt["callbacks"],
+                registry=CALLBACKS_REGISTRY
+            )
         )
 
     def infocheck(self):

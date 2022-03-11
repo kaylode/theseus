@@ -3,7 +3,7 @@ from typing import List, Dict
 import os.path as osp
 import torch
 from theseus.utilities.loading import load_state_dict
-from theseus.base.trainer.callbacks import Callbacks
+from theseus.base.callbacks import Callbacks
 from theseus.utilities.loggers.cp_logger import Checkpoint
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
