@@ -126,7 +126,7 @@ class Pipeline(object):
             }
         )
 
-        self.trainer = get_instance(
+        self.trainer = get_instance_recursively(
             self.opt["trainer"],
             model=self.model,
             trainloader=self.train_dataloader,
@@ -135,8 +135,8 @@ class Pipeline(object):
             optimizer=self.optimizer,
             scheduler=self.scheduler,
             use_fp16=self.use_fp16,
-            save_dir=self.savedir,
             resume=self.resume,
+            debug=self.debug,
             registry=TRAINER_REGISTRY,
         )
 
@@ -165,10 +165,6 @@ class Pipeline(object):
             ))
         self.logger.subscribe(tf_logger)
 
-        if self.debug:
-            self.logger.text("Sanity checking before training...", level=LoggerObserver.DEBUG)
-            self.trainer.sanitycheck()
-
 
     def fit(self):
         self.initiate()
@@ -181,6 +177,3 @@ class Pipeline(object):
 
         self.logger.text("Evaluating...", level=LoggerObserver.INFO)
         self.trainer.evaluate_epoch()
-   
-
-  
