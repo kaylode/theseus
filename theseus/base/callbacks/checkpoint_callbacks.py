@@ -44,7 +44,8 @@ class CheckpointCallbacks(Callbacks):
         LOGGER.text("Loading checkpoints...", level=LoggerObserver.INFO)
         state_dict = torch.load(path, map_location='cpu')
         trainer.iters = load_state_dict(trainer.iters, state_dict, 'iters')
-        trainer.scaler = load_state_dict(trainer.scaler, state_dict, trainer.scaler.state_dict_key)
+        if trainer.scaler:
+            trainer.scaler = load_state_dict(trainer.scaler, state_dict, trainer.scaler.state_dict_key)
         self.best_value = load_state_dict(self.best_value, state_dict, 'best_value')  
 
     def save_checkpoint(self, trainer, iters, outname='last'):
@@ -58,7 +59,7 @@ class CheckpointCallbacks(Callbacks):
             'best_value': self.best_value,
         }
 
-        if trainer.scaler is not None:
+        if trainer.scaler:
             weights[trainer.scaler.state_dict_key] = trainer.scaler.state_dict()
            
         self.checkpoint.save(weights, outname)

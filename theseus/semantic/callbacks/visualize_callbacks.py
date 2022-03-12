@@ -88,7 +88,7 @@ class VisualizerCallbacks(Callbacks):
         patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
                                 label=classnames[i]) for i in range(len(classnames))]
         plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large')
+                fontsize='large', ncol=(len(classnames)//10)+1)
         plt.tight_layout(pad=0)
 
         LOGGER.log([{
@@ -118,7 +118,7 @@ class VisualizerCallbacks(Callbacks):
         plt.axis('off')
         plt.imshow(grid_img)
         plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large')
+                fontsize='large', ncol=(len(classnames)//10)+1)
         plt.tight_layout(pad=0)
 
         LOGGER.log([{
@@ -208,11 +208,11 @@ class VisualizerCallbacks(Callbacks):
         plt.imshow(grid_img)
 
         # segmentation color legends 
-        classes = valloader.dataset.classnames
+        classnames = valloader.dataset.classnames
         patches = [mpatches.Patch(color=np.array(color_list[i][::-1]), 
-                                label=classes[i]) for i in range(len(classes))]
+                                label=classnames[i]) for i in range(len(classnames))]
         plt.legend(handles=patches, bbox_to_anchor=(-0.03, 1), loc="upper right", borderaxespad=0., 
-                fontsize='large')
+                fontsize='large', ncol=(len(classnames)//10)+1)
         plt.tight_layout(pad=0)
 
         LOGGER.log([{
