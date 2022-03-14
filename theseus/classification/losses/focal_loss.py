@@ -15,6 +15,10 @@ class FocalLoss(nn.Module):
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         outputs = outputs['outputs']
         targets = move_to(batch["targets"], device)
+        num_classes = outputs.shape[-1]
+
+        # Need to be one hot encoding
+        targets = nn.functional.one_hot(targets, num_classes=num_classes)
         targets = targets.float()
 
         loss = sigmoid_focal_loss(outputs, targets, self.alpha, self.gamma, self.reduction)
