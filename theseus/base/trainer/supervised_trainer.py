@@ -57,7 +57,11 @@ class SupervisedTrainer(BaseTrainer):
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
-            self.callbacks.run('on_train_batch_start', {'batch': batch})
+            self.callbacks.run('on_train_batch_start', {
+                'batch': batch,
+                'iters': self.iters,
+                'num_iterations': self.num_iterations
+            })
 
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
@@ -109,7 +113,11 @@ class SupervisedTrainer(BaseTrainer):
 
         self.callbacks.run('on_val_epoch_start')
         for batch in tqdm(self.valloader):
-            self.callbacks.run('on_val_batch_start', {'batch': batch})
+            self.callbacks.run('on_val_batch_start', {
+                'batch': batch,
+                'iters': self.iters,
+                'num_iterations': self.num_iterations
+            })
 
             # Gradient scaler
             with amp.autocast(enabled=self.use_amp):
