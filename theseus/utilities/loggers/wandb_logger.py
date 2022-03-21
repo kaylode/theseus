@@ -1,5 +1,5 @@
 try:
-    import theseus.utilities.loggers.wandb_logger as wandb_logger
+    import wandb as wandb_logger
 except ModuleNotFoundError:
     pass
 import torch
