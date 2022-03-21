@@ -19,6 +19,7 @@ setuptools.setup(
         "gdown>=4.4.0",
         "grad-cam",
         "tabulate",
+        "wandb",
         "segmentation-models-pytorch",
         "opencv-python-headless==4.2.0.32" 
         
