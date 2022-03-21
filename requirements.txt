@@ -1,0 +1,13 @@
+albumentations>=1.1.0
+pyyaml>=5.1
+webcolors
+tensorboard
+tqdm
+timm>=0.5.4
+omegaconf
+pycocotools
+gdown>=4.4.0
+grad-cam
+tabulate
+segmentation-models-pytorch
+opencv-python-headless==4.2.0.32 
