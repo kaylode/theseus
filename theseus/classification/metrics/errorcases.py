@@ -1,3 +1,4 @@
+from distutils.log import error
 from typing import Any, Dict, Optional, List
 
 import torch
@@ -75,16 +76,14 @@ class ErrorCases(Metric):
             )
             pred_img = self.visualizer.get_image()
             pred_img = TFF.to_tensor(pred_img)
-
             pred_batch.append(pred_img)
-        pred_batch = torch.stack(pred_batch, dim=0)
-
-        error_imgs = torchvision.utils.make_grid(pred_batch, nrow=int((idx+1)/8), normalize=False)
-
+ 
+        error_imgs = self.visualizer.make_grid(pred_batch)
         fig, ax = plt.subplots(1, figsize=(10,10))
-        ax.imshow(error_imgs.permute(1, 2, 0))
+        ax.imshow(error_imgs)
         ax.set_title('Error cases\n\n')
         ax.axis("off")
+        plt.tight_layout(pad=0)
 
         return {'errorcases': fig}
 
