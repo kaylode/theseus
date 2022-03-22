@@ -86,7 +86,7 @@ data:
               cutmix_alpha: 1.0
               weight: [0.2, 0.2]
         sampler:
-            name: ImbalancedDatasetSampler
+            name: BalanceSampler
             args:
     val:
       name: DataLoaderWithCollator

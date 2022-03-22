@@ -1,42 +1,30 @@
-"""
-Source: https://github.com/ufoym/imbalanced-dataset-sampler
-"""
-
-from typing import Callable
-
-import pandas as pd
+import numpy as np
 import torch
-import torch.utils.data
-import torchvision
+from torch.utils.data.sampler import WeightedRandomSampler
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 
-class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
-    """Samples elements randomly from a given list of indices for imbalanced dataset
-    Arguments:
-        indices: a list of indices
-        num_samples: number of samples to draw
-        callback_get_label: a callback-like function which takes two arguments - dataset and index
-    """
+class BalanceSampler(WeightedRandomSampler):
+    def __init__(self, dataset: torch.utils.data.Dataset, **kwargs):
+        r""" Create balance sampler based on label distribution
+        equally distribute labels in one batch
 
-    def __init__(self, dataset, indices: list = None, num_samples: int = None):
-        # if indices is not provided, all elements in the dataset will be considered
-        self.indices = list(range(len(dataset))) if indices is None else indices
+        dataset: `torch.utils.data.Dataset`
+            dataset, must have classes_dict and collate_fn attributes
 
-        # if num_samples is not provided, draw `len(indices)` samples in each iteration
-        self.num_samples = len(self.indices) if num_samples is None else num_samples
+        **Note**:   the dataset must have `_calculate_classes_dist()` method 
+                    that return `classes_dist` 
+        """
 
-        # distribution of classes in the dataset
-        df = pd.DataFrame()
-        df["label"] = self._get_labels(dataset)
-        df.index = self.indices
-        df = df.sort_index()
-        label_to_count = df["label"].value_counts()
-        weights = 1.0 / label_to_count[df["label"]]
-        self.weights = torch.DoubleTensor(weights.to_list())
+        labels = self._load_labels(dataset)
+        class_count = torch.bincount(labels.squeeze())
+        class_weighting = 1. / class_count
+        sample_weights = np.array([class_weighting[t] for t in labels.squeeze()])
+        sample_weights = torch.from_numpy(sample_weights)
+        super().__init__(sample_weights, len(sample_weights))
 
-    def _get_labels(self, dataset):
+    def _load_labels(self, dataset):
         op = getattr(dataset, '_calculate_classes_dist', None)
         if not callable(op):
             LOGGER.text("""Using BalanceSampler but _calculate_classes_dist()
@@ -44,10 +32,5 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
             raise ValueError
 
         classes_dist = dataset._calculate_classes_dist()
-        return classes_dist
-
-    def __iter__(self):
-        return (self.indices[i] for i in torch.multinomial(self.weights, self.num_samples, replacement=True))
-
-    def __len__(self):
-        return self.num_samples
+        labels = torch.LongTensor(classes_dist).unsqueeze(1)
+        return labels
