@@ -19,7 +19,7 @@ class FocalLoss(nn.Module):
 
         # Need to be one hot encoding
         targets = nn.functional.one_hot(targets, num_classes=num_classes)
-        targets = targets.float()
+        targets = targets.float().squeeze()
 
         loss = sigmoid_focal_loss(outputs, targets, self.alpha, self.gamma, self.reduction)
         loss_dict = {"L": loss.item()}
