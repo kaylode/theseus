@@ -81,7 +81,6 @@ class ErrorCases(Metric):
         error_imgs = self.visualizer.make_grid(pred_batch)
         fig, ax = plt.subplots(1, figsize=(10,10))
         ax.imshow(error_imgs)
-        ax.set_title('Error cases\n\n')
         ax.axis("off")
         plt.tight_layout(pad=0)
 
