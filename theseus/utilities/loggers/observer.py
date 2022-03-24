@@ -4,6 +4,7 @@ import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
 from .stdout_logger import StdoutLogger
+from tabulate import tabulate
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -112,3 +113,10 @@ class LoggerObserver(object):
                 'level': level
             }
         }])
+
+    def __repr__(self) -> str:
+        table_headers = ["Subscribers"]
+        table = tabulate(
+            [[type(i).__name__] for i in self.subscriber], headers=table_headers, tablefmt="fancy_grid"
+        )
+        return "Logger subscribers: \n" + table
