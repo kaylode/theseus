@@ -1,3 +1,4 @@
+from sre_constants import SUCCESS
 from typing import Callable, Dict, Optional, List
 import logging
 import torch
@@ -32,6 +33,7 @@ class LoggerObserver(object):
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     CRITICAL = logging.CRITICAL
+    SUCCESS = "SUCCESS"
 
     instances = {}
 
