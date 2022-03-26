@@ -11,7 +11,8 @@ from theseus.utilities.loggers.observer import LoggerObserver
 
 model_last_layers = {
     'convnext': ['stages', -1],
-    'efficientnet': ['blocks', -1],
+    'tf_efficientnet': ['act2'],
+    'tf_efficientnetv2': ['act2'],
     'xception': ['act4']
 }
 
@@ -46,13 +47,14 @@ class CAMWrapper(BaseCAM):
         assert model_name is not None or target_layers is not None, "Should specify model name or target layers name"
       
         if target_layers is None:
-            prefix = model_name.split('_')[0]
-            if prefix in model_last_layers.keys():
-                model_name = prefix
-
-            if model_name not in model_last_layers.keys():
+            for available_model in model_last_layers.keys():
+                if model_name.startswith(available_model):
+                    model_name = available_model
+                    break
+            else:
                 LoggerObserver.text(
-                    "Model has not been registered for using CAM. Please register in the `model_last_layers` dict above", 
+                    f"""Model {model_name} has not been registered for using CAM. 
+                    Please register in the `model_last_layers` dict above""", 
                     LoggerObserver.ERROR
                 )
 

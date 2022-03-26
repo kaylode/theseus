@@ -17,16 +17,17 @@ def make_cm_fig(cm, labels: Optional[List] = None):
     ax = sns.heatmap(cm, annot=False, 
             fmt='', cmap='Blues',ax =ax)
 
-    ax.set_title('Confusion Matrix\n\n');
-    ax.set_xlabel('\nPredicted')
-    ax.set_ylabel('Actual ');
+    ax.set_title('Confusion Matrix\n\n')
+    ax.set_xlabel('\nActual')
+    ax.set_ylabel('Predicted ')
 
     ## Ticket labels - List must be in alphabetical order
     if not labels:
         labels = [str(i) for i in range(len(cm))]
 
     ax.xaxis.set_ticklabels(labels)
-    ax.yaxis.set_ticklabels(labels)
+    ax.yaxis.set_ticklabels(labels, rotation=0)
+    plt.tight_layout(pad=0)
     return fig
 
 
@@ -95,6 +96,6 @@ class ConfusionMatrix(Metric):
         self.targets = []
 
     def value(self):
-        values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes)
+        values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes, normalize="pred")
         fig = make_cm_fig(values, self.classnames)
         return {"cfm": fig}

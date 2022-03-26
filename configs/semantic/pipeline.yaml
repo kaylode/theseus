@@ -7,14 +7,23 @@ global:
   pretrained: null
   resume: null
 trainer:
-  name: SemanticTrainer
+  name: SupervisedTrainer
   args:
-    num_iterations: 50000
-    clip_grad: 10.0
+    num_iterations: 10000
+    clip_grad:  10.0
+    evaluate_interval:  1
     print_interval: 20
     save_interval: 1000
-    evaluate_interval: 1
-    visualize_when_val: true
+callbacks:
+  - name: LoggerCallbacks
+    args: null 
+  - name: CheckpointCallbacks
+    args:
+      best_key: bl_acc
+  - name: VisualizerCallbacks
+    args: null
+  - name: TensorboardCallbacks
+    args: null
 model:
   name: BaseSegModel
   args:
@@ -55,14 +64,12 @@ scheduler:
 data:
   dataset:
     train:
-      name: CSVDatasetWithMosaic
+      name: CSVDataset
       args:
         image_dir: data/images/train
         mask_dir: data/masks/train
         csv_path: data/train.csv
         txt_classnames: configs/semantic/classes.txt
-        mosaic_size: 960 
-        mosaic_prob: 0.4
     val:
       name: CSVDataset
       args:
@@ -74,12 +81,17 @@ data:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 8
+        batch_size: 32
         drop_last: false
         shuffle: true
+        collate_fn:
+            name: MosaicCollator
+            args:
+              scale_range: [0.3, 0.7]
+              p: 0.3
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 8
+        batch_size: 32
         drop_last: false
         shuffle: true
