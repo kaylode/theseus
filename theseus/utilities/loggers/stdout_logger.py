@@ -22,7 +22,7 @@ class BaseTextLogger(LoggerSubscriber):
 
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
         if level == LoggerObserver.WARN:
-            logger.warn(value)
+            logger.warning(value)
 
         if level == LoggerObserver.INFO:
             logger.info(value)
