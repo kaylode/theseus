@@ -25,7 +25,7 @@ def load_state_dict(instance, state_dict, key=None):
             else:
                 instance.load_state_dict(state_dict)
 
-            LOGGER.text("Loaded Successfully!", level=LoggerObserver.INFO)
+            LOGGER.text("Loaded Successfully!", level=LoggerObserver.SUCCESS)
         except RuntimeError as e:
             LOGGER.text(f'Loaded Successfully. Ignoring {e}', level=LoggerObserver.WARN)
         return instance
