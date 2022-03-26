@@ -1,7 +1,6 @@
 import sys
 from loguru import logger
-import logging
-from .observer import LoggerSubscriber
+from .observer import LoggerSubscriber, LoggerObserver
 
 logger.remove()
 
@@ -21,20 +20,20 @@ class BaseTextLogger(LoggerSubscriber):
     def __init__(self, name):
         self.name = name
 
-    def log_text(self, tag, value, level=LoggerSubscriber.DEBUG, **kwargs):
-        if level == LoggerSubscriber.WARN:
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
+        if level == LoggerObserver.WARN:
             logger.warn(value)
 
-        if level == LoggerSubscriber.INFO:
+        if level == LoggerObserver.INFO:
             logger.info(value)
 
-        if level == LoggerSubscriber.ERROR:
+        if level == LoggerObserver.ERROR:
             logger.error(value)
 
-        if level == LoggerSubscriber.DEBUG:
+        if level == LoggerObserver.DEBUG:
             logger.debug(value)
 
-        if level == LoggerSubscriber.SUCCESS:
+        if level == LoggerObserver.SUCCESS:
             logger.success(value)
         
 
@@ -66,7 +65,7 @@ class FileLogger(BaseTextLogger):
             filter=lambda record: "filelog" in record["extra"]
         )
     
-    def log_text(self, tag, value, level=LoggerSubscriber.DEBUG, **kwargs):
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
         with logger.contextualize(filelog=True):
             return super().log_text(tag, value, level, **kwargs)
 
@@ -98,6 +97,6 @@ class StdoutLogger(BaseTextLogger):
             filter=lambda record: "stdout" in record["extra"]
         )
 
-    def log_text(self, tag, value, level=LoggerSubscriber.DEBUG, **kwargs):
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
         with logger.contextualize(stdout=True):
             return super().log_text(tag, value, level, **kwargs)

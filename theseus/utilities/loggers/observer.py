@@ -4,7 +4,6 @@ import logging
 import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
-from .stdout_logger import StdoutLogger
 from tabulate import tabulate
 
 def get_type(value):
@@ -44,6 +43,8 @@ class LoggerObserver(object):
             return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
+        from .stdout_logger import StdoutLogger # to circumvent circular import
+
         self.subscriber = []
         self.name = name
 
