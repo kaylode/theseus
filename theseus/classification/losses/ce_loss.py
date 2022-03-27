@@ -32,7 +32,6 @@ class SmoothCELoss(nn.Module):
 
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         pred = outputs['outputs']
-        target = torch.tensor([b[0] for b in batch["targets"]], dtype=torch.int64)
         target = move_to(batch["targets"], device)
 
         loss = self.criterion(pred, target.view(-1).contiguous())
