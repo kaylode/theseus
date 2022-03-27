@@ -12,13 +12,14 @@ class CELoss(nn.Module):
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
-
         pred = outputs["outputs"]
         target = move_to(batch["targets"], device)
+
         if pred.shape == target.shape:
             loss = self.criterion(pred, target)
         else:
             loss = self.criterion(pred, target.view(-1).contiguous())
+
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
 
@@ -31,7 +32,9 @@ class SmoothCELoss(nn.Module):
 
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         pred = outputs['outputs']
+        target = torch.tensor([b[0] for b in batch["targets"]], dtype=torch.int64)
         target = move_to(batch["targets"], device)
+
         loss = self.criterion(pred, target.view(-1).contiguous())
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
