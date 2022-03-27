@@ -1,44 +1,8 @@
-import os
-import logging
-from .observer import LoggerSubscriber
+import sys
+from loguru import logger
+from .observer import LoggerSubscriber, LoggerObserver
 
-class CustomFormatter(logging.Formatter):
-    """
-    Color schemes longging formater
-    https://docs.microsoft.com/en-us/windows/terminal/customize-settings/color-schemes
-    """
-    grey = "\x1b[38;21m"
-    green = "\x1b[1;32m"
-    yellow = "\x1b[33;21m"
-    bold_red = "\x1b[31;21m"
-    red = "\x1b[31;1m"
-    grey2 = "\x1b[1;30m"
-    white = "\x1b[1;37m"
-    reset = "\x1b[0m"
-    cyan = "\x1b[1;36m"
-    purple = "\x1b[35m"
-
-    FORMATS = {
-        logging.DEBUG: green,
-        logging.INFO: cyan,
-        logging.WARNING: yellow,
-        logging.ERROR: red,
-        logging.CRITICAL: bold_red
-    }
-
-    def __init__(self, text_format, date_format):
-        self.text_format = text_format
-        self.date_format = date_format
-
-    def format(self, record):
-        log_fmt = self.text_format.format(
-            level_color=self.FORMATS.get(record.levelno),
-            time_color=self.grey2, msg_color=self.white, 
-            path_color=self.purple)
-
-        formatter = logging.Formatter(log_fmt, datefmt=self.date_format)
-        return formatter.format(record)
-
+logger.remove()
 
 class BaseTextLogger(LoggerSubscriber):
     """
@@ -51,55 +15,26 @@ class BaseTextLogger(LoggerSubscriber):
 
     """
 
-    date_format = '%d-%m-%y %H:%M:%S'
-    message_format = '[%(asctime)s][%(filename)s::%(lineno)d][%(levelname)s]: %(message)s'
-    color_message_format = '{time_color}[%(asctime)s]\x1b[0m{path_color}[%(filename)s::%(lineno)d]\x1b[0m{level_color}[%(levelname)s]\x1b[0m: {msg_color}%(message)s\x1b[0m'
-    def __init__(self, name, debug=False):
+    message_format = """<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <light-black>{file}</light-black>:<light-black>{function}</light-black>:<light-black>{line}</light-black> - <level>{message}</level>"""
 
-        if debug:
-            self.level = logging.DEBUG        
-        else:
-            self.level = logging.INFO        
+    def __init__(self, name):
+        self.name = name
 
-        # Init logger
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(self.level)
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
+        if level == LoggerObserver.WARN:
+            logger.warning(value)
 
-        # Create handlers
-        handlers = self.init_handlers()
-        if not isinstance(handlers, list):
-            handlers = [handlers]
+        if level == LoggerObserver.INFO:
+            logger.info(value)
 
-        # Add handlers
-        self.add_handlers(self.logger, handlers=handlers)
+        if level == LoggerObserver.ERROR:
+            logger.error(value)
 
-    def init_handlers(self):
-        raise NotImplementedError
+        if level == LoggerObserver.DEBUG:
+            logger.debug(value)
 
-    def add_handlers(self, logger, handlers):
-        # Add handlers to the logger
-        for handler in handlers:
-            logger.addHandler(handler)
-
-    def set_debug_mode(self, toggle="off"):
-        if toggle == "on":
-            self.level = logging.DEBUG
-        else:
-            self.level = logging.INFO
-        self.logger.setLevel(self.level)
-
-    def log_text(self, tag, value, level=logging.DEBUG, **kwargs):
-        if level == logging.WARN:
-            self.logger.warn(value)
-
-        if level == logging.INFO:
-            self.logger.info(value)
-
-        if level == logging.ERROR:
-            self.logger.error(value)
-
-        if level == logging.DEBUG:
-            self.logger.debug(value)
+        if level == LoggerObserver.SUCCESS:
+            logger.success(value)
         
 
 class FileLogger(BaseTextLogger):
@@ -113,20 +48,26 @@ class FileLogger(BaseTextLogger):
 
     """
 
-    def __init__(self, name, logdir, debug=False):
+    def __init__(self, name, logdir, rotation="10 MB", debug=False):
         self.logdir = logdir
         self.filename = f'{self.logdir}/log.txt'
-        super().__init__(name, debug)
+        super().__init__(name)
 
-    def init_handlers(self):
-        # Create one file logger and one stream logger
-        file_handler = logging.FileHandler(self.filename)
-        
-        # Create formatters and add it to handlers
-        format = logging.Formatter(FileLogger.message_format, datefmt=FileLogger.date_format)
-        file_handler.setFormatter(format)
-        
-        return file_handler
+        if debug:
+            level = "DEBUG"
+        else:
+            level = "INFO"
+
+        logger.add(
+            self.filename, 
+            rotation=rotation, 
+            level=level,
+            filter=lambda record: "filelog" in record["extra"]
+        )
+    
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
+        with logger.contextualize(filelog=True):
+            return super().log_text(tag, value, level, **kwargs)
 
 class StdoutLogger(BaseTextLogger):
     """
@@ -140,14 +81,22 @@ class StdoutLogger(BaseTextLogger):
     """
 
     def __init__(self, name, debug=False):
-        super().__init__(name, debug)
+        super().__init__(name)
 
-    def init_handlers(self):
-        # Create one file logger and one stream logger
-        stream_handler = logging.StreamHandler()
-        
-        # Create formatters and add it to handlers
-        custom_format = CustomFormatter(StdoutLogger.color_message_format, date_format=StdoutLogger.date_format)
-        stream_handler.setFormatter(custom_format)
-        
-        return stream_handler
+        if debug:
+            level = "DEBUG"
+        else:
+            level = "INFO"
+
+        logger.add(
+            sys.stdout, 
+            backtrace=True, 
+            diagnose=True,
+            level=level, 
+            format = self.message_format,
+            filter=lambda record: "stdout" in record["extra"]
+        )
+
+    def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
+        with logger.contextualize(stdout=True):
+            return super().log_text(tag, value, level, **kwargs)

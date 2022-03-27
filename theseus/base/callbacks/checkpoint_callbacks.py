@@ -128,7 +128,7 @@ class CheckpointCallbacks(Callbacks):
             if iters > 0: # Have been training, else in evaluation-only mode or just sanity check
                 LOGGER.text(
                     f"Evaluation improved from {self.best_value} to {metric_dict[self.best_key]}",
-                    level=LoggerObserver.INFO)
+                    level=LoggerObserver.SUCCESS)
                 self.best_value = metric_dict[self.best_key]
                 self.save_checkpoint(self.params['trainer'], iters=iters, outname='best')
 

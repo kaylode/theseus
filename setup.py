@@ -20,7 +20,7 @@ setuptools.setup(
         "grad-cam",
         "tabulate",
         "segmentation-models-pytorch",
-        "opencv-python-headless==4.2.0.32" 
-        
+        "opencv-python-headless==4.2.0.32",
+        "loguru"
     ],
 )
