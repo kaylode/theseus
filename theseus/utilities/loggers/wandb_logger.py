@@ -4,6 +4,7 @@ try:
 except ModuleNotFoundError:
     pass
 
+import os.path as osp
 import torch
 from theseus.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
 LOGGER = LoggerObserver.getLogger('main')
@@ -13,13 +14,17 @@ class WandbLogger(LoggerSubscriber):
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, username:str, project_name:str, run_name:str, config_dict:Dict = None):
+    def __init__(self, id:str, username:str, project_name:str, run_name:str, save_dir:str = None, config_dict:Dict = None):
         self.project_name = project_name
         self.username = username
         self.run_name = run_name
         self.config_dict = config_dict
+        self.id = id
+        self.save_dir = save_dir
         
         wandb_logger.init(
+            id = id,
+            dir = self.save_dir,
             config=config_dict,
             entity=username, 
             project=project_name, 
@@ -43,11 +48,14 @@ class WandbLogger(LoggerSubscriber):
         :param step: (int) logging step
         """
 
-        wandb_logger.log({tag: value}, step=step)
+        wandb_logger.log({
+            tag: value,
+            'iterations': step
+        })
 
     def log_figure(self, tag, value, step, **kwargs):
         """
-        Write a matplotlib fig to tensorboard
+        Write a matplotlib fig to wandb
         :param tags: (str) tag for log
         :param value: (image) image to log. torch.Tensor or plt.fire.Figure
         :param step: (int) logging step
@@ -57,20 +65,85 @@ class WandbLogger(LoggerSubscriber):
         if isinstance(value, torch.Tensor):
             image = wandb_logger.Image(value)
             wandb_logger.log({
-               tag: image
-            }, step=step)
+               tag: image,
+               'iterations': step
+            })
         else:
             wandb_logger.log({
-               tag: value
-            }, step=step)
+               tag: value,
+               'iterations': step
+            })
 
     def log_torch_module(self, tag, value, **kwargs):
         """
-        Write a model graph to tensorboard
+        Write a model graph to wandb
         :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
         wandb_logger.watch(value, log="all")
 
+    def log_spec_text(self, tag, value, step, **kwargs):
+        """
+        Write a text to wandb
+        :param value: (str) captions
+        """
+        texts = wandb_logger.Html(value)
+        wandb_logger.log({
+            tag: texts,
+            'iterations': step
+        })
+
+    def log_table(self, tag, value, columns, step, **kwargs):
+        """
+        Write a table to wandb
+        :param value: list of column values
+        :param columns: list of column names
+
+        Examples:
+        value = [
+            [0, fig1, 0],
+            [1, fig2, 8],
+            [2, fig3, 7],
+            [3, fig4, 1]
+        ]
+        columns=[
+            "id", 
+            "image", 
+            "prediction"
+        ]
+        """
+        
+        # Workaround for tensor image, have not figured out how to use plt.Figure :<
+        new_value = []
+        for record in value:
+            new_record = []
+            for val in record:
+                if isinstance(val, torch.Tensor):
+                    val = wandb_logger.Image(val)
+                new_record.append(val)
+            new_value.append(new_record)
+
+        table = wandb_logger.Table(data=new_value, columns=columns)
+        wandb_logger.log({
+            tag: table,
+            'iterations': step
+        })
+
     def __del__(self):
         wandb_logger.finish()
+
+
+def find_run_id(dirname):
+    """
+    Read a .txt file which contains wandb run id
+    """
+
+    wandb_id_file = osp.join(dirname, 'wandb_id.txt')
+
+    if not osp.isfile(wandb_id_file):
+        LOGGER.text(f"Wandb ID file not found in {wandb_id_file}. Creating new run...", level=LoggerObserver.WARN)
+        return wandb_logger.util.generate_id()
+    else:
+        with open(wandb_id_file, 'r') as f:
+            wandb_id = f.read().rstrip()
+        return wandb_id
