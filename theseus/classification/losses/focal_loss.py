@@ -14,7 +14,8 @@ class FocalLoss(nn.Module):
 
     def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         outputs = outputs['outputs']
-        targets = move_to(batch["targets"], device)
+        targets = torch.tensor([b[0] for b in batch["targets"]], dtype=torch.int64)
+        targets = move_to(targets, device)
         num_classes = outputs.shape[-1]
 
         # Need to be one hot encoding

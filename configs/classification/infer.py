@@ -14,7 +14,7 @@ from theseus.classification.augmentations import TRANSFORM_REGISTRY
 from theseus.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loading import load_state_dict
-from theseus.utilities.loggers import LoggerObserver, StdoutLogger
+from theseus.utilities.loggers import LoggerObserver, FileLogger
 from theseus.utilities.cuda import get_devices_info, move_to, get_device
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 
@@ -36,8 +36,8 @@ class TestPipeline(object):
         self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(self.savedir, exist_ok=True)
 
-        stdout_logger = StdoutLogger(__name__, self.savedir, debug=self.debug)
-        self.logger.subscribe(stdout_logger)
+        file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
+        self.logger.subscribe(file_logger)
         self.logger.text(self.opt, level=LoggerObserver.INFO)
 
         self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
