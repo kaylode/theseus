@@ -1,7 +1,9 @@
+from typing import Dict
 try:
     import wandb as wandb_logger
 except ModuleNotFoundError:
     pass
+
 import torch
 from theseus.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
 LOGGER = LoggerObserver.getLogger('main')
@@ -11,12 +13,19 @@ class WandbLogger(LoggerSubscriber):
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, username:str, project_name:str, resume:bool = False):
+    def __init__(self, username:str, project_name:str, run_name:str, config_dict:Dict = None):
         self.project_name = project_name
         self.username = username
-        self.resume = resume
+        self.run_name = run_name
+        self.config_dict = config_dict
         
-        wandb_logger.init(entity=username, project=project_name, resume=resume)
+        wandb_logger.init(
+            config=config_dict,
+            entity=username, 
+            project=project_name, 
+            name=run_name, 
+            resume="allow")
+            
         wandb_logger.watch_called = False
 
     def load_state_dict(self, path):
