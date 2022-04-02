@@ -15,7 +15,7 @@ class BaseTextLogger(LoggerSubscriber):
 
     """
 
-    message_format = """<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <light-black>{file}</light-black>:<light-black>{function}</light-black>:<light-black>{line}</light-black> - <level>{message}</level>"""
+    message_format = """<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <light-black>{extra[filename]}</light-black>:<light-black>{extra[funcname]}</light-black>:<light-black>{extra[lineno]}</light-black> - <level>{message}</level>"""
 
     def __init__(self, name):
         self.name = name
@@ -66,7 +66,10 @@ class FileLogger(BaseTextLogger):
         )
     
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        with logger.contextualize(filelog=True):
+        filename = kwargs.get('filename', None)
+        funcname = kwargs.get('funcname', None)
+        lineno = kwargs.get('lineno', None)
+        with logger.contextualize(filelog=True, filename=filename, funcname=funcname, lineno=lineno):
             return super().log_text(tag, value, level, **kwargs)
 
 class StdoutLogger(BaseTextLogger):
@@ -98,5 +101,8 @@ class StdoutLogger(BaseTextLogger):
         )
 
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        with logger.contextualize(stdout=True):
+        filename = kwargs.get('filename', None)
+        funcname = kwargs.get('funcname', None)
+        lineno = kwargs.get('lineno', None)
+        with logger.contextualize(stdout=True, filename=filename, funcname=funcname, lineno=lineno):
             return super().log_text(tag, value, level, **kwargs)
