@@ -5,6 +5,7 @@ import torch
 import matplotlib as mpl
 from .subscriber import LoggerSubscriber
 from tabulate import tabulate
+from inspect import getframeinfo, stack
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -108,12 +109,21 @@ class LoggerObserver(object):
                     )
 
     def text(self, value, level):
+        """
+        Text logging
+        """
+        caller = getframeinfo(stack()[1][0])
+        function_name = stack()[1][3]
+
         self.log([{
             'tag': 'stdout',
             'value': value,
             'type': LoggerObserver.TEXT,
             'kwargs': {
-                'level': level
+                'level': level,
+                'lineno': caller.lineno,
+                'filename': caller.filename,
+                'funcname': function_name
             }
         }])
 
