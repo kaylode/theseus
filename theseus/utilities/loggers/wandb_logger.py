@@ -40,6 +40,17 @@ class WandbLogger(LoggerSubscriber):
         else:
             return None
 
+    def log_file(self, tag, value, base_folder=None, **kwargs):
+        """
+        Write a file to wandb
+        :param tag: (str) tag
+        :param value: (str) path to file
+
+        :param base_folder: (str) folder to save file to
+        """
+        wandb_logger.save(value, base_path=base_folder)
+
+
     def log_scalar(self, tag, value, step, **kwargs):
         """
         Write a log to specified directory
@@ -61,7 +72,6 @@ class WandbLogger(LoggerSubscriber):
         :param step: (int) logging step
         """
 
-
         if isinstance(value, torch.Tensor):
             image = wandb_logger.Image(value)
             wandb_logger.log({
@@ -74,13 +84,16 @@ class WandbLogger(LoggerSubscriber):
                'iterations': step
             })
 
-    def log_torch_module(self, tag, value, **kwargs):
+    def log_torch_module(self, tag, value, log_freq, **kwargs):
         """
         Write a model graph to wandb
         :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
-        wandb_logger.watch(value, log="all")
+        wandb_logger.watch(
+          value, 
+          log="gradients", 
+          log_freq=log_freq)
 
     def log_spec_text(self, tag, value, step, **kwargs):
         """
@@ -141,8 +154,7 @@ def find_run_id(dirname):
     wandb_id_file = osp.join(dirname, 'wandb_id.txt')
 
     if not osp.isfile(wandb_id_file):
-        LOGGER.text(f"Wandb ID file not found in {wandb_id_file}. Creating new run...", level=LoggerObserver.WARN)
-        return wandb_logger.util.generate_id()
+        raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
     else:
         with open(wandb_id_file, 'r') as f:
             wandb_id = f.read().rstrip()
