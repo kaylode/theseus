@@ -114,6 +114,8 @@ class LoggerObserver(object):
         """
         caller = getframeinfo(stack()[1][0])
         function_name = stack()[1][3]
+        filename = '//'.join(caller.filename.split('theseus')[1:])[1:] # split filename based on project name
+        lineno = caller.lineno
 
         self.log([{
             'tag': 'stdout',
@@ -121,8 +123,8 @@ class LoggerObserver(object):
             'type': LoggerObserver.TEXT,
             'kwargs': {
                 'level': level,
-                'lineno': caller.lineno,
-                'filename': caller.filename,
+                'lineno': lineno,
+                'filename': filename,
                 'funcname': function_name
             }
         }])
