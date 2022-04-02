@@ -72,4 +72,9 @@ class SchedulerWrapper():
     
     def step(self, *args, **kwargs):
         self.scheduler.step(*args, **kwargs)
-        
+
+    def state_dict(self):
+        return self.scheduler.state_dict()
+
+    def load_state_dict(self, state_dict):
+        self.scheduler.load_state_dict(state_dict)
