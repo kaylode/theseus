@@ -1,4 +1,6 @@
 global:
+  exp_name: null
+  exist_ok: false
   debug: true
   cfg_transform: configs/classification/transform.yaml
   save_dir: /content/main/runs
