@@ -71,17 +71,6 @@ class TensorboardLogger(LoggerSubscriber):
             metadata_header = metadata_header,
             global_step=step)
 
-    def log_spec_text(self, tag, value, step, **kwargs):
-        """
-        Write a text to tensorboard
-        :param value: (str) embedding (N, D)
-        """
-        self.writer.add_text(
-            tag=tag,
-            text_string=value,
-            global_step=step
-        )
-
     def load(self, old_log):
         """
         Load tensorboard from log
