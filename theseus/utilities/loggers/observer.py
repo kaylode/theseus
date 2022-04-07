@@ -15,13 +15,8 @@ def get_type(value):
     if isinstance(value, str):
         return LoggerObserver.TEXT
     if isinstance(value, torch.Tensor):
-        if len(value.shape) == 2:
-            return LoggerObserver.EMBED
-    if isinstance(value, int) or isinstance(value, float):
-        return LoggerObserver.SCALAR
-    
-    LoggerObserver.text(f'Fail to log undefined type: {type(value)}', level=LoggerObserver.CRITICAL)
-    raise ValueError()
+        return LoggerObserver.EMBED
+    return LoggerObserver.SCALAR
 
 class LoggerObserver(object):
     """Logger Oberserver Degisn Pattern
@@ -31,9 +26,7 @@ class LoggerObserver(object):
     FIGURE = 'figure'
     TORCH_MODULE = 'torch_module'
     TEXT = 'text'
-    SPECIAL_TEXT = 'special_text'
     EMBED = 'embedding'
-    TABLE = 'table'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -110,20 +103,6 @@ class LoggerObserver(object):
 
                 if type == LoggerObserver.EMBED:
                     subscriber.log_embedding(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
-
-                if type == LoggerObserver.SPECIAL_TEXT:
-                    subscriber.log_spec_text(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
-
-                if type == LoggerObserver.TABLE:
-                    subscriber.log_table(
                         tag=tag,
                         value=value,
                         **kwargs

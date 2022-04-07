@@ -2,44 +2,32 @@ import os
 import yaml
 import torch
 import glob
+import logging
 from theseus.base.optimizers.scalers.native import NativeScaler
 from theseus.utilities.loggers.observer import LoggerObserver
-from torch.optim.lr_scheduler import _LRScheduler, ReduceLROnPlateau
-
 LOGGER = LoggerObserver.getLogger("main")
 
 def load_yaml(path):
     with open(path, 'rt') as f:
         return yaml.safe_load(f)
 
-def load_state_dict(instance, state_dict, key=None, strict=True):
+def load_state_dict(instance, state_dict, key=None):
     """
     Load trained model checkpoint
     :param model: (nn.Module)
     :param path: (string) checkpoint path
     """
-    
-    if isinstance(instance, (
-        _LRScheduler, ReduceLROnPlateau, 
-        torch.nn.Module, torch.optim.Optimizer, 
-        NativeScaler)):
+
+    if isinstance(instance, torch.nn.Module) or isinstance(instance, torch.optim.Optimizer) or isinstance(instance, NativeScaler):
         try:
             if key is not None:
-                _state_dict = state_dict[key]
+                instance.load_state_dict(state_dict[key])
             else:
-                _state_dict = state_dict
-
-            if not strict:
-                instance.load_state_dict(_state_dict, strict=False)
-            else:
-                instance.load_state_dict(_state_dict)
+                instance.load_state_dict(state_dict)
 
             LOGGER.text("Loaded Successfully!", level=LoggerObserver.SUCCESS)
         except RuntimeError as e:
-            if not strict:
-                LOGGER.text(f'Loaded Successfully. Ignoring {e}', level=LoggerObserver.WARN)
-            else:
-                LOGGER.text(f'Loaded failed: "{e}". Consider loading with strict=False', level=LoggerObserver.ERROR)
+            LOGGER.text(f'Loaded Successfully. Ignoring {e}', level=LoggerObserver.WARN)
         return instance
     else:
         if key in state_dict.keys():    
