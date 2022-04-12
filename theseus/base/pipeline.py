@@ -316,6 +316,7 @@ class BaseTestPipeline(object):
             num_classes = len(CLASSNAMES),
             classnames=CLASSNAMES)
         self.model = move_to(self.model, self.device)
+        self.model.eval()
 
     def init_pipeline(self):
         self.init_globals()

@@ -7,37 +7,16 @@ from theseus.opt import Opts
 import os
 import cv2
 import torch
-from datetime import datetime
 from theseus.opt import Config
 from theseus.semantic.models import MODEL_REGISTRY
 from theseus.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loading import load_state_dict
-from theseus.utilities.loggers import LoggerObserver, FileLogger
-from theseus.utilities.cuda import get_devices_info, move_to, get_device
-from theseus.utilities.getter import (get_instance, get_instance_recursively)
-
+from theseus.utilities.loggers import LoggerObserver
+from theseus.base.pipeline import BaseTestPipeline
 from theseus.utilities.visualization.visualizer import Visualizer
-from theseus.semantic.datasets.csv_dataset import CSVDataset
 
-@DATASET_REGISTRY.register()
-class TestCSVDataset(CSVDataset):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def collate_fn(self, batch: List):
-        imgs = torch.stack([s['input'] for s in batch])
-        img_names = [s['img_name'] for s in batch]
-        ori_sizes = [s['ori_size'] for s in batch]
-
-        return {
-            'inputs': imgs,
-            'img_names': img_names,
-            'ori_sizes': ori_sizes
-        }
-
-class TestPipeline(object):
+class TestPipeline(BaseTestPipeline):
     def __init__(
             self,
             opt: Config
@@ -46,65 +25,24 @@ class TestPipeline(object):
         super(TestPipeline, self).__init__()
         self.opt = opt
 
-        self.debug = opt['global']['debug']
-        self.logger = LoggerObserver.getLogger("main") 
-        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-        os.makedirs(self.savedir, exist_ok=True)
+    def init_globals(self):
+        super().init_globals()
 
-        file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
-        self.logger.subscribe(file_logger)
-        self.logger.text(self.opt, level=LoggerObserver.INFO)
-
-        self.transform_cfg = Config.load_yaml(opt['global']['cfg_transform'])
-        self.device_name = opt['global']['device']
-        self.device = get_device(self.device_name)
-
-        self.weights = opt['global']['weights']
-
-        self.transform = get_instance_recursively(
-            self.transform_cfg, registry=TRANSFORM_REGISTRY
+    def init_registry(self):
+        self.model_registry = MODEL_REGISTRY
+        self.dataset_registry = DATASET_REGISTRY
+        self.dataloader_registry = DATALOADER_REGISTRY
+        self.transform_registry = TRANSFORM_REGISTRY
+        self.logger.text(
+            "Overidding registry in pipeline...", LoggerObserver.INFO
         )
-
-        self.dataset = get_instance(
-            opt['data']["dataset"],
-            registry=DATASET_REGISTRY,
-            transform=self.transform['val'],
-        )
-        CLASSNAMES = self.dataset.classnames
-
-        self.dataloader = get_instance(
-            opt['data']["dataloader"],
-            registry=DATALOADER_REGISTRY,
-            dataset=self.dataset,
-        )
-
-        self.model = get_instance(
-          self.opt["model"], 
-          registry=MODEL_REGISTRY, 
-          classnames=CLASSNAMES,
-          num_classes=len(CLASSNAMES))
-          
-
-        self.model = move_to(self.model, self.device)
-
-        if self.weights:
-            state_dict = torch.load(self.weights)
-            self.model = load_state_dict(self.model, state_dict, 'model')
-
-    
-    def infocheck(self):
-        device_info = get_devices_info(self.device_name)
-        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
-        self.logger.text(f"Number of test sample: {len(self.dataset)}", level=LoggerObserver.INFO)
-        self.logger.text(f"Everything will be saved to {self.savedir}", level=LoggerObserver.INFO)
 
     @torch.no_grad()
     def inference(self):
-        self.infocheck()
+        self.init_pipeline()
         self.logger.text("Inferencing...", level=LoggerObserver.INFO)
 
         visualizer = Visualizer()
-        self.model.eval()
 
         saved_mask_dir = os.path.join(self.savedir, 'masks')
         saved_overlay_dir = os.path.join(self.savedir, 'overlays')
@@ -142,5 +80,3 @@ if __name__ == '__main__':
     opts = Opts().parse_args()
     val_pipeline = TestPipeline(opts)
     val_pipeline.inference()
-
-        
