@@ -19,9 +19,3 @@ class LoggerSubscriber:
 
     def log_embedding(self, **kwargs):
         return
-
-    def log_spec_text(self, **kwargs):
-        return
-
-    def log_table(self, **kwargs):
-        return

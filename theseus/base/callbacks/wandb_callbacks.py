@@ -25,6 +25,8 @@ class WandbCallbacks(Callbacks):
         username of Wandb
     project_name: `str`
         project name of Wandb
+    resume: `bool`
+        whether to resume project
     """
 
     def __init__(self, 
@@ -57,10 +59,13 @@ class WandbCallbacks(Callbacks):
                 )
 
                 # Load the config from that run
-                old_config_path = wandblogger.restore(
-                    'pipeline.yaml',
-                    run_path = f"{self.username}/{self.project_name}/{id}"
-                ).name
+                try:
+                    old_config_path = wandblogger.restore(
+                        'pipeline.yaml',
+                        run_path = f"{self.username}/{self.project_name}/{id}"
+                    ).name
+                except:
+                    raise ValueError(f"Falid to load run id={id}, due to pipeline.yaml is missing or run is not existed")
 
                 # Check if the config remains the same, if not, create new run id 
                 old_config_dict = Config(old_config_path)

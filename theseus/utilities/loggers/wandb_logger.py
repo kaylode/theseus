@@ -84,7 +84,7 @@ class WandbLogger(LoggerSubscriber):
                'iterations': step
             })
 
-    def log_torch_module(self, tag, value, log_freq=100, **kwargs):
+    def log_torch_module(self, tag, value, log_freq, **kwargs):
         """
         Write a model graph to wandb
         :param value: (nn.Module) torch model

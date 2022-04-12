@@ -16,7 +16,7 @@ from theseus.semantic.callbacks import CALLBACKS_REGISTRY
 from theseus.utilities.getter import (get_instance, get_instance_recursively)
 from theseus.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
 from theseus.utilities.loading import load_state_dict
-from theseus.utilities.folder import get_new_folder_name
+
 from theseus.utilities.cuda import get_devices_info, move_to, get_device
 
 
@@ -31,15 +31,8 @@ class Pipeline(object):
         super(Pipeline, self).__init__()
         self.opt = opt
 
-        self.exp_name = opt['global']['exp_name']
-        self.exist_ok = opt['global']['exist_ok']
-
-        if self.exp_name:
-            self.savedir = os.path.join(opt['global']['save_dir'], self.exp_name)
-            if not self.exist_ok:
-                self.savedir = get_new_folder_name(self.savedir)
-        else:
-            self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+        
+        self.savedir = os.path.join(opt['global']['save_dir'], datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         os.makedirs(self.savedir, exist_ok=True)
         
         self.debug = opt['global']['debug']
@@ -135,11 +128,6 @@ class Pipeline(object):
                 'last_epoch': last_epoch,
             }
         )
-
-        if self.resume:
-            state_dict = torch.load(self.resume)
-            self.scheduler = load_state_dict(self.scheduler, state_dict, 'scheduler')
-
 
         self.trainer = get_instance(
             self.opt["trainer"],
