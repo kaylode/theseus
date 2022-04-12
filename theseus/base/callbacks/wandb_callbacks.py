@@ -25,8 +25,6 @@ class WandbCallbacks(Callbacks):
         username of Wandb
     project_name: `str`
         project name of Wandb
-    resume: `bool`
-        whether to resume project
     """
 
     def __init__(self, 
