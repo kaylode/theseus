@@ -37,6 +37,11 @@ def make_cm_fig(cms, labels: Optional[List] = None):
     num_cfms = cms.shape[0]
     nrow = int(np.ceil(np.sqrt(num_cfms)))
 
+    # Clear figures first to prevent memory-consuming
+    plt.cla()
+    plt.clf()
+    plt.close()
+
     fig, axes = plt.subplots(nrow, nrow, figsize=(8, 8))
     
     if num_cfms > 1:
