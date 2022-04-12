@@ -3,7 +3,9 @@ import timm
 import torch
 import torch.nn as nn
 from theseus.utilities.hooks import postfix_hook
-from theseus.utilities.cuda import move_to
+from theseus.utilities.cuda import move_to, detach
+from theseus.classification.utilities.logits import logits2labels
+import torch.nn.functional as F
 
 class BaseTimmModel(nn.Module):
     """Convolution models from timm
@@ -59,7 +61,8 @@ class BaseTimmModel(nn.Module):
         """
         return self.model
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, batch: Dict, device: torch.device):
+        x = move_to(batch['inputs'], device)
         self.features = None # Clear current features
         outputs = self.model(x)
         return {
@@ -76,16 +79,29 @@ class BaseTimmModel(nn.Module):
         device: `torch.device`
             current device 
         """
-        inputs = move_to(adict['inputs'], device)
-        outputs = self.model(inputs)
+        outputs = self.forward(adict, device)['outputs']
 
-        probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)
+        if not adict['multilabel']:
+            outputs, probs = logits2labels(outputs, type='multiclass', return_probs=True)
+        else:
+            outputs, probs = logits2labels(outputs, type='multilabel', threshold=adict['threshold'], return_probs=True)
 
-        probs = probs.cpu().detach().numpy()
-        classids = outputs.cpu().detach().numpy()
+            if adict['no-zeroes']:
+                argmaxs = torch.argmax(probs, dim=1)
+                tmp = torch.sum(outputs, dim=1)
+                one_hots = F.one_hot(argmaxs, outputs.shape[1])
+                outputs[tmp==0] = one_hots[tmp==0].bool()
 
-        if self.classnames:
+        probs = move_to(detach(probs), torch.device('cpu')).numpy()
+        classids = move_to(detach(outputs), torch.device('cpu')).numpy()
+
+        if self.classnames and not adict['multilabel']:
             classnames = [self.classnames[int(clsid)] for clsid in classids]
+        elif self.classnames and adict['multilabel']:
+            classnames = [
+              [self.classnames[int(i)] for i, c in enumerate(clsid) if c]
+              for clsid in classids
+            ]
         else:
             classnames = []
 

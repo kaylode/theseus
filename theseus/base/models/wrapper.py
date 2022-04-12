@@ -1,11 +1,8 @@
+import torch
 from torch import nn
 
-from . import MODEL_REGISTRY
-
-
-@MODEL_REGISTRY.register()
 class ModelWithLoss(nn.Module):
-    """Wrapper for model with loss function
+    """Add utilitarian functions for module to work with pipeline
 
     Args:
         model (Module): Base Model without loss
@@ -13,14 +10,19 @@ class ModelWithLoss(nn.Module):
 
     """
 
-    def __init__(self, model: nn.Module, criterion: nn.Module):
+    def __init__(self, model: nn.Module, criterion: nn.Module, device: torch.device):
         super().__init__()
         self.model = model
         self.criterion = criterion
+        self.device = device
 
     def forward(self, batch, metrics=None):
-        outputs = self.model(batch["inputs"])
-        loss, loss_dict = self.criterion(outputs, batch)
+        """
+        Forward the batch through models, losses and metrics
+        If some parameters are needed, it's best to include in the batch
+        """
+        outputs = self.model(batch, self.device)
+        loss, loss_dict = self.criterion(outputs, batch, self.device)
 
         if metrics is not None:
             for metric in metrics:
@@ -28,7 +30,8 @@ class ModelWithLoss(nn.Module):
 
         return {
             'loss': loss,
-            'loss_dict': loss_dict
+            'loss_dict': loss_dict,
+            'model_outputs': outputs
         }
 
     def training_step(self, batch):

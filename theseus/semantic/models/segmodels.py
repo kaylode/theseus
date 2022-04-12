@@ -2,7 +2,7 @@ from typing import Dict, Any
 import torch
 import torch.nn as nn
 import segmentation_models_pytorch as smp
-from theseus.utilities.cuda import move_to
+from theseus.utilities.cuda import move_to, detach
 
 """
 Source: https://github.com/qubvel/segmentation_models.pytorch
@@ -45,9 +45,12 @@ class BaseSegModel(nn.Module):
         """
         return self.model
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, batch: Dict, device: torch.device):
+        x = move_to(batch['inputs'], device)
         outputs = self.model(x)
-        return outputs
+        return {
+            'outputs': outputs,
+        }
 
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         """
@@ -58,8 +61,7 @@ class BaseSegModel(nn.Module):
         device: `torch.device`
             current device 
         """
-        inputs = move_to(adict['inputs'], device)
-        outputs = self.model(inputs)
+        outputs = self.model(adict, device)['outputs']
 
         if self.num_classes == 1:
             thresh = adict['thresh']
@@ -67,7 +69,7 @@ class BaseSegModel(nn.Module):
         else:
             predicts = torch.argmax(outputs, dim=1)
 
-        predicts = predicts.detach().cpu().squeeze().numpy()
+        predicts = move_to(detach(predicts), torch.device('cpu')).squeeze().numpy()
         return {
             'masks': predicts
         } 
