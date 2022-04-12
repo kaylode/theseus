@@ -1,4 +1,6 @@
 global:
+  exp_name: null
+  exist_ok: false
   debug: True
   cfg_transform: configs/sample/transform.yaml
   save_dir: runs
