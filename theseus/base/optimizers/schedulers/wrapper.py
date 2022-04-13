@@ -77,4 +77,10 @@ class SchedulerWrapper():
         return self.scheduler.state_dict()
 
     def load_state_dict(self, state_dict, strict=False):
-        self.scheduler.load_state_dict(state_dict, strict=strict)
+        if strict:
+            self.scheduler.load_state_dict(state_dict)
+        else:
+            try:
+                self.scheduler.load_state_dict(state_dict)
+            except:
+                return
