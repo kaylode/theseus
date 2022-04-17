@@ -55,10 +55,12 @@ class CheckpointCallbacks(Callbacks):
         weights = {
             'model': trainer.model.model.state_dict(),
             'optimizer': trainer.optimizer.state_dict(),
-            'scheduler': trainer.scheduler.state_dict(),
             'iters': iters,
             'best_value': self.best_value,
         }
+
+        if trainer.scheduler:
+            weights['scheduler'] = trainer.scheduler.state_dict()
 
         if trainer.scaler:
             weights[trainer.scaler.state_dict_key] = trainer.scaler.state_dict()

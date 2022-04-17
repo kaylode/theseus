@@ -95,8 +95,7 @@ class BasePipeline(object):
         self.logger.text(f"Number of validation samples: {len(self.val_dataset)}", level=LoggerObserver.INFO)
         self.logger.text(f"Number of validation iterations each epoch: {len(self.val_dataloader)}", level=LoggerObserver.INFO)
 
-
-    def init_model_with_loss(self):
+    def init_model(self):
         CLASSNAMES = self.val_dataset.classnames
         model = get_instance(
             self.opt["model"], 
@@ -104,12 +103,18 @@ class BasePipeline(object):
             num_classes=len(CLASSNAMES),
             classnames=CLASSNAMES)
         model = move_to(model, self.device)
+        return model
 
+    def init_criterion(self):
         criterion = get_instance_recursively(
             self.opt["loss"], 
             registry=self.loss_registry)
         criterion = move_to(criterion, self.device)
-            
+        return criterion
+
+    def init_model_with_loss(self):
+        model = self.init_model()
+        criterion = self.init_criterion()
         self.model = ModelWithLoss(model, criterion, self.device)
         self.logger.text(f"Number of trainable parameters: {self.model.trainable_parameters():,}", level=LoggerObserver.INFO)
         device_info = get_devices_info(self.device_name)
@@ -145,19 +150,22 @@ class BasePipeline(object):
             self.last_epoch = iters//len(self.train_dataloader) - 1
 
     def init_scheduler(self):
-        self.scheduler = get_instance(
-            self.opt["scheduler"], registry=self.scheduler_registry, optimizer=self.optimizer,
-            **{
-                'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
-                'trainset': self.train_dataset,
-                'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
-                'last_epoch': self.last_epoch,
-            }
-        )
+        if "scheduler" in self.opt.keys():
+            self.scheduler = get_instance(
+                self.opt["scheduler"], registry=self.scheduler_registry, optimizer=self.optimizer,
+                **{
+                    'num_epochs': self.opt["trainer"]['args']['num_iterations'] // len(self.train_dataloader),
+                    'trainset': self.train_dataset,
+                    'batch_size': self.opt["data"]['dataloader']['val']['args']['batch_size'],
+                    'last_epoch': self.last_epoch,
+                }
+            )
 
-        if self.resume:
-            state_dict = torch.load(self.resume)
-            self.scheduler = load_state_dict(self.scheduler, state_dict, 'scheduler')
+            if self.resume:
+                state_dict = torch.load(self.resume)
+                self.scheduler = load_state_dict(self.scheduler, state_dict, 'scheduler')
+        else:
+            self.scheduler = None
 
     def init_callbacks(self):
         callbacks = get_instance_recursively(
@@ -166,6 +174,7 @@ class BasePipeline(object):
             save_interval=self.opt["trainer"]['args']['save_interval'],
             save_dir=self.savedir,
             resume=self.resume,
+            config_dict=self.opt,
             registry=self.callbacks_registry
         )
         return callbacks
