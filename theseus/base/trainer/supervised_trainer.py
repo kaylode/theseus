@@ -155,5 +155,5 @@ class SupervisedTrainer(BaseTrainer):
             'iters': self.iters,
             'num_iterations': self.num_iterations,
             'last_batch': batch,
-            'last_outputs': outputs['outputs']
+            'last_outputs': outputs['model_outputs']
         })

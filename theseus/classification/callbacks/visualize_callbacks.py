@@ -54,7 +54,7 @@ class VisualizerCallbacks(Callbacks):
             'value': model.model.get_model(),
             'type': LoggerObserver.TORCH_MODULE,
             'kwargs': {
-                'inputs': batch,
+                'inputs': move_to(batch['inputs'], model.device),
                 'log_freq': 100
             }
         }])
