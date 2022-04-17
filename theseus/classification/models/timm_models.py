@@ -22,31 +22,44 @@ class BaseTimmModel(nn.Module):
 
     def __init__(
         self,
-        name: str,
+        model_name: str,
         num_classes: int = 1000,
         from_pretrained: bool = True,
         classnames: Optional[List] = None,
+        freeze: bool = False,
         **kwargs
     ):
         super().__init__()
-        self.name = name
+        self.name = model_name
 
         self.classnames = classnames
+        self.num_classes = num_classes
+        self.freeze = freeze
 
-        if num_classes != 1000:
-            self.model = timm.create_model(name, pretrained=from_pretrained, num_classes=num_classes)
+        if self.num_classes != 1000:
+            self.model = timm.create_model(model_name, pretrained=from_pretrained, num_classes=self.num_classes)
         else:
-            self.model = timm.create_model(name, pretrained=from_pretrained)
+            self.model = timm.create_model(model_name, pretrained=from_pretrained)
 
-        # Register a postfix hook to extract model features when forward
-        self.model.forward_features = postfix_hook(
-            self.model.forward_features, self.get_feature_hook)
+        self.feature_dim = self.model.num_features
+
+        if self.num_classes > 0:
+            # Register a postfix hook to extract model features when forward
+            self.model.forward_features = postfix_hook(
+                self.model.forward_features, self.get_feature_hook)
         
-        self.features = None
-        self.pooling = torch.nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten()
-        )
+            self.features = None
+            self.pooling = torch.nn.Sequential(
+                nn.AdaptiveAvgPool2d((1, 1)),
+                nn.Flatten()
+            )
+
+        if self.freeze:
+            self.freeze_backbone()
+
+    def freeze_backbone(self):
+        for p in self.model.parameters():
+            p.requires_grad = False
 
     def get_feature_hook(self, parameter):
         """
@@ -65,6 +78,8 @@ class BaseTimmModel(nn.Module):
         x = move_to(batch['inputs'], device)
         self.features = None # Clear current features
         outputs = self.model(x)
+        if self.num_classes == 0:
+            self.features = outputs
         return {
             'outputs': outputs,
             'features': self.features
