@@ -1,9 +1,10 @@
 global:
+  exp_name: null
+  exist_ok: false
   debug: true
   cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
-  use_fp16: true
   pretrained: null
   resume: null
 trainer:
@@ -14,6 +15,7 @@ trainer:
     evaluate_interval:  1
     print_interval: 20
     save_interval: 1000
+    use_fp16: true
 callbacks:
   - name: LoggerCallbacks
     args: null 

@@ -46,7 +46,12 @@ class SupervisedTrainer(BaseTrainer):
         self.valloader = valloader
         self.use_cuda = next(self.model.parameters()).is_cuda
 
-        self.step_per_epoch = self.scheduler.step_per_epoch
+        if self.scheduler:
+            self.step_per_epoch = self.scheduler.step_per_epoch
+
+        # Flags for shutting down training or validation stages
+        self.shutdown_training = False
+        self.shutdown_validation = False
 
 
     def training_epoch(self):
@@ -57,6 +62,11 @@ class SupervisedTrainer(BaseTrainer):
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
         for i, batch in enumerate(self.trainloader):
+
+            # Check if shutdown flag has been turned on
+            if self.shutdown_training or self.shutdown_all:
+                break
+
             self.callbacks.run('on_train_batch_start', {
                 'batch': batch,
                 'iters': self.iters,
@@ -74,7 +84,7 @@ class SupervisedTrainer(BaseTrainer):
             
             # Optmizer step
             self.scaler.step(self.optimizer, clip_grad=self.clip_grad, parameters=self.model.parameters())
-            if not self.step_per_epoch:
+            if self.scheduler and not self.step_per_epoch:
                 self.scheduler.step()
             self.optimizer.zero_grad()
 
@@ -95,7 +105,7 @@ class SupervisedTrainer(BaseTrainer):
                 'lr': lr
             })
 
-        if self.step_per_epoch:
+        if self.scheduler and self.step_per_epoch:
             self.scheduler.step()
 
         self.callbacks.run('on_train_epoch_end', {
@@ -113,6 +123,11 @@ class SupervisedTrainer(BaseTrainer):
 
         self.callbacks.run('on_val_epoch_start')
         for batch in tqdm(self.valloader):
+
+            # Check if shutdown flag has been turned on
+            if self.shutdown_validation or self.shutdown_all:
+                break
+
             self.callbacks.run('on_val_batch_start', {
                 'batch': batch,
                 'iters': self.iters,
@@ -139,5 +154,6 @@ class SupervisedTrainer(BaseTrainer):
             'metric_dict': metric_dict,
             'iters': self.iters,
             'num_iterations': self.num_iterations,
-            'last_batch': batch
+            'last_batch': batch,
+            'last_outputs': outputs['model_outputs']
         })

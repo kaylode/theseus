@@ -49,13 +49,13 @@ class VisualizerCallbacks(Callbacks):
     def visualize_model(self, model, batch):
         # Vizualize Model Graph
         LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
-        images = move_to(batch["inputs"], model.device)
         LOGGER.log([{
             'tag': "Sanitycheck/analysis/architecture",
             'value': model.model.get_model(),
             'type': LoggerObserver.TORCH_MODULE,
             'kwargs': {
-                'inputs': images
+                'inputs': move_to(batch['inputs'], model.device),
+                'log_freq': 100
             }
         }])
 

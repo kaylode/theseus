@@ -23,7 +23,8 @@ def get_instance_recursively(config, registry: Registry, **kwargs):
                 if isinstance(args, list):
                     return registry.get(config['name'])(*args, **kwargs)
                 elif isinstance(args, dict):
-                    return registry.get(config['name'])(**args, **kwargs)
+                    kwargs.update(args) # override kwargs (from parent) with args (from config)
+                    return registry.get(config['name'])(**kwargs)
                 else:
                     raise ValueError(f'Unknown type: {type(args)}')
         else:

@@ -1,78 +1,69 @@
-import torch
 from typing import Any, Dict, Optional, List
-from sklearn.metrics import confusion_matrix
 from theseus.base.metrics.metric_template import Metric
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np
+from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
+from theseus.classification.utilities.logits import logits2labels
 
-def make_cm_fig(cm, labels: Optional[List] = None):
+def plot_cfm(cm, ax, labels: List):
     """
     Make confusion matrix figure
     labels: `Optional[List]`
         classnames for visualization
     """
-    fig, ax = plt.subplots(1, figsize=(10,10))
 
     ax = sns.heatmap(cm, annot=False, 
             fmt='', cmap='Blues',ax =ax)
 
-    ax.set_title('Confusion Matrix\n\n')
     ax.set_xlabel('\nActual')
     ax.set_ylabel('Predicted ')
 
-    ## Ticket labels - List must be in alphabetical order
-    if not labels:
-        labels = [str(i) for i in range(len(cm))]
-
     ax.xaxis.set_ticklabels(labels)
     ax.yaxis.set_ticklabels(labels, rotation=0)
-    plt.tight_layout(pad=0)
+
+def make_cm_fig(cms, labels: Optional[List] = None):
+    
+    if cms.shape[0] > 1: # multilabel
+        num_classes = cms.shape[0]
+    else:
+        num_classes = cms.shape[1]
+    
+    ## Ticket labels - List must be in alphabetical order
+    if not labels:
+        labels = [str(i) for i in range(num_classes)]
+
+    ## 
+    num_cfms = cms.shape[0]
+    nrow = int(np.ceil(np.sqrt(num_cfms)))
+
+    # Clear figures first to prevent memory-consuming
+    plt.cla()
+    plt.clf()
+    plt.close()
+
+    fig, axes = plt.subplots(nrow, nrow, figsize=(8, 8))
+    
+    if num_cfms > 1:
+        for ax, cfs_matrix, label in zip(axes.flatten(), cms, labels):
+            ax.set_title(f'{label}\n\n')
+            plot_cfm(cfs_matrix, ax, labels = ["N", "Y"])
+    else:
+        plot_cfm(cms[0], axes, labels = labels)
+    
+    fig.tight_layout()
     return fig
-
-
-def print_cm(cm, labels, hide_zeroes=False, hide_diagonal=False, hide_threshold=None):
-    """pretty print for confusion matrixes"""
-    result = ""
-    columnwidth = max([len(x) for x in labels] + [5])  # 5 is value length
-    empty_cell = " " * columnwidth
-    
-    # Begin CHANGES
-    fst_empty_cell = (columnwidth-3)//2 * " " + "t/p" + (columnwidth-3)//2 * " "
-    
-    if len(fst_empty_cell) < len(empty_cell):
-        fst_empty_cell = " " * (len(empty_cell) - len(fst_empty_cell)) + fst_empty_cell
-    # Print header
-    result += ("    " + fst_empty_cell + " ")
-    # End CHANGES
-    
-    for label in labels:
-        result += (("%{0}s".format(columnwidth) % label) + " ")
-        
-    result += '\n'
-    # Print rows
-    for i, label1 in enumerate(labels):
-        result += (("    %{0}s".format(columnwidth) % label1) + " ")
-        for j in range(len(labels)):
-            cell = "%{0}.1f".format(columnwidth) % cm[i, j]
-            if hide_zeroes:
-                cell = cell if float(cm[i, j]) != 0 else empty_cell
-            if hide_diagonal:
-                cell = cell if i != j else empty_cell
-            if hide_threshold:
-                cell = cell if cm[i, j] > hide_threshold else empty_cell
-            result += (cell + " ")
-        result += '\n'
-    return result
 
 class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification
     """
-    def __init__(self, classnames=None, **kwargs):
+    def __init__(self, classnames=None, type:str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
+        self.type = type
         self.classnames = classnames
         self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
+        self.threshold = kwargs.get('threshold', 0.5)
         self.reset()
 
     def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
@@ -83,19 +74,21 @@ class ConfusionMatrix(Metric):
         outputs = outputs["outputs"] 
         targets = batch["targets"] 
 
-        outputs = torch.argmax(outputs,dim=1)
-        if outputs.is_cuda:
-            outputs = outputs.cpu()
-            targets = targets.cpu()
+        outputs = logits2labels(outputs, type=self.type, threshold=self.threshold)
 
         self.outputs +=  outputs.numpy().tolist()
-        self.targets +=  targets.numpy().tolist()
+        self.targets +=  targets.squeeze().numpy().tolist()
         
     def reset(self):
         self.outputs = []
         self.targets = []
 
     def value(self):
-        values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes, normalize="pred")
+        if self.type == 'multiclass':
+            values = confusion_matrix(self.outputs, self.targets, labels=self.num_classes, normalize="pred")
+            values = values[np.newaxis, :, :]
+        else:
+            values = multilabel_confusion_matrix(self.outputs, self.targets, labels=self.num_classes)
+
         fig = make_cm_fig(values, self.classnames)
         return {"cfm": fig}

@@ -37,6 +37,7 @@ class BaseTrainer():
         self.evaluate_interval = evaluate_interval
         self.iters = 0
         self.debug = debug
+        self.shutdown_all = False # Flag to stop trainer immediately
 
         if not isinstance(callbacks, CallbacksList):
             callbacks = callbacks if isinstance(callbacks, list) else [callbacks]
@@ -58,6 +59,11 @@ class BaseTrainer():
 
         while self.iters < self.num_iterations:
             try:
+
+                # Check if shutdown flag has been turned on
+                if self.shutdown_all:
+                    break
+
                 # On epoch start callbacks
                 self.callbacks.run('on_epoch_start', {'iters': self.iters})
 

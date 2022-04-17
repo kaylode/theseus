@@ -1,11 +1,10 @@
 from distutils.log import error
 from typing import Any, Dict, Optional, List
 
-import torch
-import torchvision
 import matplotlib.pyplot as plt
 from torchvision.transforms import functional as TFF
 from theseus.base.metrics.metric_template import Metric
+from theseus.classification.utilities.logits import logits2labels
 
 from theseus.utilities.visualization.visualizer import Visualizer
 
@@ -18,12 +17,14 @@ class ErrorCases(Metric):
         classnames for plot
     """
 
-    def __init__(self, max_samples: int = 64, classnames: Optional[List[str]]=None, **kwargs):
+    def __init__(self, max_samples: int = 64, classnames: Optional[List[str]]=None, type:str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
         self.visualizer = Visualizer()
 
+        self.type = type
         self.max_samples = max_samples
         self.classnames = classnames
+        self.threshold = kwargs.get('threshold', 0.5)
         self.reset()
 
     def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
@@ -37,10 +38,8 @@ class ErrorCases(Metric):
         outputs = outputs["outputs"]
         images = batch["inputs"]
         targets = batch["targets"] 
-        probs, outputs = torch.max(torch.softmax(outputs,dim=-1), dim=-1)
-        outputs = outputs.detach().cpu()
-        probs = probs.detach().cpu()
-        targets = targets.detach().cpu().view(-1)
+        outputs, probs = logits2labels(outputs, type=self.type, return_probs=True, threshold=self.threshold)
+        targets = targets.squeeze().long()
     
         outputs = outputs.numpy().tolist()
         targets = targets.numpy().tolist()
@@ -62,12 +61,22 @@ class ErrorCases(Metric):
             img_show = self.visualizer.denormalize(image)
             self.visualizer.set_image(img_show)
 
+            if self.type == 'multilabel':
+                prob = ', '.join([str(round(prob[i],3)) for i, c in enumerate(pred) if c]) 
+            else:
+                prob = str(round(prob, 3))
+                
             if self.classnames:
-                pred = self.classnames[pred]
-                target = self.classnames[target]
+                if self.type == 'multiclass':
+                    pred = self.classnames[pred]
+                    target = self.classnames[target]
+                else:
+                    pred = ', '.join([self.classnames[int(i)] for i, c in enumerate(pred) if c])
+                    target = ', '.join([self.classnames[int(i)] for i, c in enumerate(target) if c])
+            
 
             self.visualizer.draw_label(
-                f"GT: {target}\nP: {pred}\nC: {prob:.4f}", 
+                f"GT: {target}\nP: {pred}\nC: {prob}", 
                 fontColor=[1,0,0], 
                 fontScale=0.8,
                 thickness=2,
@@ -79,7 +88,7 @@ class ErrorCases(Metric):
             pred_batch.append(pred_img)
  
         error_imgs = self.visualizer.make_grid(pred_batch)
-        fig, ax = plt.subplots(1, figsize=(10,10))
+        fig, ax = plt.subplots(1, figsize=(8,8))
         ax.imshow(error_imgs)
         ax.axis("off")
         plt.tight_layout(pad=0)

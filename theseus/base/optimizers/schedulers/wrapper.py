@@ -72,4 +72,15 @@ class SchedulerWrapper():
     
     def step(self, *args, **kwargs):
         self.scheduler.step(*args, **kwargs)
-        
+
+    def state_dict(self):
+        return self.scheduler.state_dict()
+
+    def load_state_dict(self, state_dict, strict=False):
+        if strict:
+            self.scheduler.load_state_dict(state_dict)
+        else:
+            try:
+                self.scheduler.load_state_dict(state_dict)
+            except:
+                return

@@ -1,15 +1,16 @@
 from typing import Any, Dict, Optional
 
-import torch
 from theseus.base.metrics.metric_template import Metric
-
+from theseus.classification.utilities.logits import logits2labels
 
 class Accuracy(Metric):
     """Accuracy metric
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, type: str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
+        self.type = type
+        self.threshold = kwargs.get('threshold', 0.5)
         self.reset()
 
     def update(self, output: Dict[str, Any], batch: Dict[str, Any]):
@@ -18,13 +19,14 @@ class Accuracy(Metric):
         """
         output = output["outputs"] 
         target = batch["targets"] 
-        prediction = torch.argmax(output, dim=1)
-        prediction = prediction.cpu().detach()
+
+        prediction = logits2labels(output, self.type, threshold=self.threshold)
+        target = target.squeeze()
 
         correct = (prediction.view(-1) == target.view(-1)).sum()
-        correct = correct.cpu()
+
         self.total_correct += correct
-        self.sample_size += prediction.size(0)
+        self.sample_size += prediction.view(-1).size(0)
 
     def value(self):
         return {'acc': (self.total_correct / self.sample_size).item()}
