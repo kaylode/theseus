@@ -152,6 +152,7 @@ class Visualizer():
                 color = color_list[int(label)]
             else:
                 box, label = item, None
+                color = color_list[1]
 
             coord = [box[0], box[1], box[2], box[3]]
             c1, c2 = (int(coord[0]), int(coord[1])), (int(coord[2]), int(coord[3]))
