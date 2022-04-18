@@ -54,7 +54,7 @@ class WandbCallbacks(Callbacks):
         else:
             try:
                 # Get run id
-                id = find_run_id(
+                run_id = find_run_id(
                     os.path.dirname(os.path.dirname(self.resume))
                 )
 
@@ -62,10 +62,10 @@ class WandbCallbacks(Callbacks):
                 try:
                     old_config_path = wandblogger.restore(
                         'pipeline.yaml',
-                        run_path = f"{self.username}/{self.project_name}/{id}"
+                        run_path = f"{self.username}/{self.project_name}/{run_id}"
                     ).name
                 except Exception:
-                    raise ValueError(f"Falid to load run id={id}, due to pipeline.yaml is missing or run is not existed")
+                    raise ValueError(f"Falid to load run id={run_id}, due to pipeline.yaml is missing or run is not existed")
 
                 # Check if the config remains the same, if not, create new run id 
                 old_config_dict = Config(old_config_path)
@@ -74,7 +74,7 @@ class WandbCallbacks(Callbacks):
                 old_config_dict.pop('global', None)
                 tmp_config_dict.pop('global', None)
                 if old_config_dict == tmp_config_dict:
-                    self.id = id
+                    self.id = run_id
                     LOGGER.text("Run configuration remains unchanged. Resuming wandb run...", LoggerObserver.SUCCESS)
                 else:
                     self.id = wandblogger.util.generate_id()
@@ -83,12 +83,12 @@ class WandbCallbacks(Callbacks):
                 LOGGER.text(f"Can not resume wandb due to '{e}'. Creating new wandb run...", LoggerObserver.WARN)
                 self.id = wandblogger.util.generate_id()
 
-        """
-        All the logging stuffs have been done in LoggerCallbacks. Here we just register 
-        the wandb logger to the main logger
-        """
+
+        # All the logging stuffs have been done in LoggerCallbacks. 
+        # Here we just register the wandb logger to the main logger
+
         self.wandb_logger = WandbLogger(
-            id = self.id,
+            unique_id = self.id,
             save_dir = self.save_dir,
             username = self.username, 
             project_name = self.project_name, 

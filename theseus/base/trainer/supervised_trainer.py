@@ -63,7 +63,7 @@ class SupervisedTrainer(BaseTrainer):
         self.optimizer.zero_grad()
 
         last_batch = 0
-        for i, batch in enumerate(self.trainloader):
+        for _, batch in enumerate(self.trainloader):
             last_batch = batch
 
             # Check if shutdown flag has been turned on
@@ -126,8 +126,9 @@ class SupervisedTrainer(BaseTrainer):
         self.model.eval()
 
         self.callbacks.run('on_val_epoch_start')
+        last_batch = 0
         for batch in tqdm(self.valloader):
-
+            last_batch = batch
             # Check if shutdown flag has been turned on
             if self.shutdown_validation or self.shutdown_all:
                 break
@@ -158,6 +159,6 @@ class SupervisedTrainer(BaseTrainer):
             'metric_dict': metric_dict,
             'iters': self.iters,
             'num_iterations': self.num_iterations,
-            'last_batch': batch,
+            'last_batch': last_batch,
             'last_outputs': outputs['model_outputs']
         })
