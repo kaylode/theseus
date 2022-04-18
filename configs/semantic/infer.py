@@ -1,5 +1,3 @@
-from typing import List, Optional, Tuple
-
 import matplotlib as mpl
 mpl.use("Agg")
 from theseus.opt import Opts

@@ -1,7 +1,8 @@
-from typing import Callable, Dict, Optional, List
 import logging
 import torch
 import matplotlib as mpl
+
+from typing import Dict, List
 from .subscriber import LoggerSubscriber
 from tabulate import tabulate
 from inspect import getframeinfo, stack
@@ -76,52 +77,52 @@ class LoggerObserver(object):
             for log in logs:
                 tag = log['tag']
                 value = log['value']
-                type = log['type'] if 'type' in log.keys() else get_type(value)
+                log_type = log['type'] if 'type' in log.keys() else get_type(value)
                 kwargs = log['kwargs'] if 'kwargs' in log.keys() else {}
 
-                if type == LoggerObserver.SCALAR:
+                if log_type == LoggerObserver.SCALAR:
                     subscriber.log_scalar(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.FIGURE:
+                if log_type == LoggerObserver.FIGURE:
                     subscriber.log_figure(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TORCH_MODULE:
+                if log_type == LoggerObserver.TORCH_MODULE:
                     subscriber.log_torch_module(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TEXT:
+                if log_type == LoggerObserver.TEXT:
                     subscriber.log_text(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.EMBED:
+                if log_type == LoggerObserver.EMBED:
                     subscriber.log_embedding(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.SPECIAL_TEXT:
+                if log_type == LoggerObserver.SPECIAL_TEXT:
                     subscriber.log_spec_text(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TABLE:
+                if log_type == LoggerObserver.TABLE:
                     subscriber.log_table(
                         tag=tag,
                         value=value,

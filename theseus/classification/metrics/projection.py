@@ -1,6 +1,6 @@
 import os
 import torch
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict
 from theseus.base.metrics.metric_template import Metric
 import cv2
 import numpy as np

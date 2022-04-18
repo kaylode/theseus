@@ -1,7 +1,6 @@
 import math
 from torch.optim.lr_scheduler import (
-    StepLR, CosineAnnealingLR, LambdaLR, 
-    ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts)
+    LambdaLR, ReduceLROnPlateau, OneCycleLR, CosineAnnealingWarmRestarts)
 from .cosine import CosineWithRestarts
 
 class SchedulerWrapper():

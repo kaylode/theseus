@@ -1,11 +1,8 @@
-import time
-import numpy as np
-from tqdm import tqdm
 import torch
+
 from torch.cuda import amp
-
+from tqdm import tqdm
 from .base_trainer import BaseTrainer
-
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 

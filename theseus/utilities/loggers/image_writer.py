@@ -1,7 +1,7 @@
 import os
-from .subscriber import LoggerSubscriber
 import matplotlib as mpl
 
+from .subscriber import LoggerSubscriber
 
 class ImageWriter(LoggerSubscriber):
     """Logger for writing images

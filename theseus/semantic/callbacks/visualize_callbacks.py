@@ -1,9 +1,10 @@
-from typing import List, Dict
+from typing import Dict
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import torch
-from torchvision.transforms import functional as TFF
 import numpy as np
+
+from torchvision.transforms import functional as TFF
 from theseus.utilities.visualization.colors import color_list
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver

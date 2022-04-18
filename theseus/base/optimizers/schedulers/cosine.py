@@ -3,7 +3,6 @@
 import torch
 from typing import Dict, Any
 import numpy as np
-import logging
 
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger('main')

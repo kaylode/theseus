@@ -1,7 +1,5 @@
 import torch
-import torch.nn as nn
 import os
-import logging
 
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")

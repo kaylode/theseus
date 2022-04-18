@@ -1,5 +1,5 @@
 from sklearn.metrics import f1_score
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from theseus.base.metrics.metric_template import Metric
 from theseus.classification.utilities.logits import logits2labels

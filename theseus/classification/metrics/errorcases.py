@@ -1,4 +1,3 @@
-from distutils.log import error
 from typing import Any, Dict, Optional, List
 
 import matplotlib.pyplot as plt

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 import os
 import os.path as osp
 from theseus.base.callbacks.base_callbacks import Callbacks

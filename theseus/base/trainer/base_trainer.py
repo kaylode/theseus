@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List
 
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.optimizers.scalers import NativeScaler
