@@ -46,8 +46,8 @@ def move_to(obj: Any, device: torch.device):
         return [move_to(v, device) for v in obj]
     elif isinstance(obj, tuple):
         return tuple(move_to(list(obj), device))
-    else:
-        return obj
+    
+    return obj
 
 def detach(obj: Any):
     """Credit: https://discuss.pytorch.org/t/pytorch-tensor-to-device-for-a-list-of-dict/66283
@@ -67,5 +67,4 @@ def detach(obj: Any):
         return [detach(v) for v in obj]
     elif isinstance(obj, tuple):
         return tuple(detach(list(obj)))
-    else:
-        raise TypeError("Invalid type for detach")
+    raise TypeError("Invalid type for detach")

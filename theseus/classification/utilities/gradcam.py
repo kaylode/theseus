@@ -105,8 +105,7 @@ class CAMWrapper(BaseCAM):
 
         if return_probs: 
             return results, target_categories, scores
-        else:
-            return results
+        return results
 
     def __call__(self,
                  input_tensor: torch.Tensor,

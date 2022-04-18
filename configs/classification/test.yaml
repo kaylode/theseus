@@ -6,7 +6,7 @@ global:
   save_dir: runs
   device: cuda:0
   weights: null
-  
+
 model:
   name: BaseTimmModel
   args:
@@ -14,7 +14,7 @@ model:
     from_pretrained: False
     num_classes: 41
 
-data: 
+data:
   dataset:
     name: ImageDataset
     args:

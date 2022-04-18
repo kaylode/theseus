@@ -58,7 +58,7 @@ class TestPipeline(BaseTestPipeline):
             outputs = self.model.get_prediction(batch, self.device)
             preds = outputs['masks']
 
-            for (input, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
+            for (inpt, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
                 decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
                 resized_decode_mask = cv2.resize(decode_pred, tuple(ori_size))
 
@@ -67,7 +67,7 @@ class TestPipeline(BaseTestPipeline):
                 cv2.imwrite(savepath, resized_decode_mask)
 
                 # Save overlay
-                raw_image = visualizer.denormalize(input)   
+                raw_image = visualizer.denormalize(inpt)
                 ori_image = cv2.resize(raw_image, tuple(ori_size))
                 overlay = ori_image * 0.7 + resized_decode_mask * 0.3
                 savepath = os.path.join(saved_overlay_dir, filename)

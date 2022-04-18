@@ -82,5 +82,5 @@ class SchedulerWrapper():
         else:
             try:
                 self.scheduler.load_state_dict(state_dict)
-            except:
+            except Exception:
                 return

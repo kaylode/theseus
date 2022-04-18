@@ -25,6 +25,3 @@ class Checkpoint():
         LOGGER.text(
             f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth",
             level=LoggerObserver.INFO)
-
-    
-

@@ -64,7 +64,7 @@ class WandbCallbacks(Callbacks):
                         'pipeline.yaml',
                         run_path = f"{self.username}/{self.project_name}/{id}"
                     ).name
-                except:
+                except Exception:
                     raise ValueError(f"Falid to load run id={id}, due to pipeline.yaml is missing or run is not existed")
 
                 # Check if the config remains the same, if not, create new run id 

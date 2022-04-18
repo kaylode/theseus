@@ -150,5 +150,4 @@ def find_old_log(weight_path):
     event_paths = glob.glob(os.path.join(pardir, "event*"))
     if len(event_paths) == 0:
         return None
-    else:
-        return event_paths[0]
+    return event_paths[0]

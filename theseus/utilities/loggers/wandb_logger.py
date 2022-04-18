@@ -37,8 +37,8 @@ class WandbLogger(LoggerSubscriber):
         if wandb_logger.run.resumed:
             state_dict = torch.load(wandb_logger.restore(path))
             return state_dict
-        else:
-            return None
+            
+        return None
 
     def log_file(self, tag, value, base_folder=None, **kwargs):
         """
@@ -155,7 +155,7 @@ def find_run_id(dirname):
 
     if not osp.isfile(wandb_id_file):
         raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
-    else:
-        with open(wandb_id_file, 'r') as f:
-            wandb_id = f.read().rstrip()
-        return wandb_id
+
+    with open(wandb_id_file, 'r') as f:
+        wandb_id = f.read().rstrip()
+    return wandb_id
