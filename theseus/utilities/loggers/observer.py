@@ -16,7 +16,7 @@ def get_type(value):
     if isinstance(value, torch.Tensor):
         if len(value.shape) == 2:
             return LoggerObserver.EMBED
-    if isinstance(value, int) or isinstance(value, float):
+    if isinstance(value, (int, float)):
         return LoggerObserver.SCALAR
     
     LoggerObserver.text(f'Fail to log undefined type: {type(value)}', level=LoggerObserver.CRITICAL)
@@ -46,8 +46,8 @@ class LoggerObserver(object):
     def __new__(cls, name, *args, **kwargs):
         if name in LoggerObserver.instances.keys():
             return LoggerObserver.instances[name]
-        else:
-            return object.__new__(cls, *args, **kwargs)
+            
+        return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
         from .stdout_logger import StdoutLogger # to circumvent circular import
@@ -65,8 +65,8 @@ class LoggerObserver(object):
     def getLogger(cls, name):
         if name in LoggerObserver.instances.keys():
             return LoggerObserver.instances[name]
-        else:
-            return cls(name)
+
+        return cls(name)
 
     def subscribe(self, subscriber: LoggerSubscriber):
         self.subscriber.append(subscriber)

@@ -14,16 +14,16 @@ class WandbLogger(LoggerSubscriber):
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, id:str, username:str, project_name:str, run_name:str, save_dir:str = None, config_dict:Dict = None):
+    def __init__(self, unique_id:str, username:str, project_name:str, run_name:str, save_dir:str = None, config_dict:Dict = None):
         self.project_name = project_name
         self.username = username
         self.run_name = run_name
         self.config_dict = config_dict
-        self.id = id
+        self.id = unique_id
         self.save_dir = save_dir
         
         wandb_logger.init(
-            id = id,
+            id = self.id,
             dir = self.save_dir,
             config=config_dict,
             entity=username, 

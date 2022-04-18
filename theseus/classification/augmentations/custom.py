@@ -284,5 +284,3 @@ class RandomCutmix(torch.nn.Module):
         s += ", inplace={inplace}"
         s += ")"
         return s.format(**self.__dict__)
-
-

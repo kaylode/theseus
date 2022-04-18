@@ -61,7 +61,10 @@ class SupervisedTrainer(BaseTrainer):
         self.model.train()
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
+
+        last_batch = 0
         for i, batch in enumerate(self.trainloader):
+            last_batch = batch
 
             # Check if shutdown flag has been turned on
             if self.shutdown_training or self.shutdown_all:
@@ -105,11 +108,12 @@ class SupervisedTrainer(BaseTrainer):
                 'lr': lr
             })
 
+
         if self.scheduler and self.step_per_epoch:
             self.scheduler.step()
 
         self.callbacks.run('on_train_epoch_end', {
-            'last_batch': batch,
+            'last_batch': last_batch,
             'iters': self.iters
         })
         
