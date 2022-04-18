@@ -65,7 +65,7 @@ class Opts(ArgumentParser):
         for s in opts:
             s = s.strip()
             k, v = s.split('=')
-            config[k] = yaml.load(v, Loader=yaml.Loader)
+            config[k] = yaml.load(v, Loader=yaml.SafeLoader)
         return config
 
     def override(self, global_config, overriden):

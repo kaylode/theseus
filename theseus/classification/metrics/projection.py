@@ -38,7 +38,7 @@ class EmbeddingProjection(Metric):
         img_names = batch['img_names']
 
         for i in range(len(features)):
-            filename = hashlib.md5(img_names[i].encode('utf-8')).hexdigest()
+            filename = hashlib.sha256(img_names[i].encode('utf-8')).hexdigest()
             pred_img = self.visualizer.denormalize(inputs[i])
             pred_img = cv2.resize(pred_img, dsize=(64,64), interpolation=cv2.INTER_CUBIC)
 
