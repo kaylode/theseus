@@ -11,14 +11,14 @@ trainer:
   name: SupervisedTrainer
   args:
     num_iterations: 10000
-    clip_grad:  10.0
-    evaluate_interval:  1
+    clip_grad: 10.0
+    evaluate_interval: 1
     print_interval: 20
     save_interval: 1000
     use_fp16: true
 callbacks:
   - name: LoggerCallbacks
-    args: null 
+    args: null
   - name: CheckpointCallbacks
     args:
       best_key: bl_acc
@@ -35,25 +35,25 @@ model:
 loss:
   name: CELoss
 metrics:
-- name: Accuracy
-  args: null
-- name: BalancedAccuracyMetric
-  args: null
-- name: F1ScoreMetric
-  args:
-    average: weighted
-- name: ConfusionMatrix
-  args: null
-- name: ErrorCases
-  args:
+  - name: Accuracy
+    args: null
+  - name: BalancedAccuracyMetric
+    args: null
+  - name: F1ScoreMetric
+    args:
+      average: weighted
+  - name: ConfusionMatrix
+    args: null
+  - name: ErrorCases
+    args:
 optimizer:
   name: AdamW
   args:
     lr: 0.001
     weight_decay: 0.0005
     betas:
-    - 0.937
-    - 0.999
+      - 0.937
+      - 0.999
 scheduler:
   name: SchedulerWrapper
   args:
@@ -82,14 +82,14 @@ data:
         drop_last: true
         shuffle: false
         collate_fn:
-            name: MixupCutmixCollator
-            args:
-              mixup_alpha: 0.4
-              cutmix_alpha: 1.0
-              weight: [0.2, 0.2]
+          name: MixupCutmixCollator
+          args:
+            mixup_alpha: 0.4
+            cutmix_alpha: 1.0
+            weight: [0.2, 0.2]
         sampler:
-            name: BalanceSampler
-            args:
+          name: BalanceSampler
+          args:
     val:
       name: DataLoaderWithCollator
       args:
