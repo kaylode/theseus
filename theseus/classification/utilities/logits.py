@@ -26,6 +26,6 @@ def multilabel_logits2labels(outputs, threshold=0.5, return_probs: bool = False)
 def logits2labels(outputs, type='multiclass', threshold: float = 0.5, return_probs: bool = False):
     if type == 'multiclass':
         return multiclass_logits2labels(outputs, return_probs)
-    elif type == 'multilabel':
+    if type == 'multilabel':
         return multilabel_logits2labels(outputs, threshold, return_probs)
     return outputs

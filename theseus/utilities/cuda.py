@@ -39,12 +39,12 @@ def move_to(obj: Any, device: torch.device):
     """
     if torch.is_tensor(obj) or isinstance(obj, torch.nn.Module):
         return obj.to(device)
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         res = {k: move_to(v, device) for k, v in obj.items()}
         return res
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [move_to(v, device) for v in obj]
-    elif isinstance(obj, tuple):
+    if isinstance(obj, tuple):
         return tuple(move_to(list(obj), device))
     
     return obj
