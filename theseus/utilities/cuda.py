@@ -60,11 +60,11 @@ def detach(obj: Any):
     """
     if torch.is_tensor(obj):
         return obj.detach()
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         res = {k: detach(v) for k, v in obj.items()}
         return res
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [detach(v) for v in obj]
-    elif isinstance(obj, tuple):
+    if isinstance(obj, tuple):
         return tuple(detach(list(obj)))
     raise TypeError("Invalid type for detach")
