@@ -58,9 +58,9 @@ class ConfusionMatrix(Metric):
     """
     Confusion Matrix metric for classification
     """
-    def __init__(self, classnames=None, type:str = 'multiclass', **kwargs):
+    def __init__(self, classnames=None, label_type:str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
-        self.type = type
+        self.type = label_type
         self.classnames = classnames
         self.num_classes = [i for i in range(len(self.classnames))] if classnames is not None else None
         self.threshold = kwargs.get('threshold', 0.5)
@@ -74,7 +74,7 @@ class ConfusionMatrix(Metric):
         outputs = outputs["outputs"] 
         targets = batch["targets"] 
 
-        outputs = logits2labels(outputs, type=self.type, threshold=self.threshold)
+        outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 
         self.outputs +=  outputs.numpy().tolist()
         self.targets +=  targets.squeeze().numpy().tolist()

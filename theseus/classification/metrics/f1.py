@@ -8,10 +8,10 @@ class F1ScoreMetric(Metric):
     """
     F1 Score Metric (including macro, micro)
     """
-    def __init__(self, average = 'weighted', type:str = 'multiclass', **kwargs):
+    def __init__(self, average = 'weighted', label_type:str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
         self.average = average
-        self.type =type
+        self.type =label_type
         self.threshold = kwargs.get('threshold', 0.5)
         self.reset()
 
@@ -22,7 +22,7 @@ class F1ScoreMetric(Metric):
         targets = batch["targets"] 
         outputs = outputs["outputs"] 
 
-        outputs = logits2labels(outputs, type=self.type, threshold=self.threshold)
+        outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
         targets = targets.squeeze()
     
         self.preds +=  outputs.numpy().tolist()
