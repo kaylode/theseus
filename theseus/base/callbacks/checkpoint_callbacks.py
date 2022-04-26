@@ -1,5 +1,4 @@
-from distutils.log import WARN
-from typing import List, Dict
+from typing import Dict
 import os.path as osp
 import torch
 from theseus.utilities.loading import load_state_dict

@@ -1,6 +1,6 @@
 import os
 import torch
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict
 from theseus.base.metrics.metric_template import Metric
 import cv2
 import numpy as np
@@ -37,8 +37,8 @@ class EmbeddingProjection(Metric):
         targets = batch["targets"].numpy().tolist()
         img_names = batch['img_names']
 
-        for i in range(len(features)):
-            filename = hashlib.md5(img_names[i].encode('utf-8')).hexdigest()
+        for i, _ in enumerate(features):
+            filename = hashlib.sha256(img_names[i].encode('utf-8')).hexdigest()
             pred_img = self.visualizer.denormalize(inputs[i])
             pred_img = cv2.resize(pred_img, dsize=(64,64), interpolation=cv2.INTER_CUBIC)
 

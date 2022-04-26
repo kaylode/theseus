@@ -156,8 +156,8 @@ class CallbacksList:
         """
         if hook:
             return self._callbacks[hook]
-        else:
-            return self._callbacks
+        
+        return self._callbacks
 
     def run(self, hook, params: Dict=None):
         """

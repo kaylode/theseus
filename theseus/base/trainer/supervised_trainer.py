@@ -1,11 +1,8 @@
-import time
-import numpy as np
-from tqdm import tqdm
 import torch
+
 from torch.cuda import amp
-
+from tqdm import tqdm
 from .base_trainer import BaseTrainer
-
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -61,7 +58,10 @@ class SupervisedTrainer(BaseTrainer):
         self.model.train()
         self.callbacks.run('on_train_epoch_start')
         self.optimizer.zero_grad()
-        for i, batch in enumerate(self.trainloader):
+
+        last_batch = 0
+        for _, batch in enumerate(self.trainloader):
+            last_batch = batch
 
             # Check if shutdown flag has been turned on
             if self.shutdown_training or self.shutdown_all:
@@ -105,11 +105,12 @@ class SupervisedTrainer(BaseTrainer):
                 'lr': lr
             })
 
+
         if self.scheduler and self.step_per_epoch:
             self.scheduler.step()
 
         self.callbacks.run('on_train_epoch_end', {
-            'last_batch': batch,
+            'last_batch': last_batch,
             'iters': self.iters
         })
         
@@ -122,8 +123,9 @@ class SupervisedTrainer(BaseTrainer):
         self.model.eval()
 
         self.callbacks.run('on_val_epoch_start')
+        last_batch = 0
         for batch in tqdm(self.valloader):
-
+            last_batch = batch
             # Check if shutdown flag has been turned on
             if self.shutdown_validation or self.shutdown_all:
                 break
@@ -154,6 +156,6 @@ class SupervisedTrainer(BaseTrainer):
             'metric_dict': metric_dict,
             'iters': self.iters,
             'num_iterations': self.num_iterations,
-            'last_batch': batch,
+            'last_batch': last_batch,
             'last_outputs': outputs['model_outputs']
         })

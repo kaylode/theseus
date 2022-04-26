@@ -5,9 +5,7 @@ from transformers import AutoModel, AutoConfig
 from theseus.utilities.cuda import move_to
 from collections import OrderedDict
 
-"""
-https://huggingface.co/docs/transformers/task_summary
-"""
+# https://huggingface.co/docs/transformers/task_summary
 
 class HuggingFaceModel(nn.Module):
     """Convolution models from timm

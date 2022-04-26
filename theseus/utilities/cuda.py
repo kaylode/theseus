@@ -39,15 +39,15 @@ def move_to(obj: Any, device: torch.device):
     """
     if torch.is_tensor(obj) or isinstance(obj, torch.nn.Module):
         return obj.to(device)
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         res = {k: move_to(v, device) for k, v in obj.items()}
         return res
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [move_to(v, device) for v in obj]
-    elif isinstance(obj, tuple):
+    if isinstance(obj, tuple):
         return tuple(move_to(list(obj), device))
-    else:
-        return obj
+    
+    return obj
 
 def detach(obj: Any):
     """Credit: https://discuss.pytorch.org/t/pytorch-tensor-to-device-for-a-list-of-dict/66283
@@ -60,12 +60,11 @@ def detach(obj: Any):
     """
     if torch.is_tensor(obj):
         return obj.detach()
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         res = {k: detach(v) for k, v in obj.items()}
         return res
-    elif isinstance(obj, list):
+    if isinstance(obj, list):
         return [detach(v) for v in obj]
-    elif isinstance(obj, tuple):
+    if isinstance(obj, tuple):
         return tuple(detach(list(obj)))
-    else:
-        raise TypeError("Invalid type for detach")
+    raise TypeError("Invalid type for detach")

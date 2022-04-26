@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import Dict
 import matplotlib.pyplot as plt
 import torch
 from torchvision.transforms import functional as TFF

@@ -1,4 +1,3 @@
-from typing import List, Dict
 import os
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.utilities.loggers.observer import LoggerObserver

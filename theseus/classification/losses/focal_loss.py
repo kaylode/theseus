@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import torch
 import torch.nn as nn
 from torchvision.ops.focal_loss import sigmoid_focal_loss

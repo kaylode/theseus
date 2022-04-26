@@ -14,16 +14,16 @@ class WandbLogger(LoggerSubscriber):
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, id:str, username:str, project_name:str, run_name:str, save_dir:str = None, config_dict:Dict = None):
+    def __init__(self, unique_id:str, username:str, project_name:str, run_name:str, save_dir:str = None, config_dict:Dict = None):
         self.project_name = project_name
         self.username = username
         self.run_name = run_name
         self.config_dict = config_dict
-        self.id = id
+        self.id = unique_id
         self.save_dir = save_dir
         
         wandb_logger.init(
-            id = id,
+            id = self.id,
             dir = self.save_dir,
             config=config_dict,
             entity=username, 
@@ -37,8 +37,8 @@ class WandbLogger(LoggerSubscriber):
         if wandb_logger.run.resumed:
             state_dict = torch.load(wandb_logger.restore(path))
             return state_dict
-        else:
-            return None
+            
+        return None
 
     def log_file(self, tag, value, base_folder=None, **kwargs):
         """
@@ -155,7 +155,7 @@ def find_run_id(dirname):
 
     if not osp.isfile(wandb_id_file):
         raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
-    else:
-        with open(wandb_id_file, 'r') as f:
-            wandb_id = f.read().rstrip()
-        return wandb_id
+
+    with open(wandb_id_file, 'r') as f:
+        wandb_id = f.read().rstrip()
+    return wandb_id

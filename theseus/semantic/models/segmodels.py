@@ -4,9 +4,8 @@ import torch.nn as nn
 import segmentation_models_pytorch as smp
 from theseus.utilities.cuda import move_to, detach
 
-"""
-Source: https://github.com/qubvel/segmentation_models.pytorch
-"""
+# Source: https://github.com/qubvel/segmentation_models.pytorch
+
 
 class BaseSegModel(nn.Module):
     """
@@ -70,8 +69,7 @@ class BaseSegModel(nn.Module):
             predicts = torch.argmax(outputs, dim=1)
 
         predicts = move_to(detach(predicts), torch.device('cpu')).squeeze().numpy()
+        
         return {
             'masks': predicts
-        } 
-
-        
+        }

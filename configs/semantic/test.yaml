@@ -6,13 +6,14 @@ global:
   save_dir: runs
   device: cuda:0
   weights: null
+
 model:
   name: BaseSegModel
   args:
     name: unetplusplus
     encoder_name: efficientnet-b0
 
-data: 
+data:
   dataset:
     name: TestCSVDataset
     args:

@@ -1,7 +1,5 @@
 import torch
-import torch.nn as nn
 import os
-import logging
 
 from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
@@ -25,6 +23,3 @@ class Checkpoint():
         LOGGER.text(
             f"Save checkpoints to {os.path.join(self.path,outname)}"+".pth",
             level=LoggerObserver.INFO)
-
-    
-

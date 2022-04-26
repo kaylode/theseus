@@ -11,14 +11,14 @@ trainer:
   name: SupervisedTrainer
   args:
     num_iterations: 10000
-    clip_grad:  10.0
-    evaluate_interval:  1
+    clip_grad: 10.0
+    evaluate_interval: 1
     print_interval: 20
     save_interval: 1000
     use_fp16: true
 callbacks:
   - name: LoggerCallbacks
-    args: null 
+    args: null
   - name: CheckpointCallbacks
     args:
       best_key: bl_acc
@@ -41,20 +41,20 @@ loss:
       - name: DiceLoss
         args: {}
 metrics:
-- name: PixelAccuracy
-  args:
-    ignore_index: 0
-- name: DiceScore
-  args:
-    ignore_index: 0
+  - name: PixelAccuracy
+    args:
+      ignore_index: 0
+  - name: DiceScore
+    args:
+      ignore_index: 0
 optimizer:
   name: AdamW
   args:
     lr: 0.001
     weight_decay: 0.0005
     betas:
-    - 0.937
-    - 0.999
+      - 0.937
+      - 0.999
 scheduler:
   name: SchedulerWrapper
   args:
@@ -87,10 +87,10 @@ data:
         drop_last: false
         shuffle: true
         collate_fn:
-            name: MosaicCollator
-            args:
-              scale_range: [0.3, 0.7]
-              p: 0.3
+          name: MosaicCollator
+          args:
+            scale_range: [0.3, 0.7]
+            p: 0.3
     val:
       name: DataLoaderWithCollator
       args:

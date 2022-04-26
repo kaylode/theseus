@@ -97,9 +97,9 @@ class BaseTimmModel(nn.Module):
         outputs = self.forward(adict, device)['outputs']
 
         if not adict['multilabel']:
-            outputs, probs = logits2labels(outputs, type='multiclass', return_probs=True)
+            outputs, probs = logits2labels(outputs, label_type='multiclass', return_probs=True)
         else:
-            outputs, probs = logits2labels(outputs, type='multilabel', threshold=adict['threshold'], return_probs=True)
+            outputs, probs = logits2labels(outputs, label_type='multilabel', threshold=adict['threshold'], return_probs=True)
 
             if adict['no-zeroes']:
                 argmaxs = torch.argmax(probs, dim=1)

@@ -1,7 +1,6 @@
 import math
 from torch.optim.lr_scheduler import (
-    StepLR, CosineAnnealingLR, LambdaLR, 
-    ReduceLROnPlateau,OneCycleLR, CosineAnnealingWarmRestarts)
+    LambdaLR, ReduceLROnPlateau, OneCycleLR, CosineAnnealingWarmRestarts)
 from .cosine import CosineWithRestarts
 
 class SchedulerWrapper():
@@ -82,5 +81,5 @@ class SchedulerWrapper():
         else:
             try:
                 self.scheduler.load_state_dict(state_dict)
-            except:
+            except Exception:
                 return

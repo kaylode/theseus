@@ -1,7 +1,8 @@
-from typing import Callable, Dict, Optional, List
 import logging
 import torch
 import matplotlib as mpl
+
+from typing import Dict, List
 from .subscriber import LoggerSubscriber
 from tabulate import tabulate
 from inspect import getframeinfo, stack
@@ -16,7 +17,7 @@ def get_type(value):
     if isinstance(value, torch.Tensor):
         if len(value.shape) == 2:
             return LoggerObserver.EMBED
-    if isinstance(value, int) or isinstance(value, float):
+    if isinstance(value, (int, float)):
         return LoggerObserver.SCALAR
     
     LoggerObserver.text(f'Fail to log undefined type: {type(value)}', level=LoggerObserver.CRITICAL)
@@ -46,8 +47,8 @@ class LoggerObserver(object):
     def __new__(cls, name, *args, **kwargs):
         if name in LoggerObserver.instances.keys():
             return LoggerObserver.instances[name]
-        else:
-            return object.__new__(cls, *args, **kwargs)
+            
+        return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
         from .stdout_logger import StdoutLogger # to circumvent circular import
@@ -65,8 +66,8 @@ class LoggerObserver(object):
     def getLogger(cls, name):
         if name in LoggerObserver.instances.keys():
             return LoggerObserver.instances[name]
-        else:
-            return cls(name)
+
+        return cls(name)
 
     def subscribe(self, subscriber: LoggerSubscriber):
         self.subscriber.append(subscriber)
@@ -76,52 +77,52 @@ class LoggerObserver(object):
             for log in logs:
                 tag = log['tag']
                 value = log['value']
-                type = log['type'] if 'type' in log.keys() else get_type(value)
+                log_type = log['type'] if 'type' in log.keys() else get_type(value)
                 kwargs = log['kwargs'] if 'kwargs' in log.keys() else {}
 
-                if type == LoggerObserver.SCALAR:
+                if log_type == LoggerObserver.SCALAR:
                     subscriber.log_scalar(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.FIGURE:
+                if log_type == LoggerObserver.FIGURE:
                     subscriber.log_figure(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TORCH_MODULE:
+                if log_type == LoggerObserver.TORCH_MODULE:
                     subscriber.log_torch_module(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TEXT:
+                if log_type == LoggerObserver.TEXT:
                     subscriber.log_text(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.EMBED:
+                if log_type == LoggerObserver.EMBED:
                     subscriber.log_embedding(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.SPECIAL_TEXT:
+                if log_type == LoggerObserver.SPECIAL_TEXT:
                     subscriber.log_spec_text(
                         tag=tag,
                         value=value,
                         **kwargs
                     )
 
-                if type == LoggerObserver.TABLE:
+                if log_type == LoggerObserver.TABLE:
                     subscriber.log_table(
                         tag=tag,
                         value=value,

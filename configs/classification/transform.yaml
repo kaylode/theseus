@@ -8,8 +8,8 @@ train:
       - name: TVRandomResizedCrop
         args:
           size: [224, 224]
-      - name:  TVRandAugment
-        args: 
+      - name: TVRandAugment
+        args:
           num_ops: 2
           magnitude: 9
           num_magnitude_bins: 31

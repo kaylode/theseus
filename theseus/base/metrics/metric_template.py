@@ -18,4 +18,3 @@ class Metric:
 
     def __str__(self):
         raise NotImplementedError()
-

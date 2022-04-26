@@ -1,4 +1,3 @@
-from distutils.log import error
 from typing import Any, Dict, Optional, List
 
 import matplotlib.pyplot as plt
@@ -17,11 +16,11 @@ class ErrorCases(Metric):
         classnames for plot
     """
 
-    def __init__(self, max_samples: int = 64, classnames: Optional[List[str]]=None, type:str = 'multiclass', **kwargs):
+    def __init__(self, max_samples: int = 64, classnames: Optional[List[str]]=None, label_type:str = 'multiclass', **kwargs):
         super().__init__(**kwargs)
         self.visualizer = Visualizer()
 
-        self.type = type
+        self.type = label_type
         self.max_samples = max_samples
         self.classnames = classnames
         self.threshold = kwargs.get('threshold', 0.5)
@@ -38,7 +37,7 @@ class ErrorCases(Metric):
         outputs = outputs["outputs"]
         images = batch["inputs"]
         targets = batch["targets"] 
-        outputs, probs = logits2labels(outputs, type=self.type, return_probs=True, threshold=self.threshold)
+        outputs, probs = logits2labels(outputs, label_type=self.type, return_probs=True, threshold=self.threshold)
         targets = targets.squeeze().long()
     
         outputs = outputs.numpy().tolist()
