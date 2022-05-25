@@ -14,8 +14,8 @@ class NativeScaler:
     """
     state_dict_key = "amp_scaler"
 
-    def __init__(self):
-        self._scaler = torch.cuda.amp.GradScaler()
+    def __init__(self, use_fp16:bool = True):
+        self._scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
 
     def __call__(self, loss, optimizer, create_graph=False):
         """

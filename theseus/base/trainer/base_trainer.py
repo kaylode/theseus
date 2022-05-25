@@ -32,7 +32,7 @@ class BaseTrainer():
 
         self.num_iterations = num_iterations
         self.use_amp = True if use_fp16 else False
-        self.scaler = NativeScaler() if use_fp16 else False
+        self.scaler = NativeScaler(use_fp16)
         self.clip_grad = clip_grad
         self.evaluate_interval = evaluate_interval
         self.iters = 0
