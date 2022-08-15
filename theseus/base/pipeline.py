@@ -298,7 +298,7 @@ class BaseTestPipeline(object):
         self.dataset = get_instance(
             self.opt['data']["dataset"],
             registry=DATASET_REGISTRY,
-            transform=self.transform['val'],
+            transform=self.transform['test'],
         )
         
         self.dataloader = get_instance(

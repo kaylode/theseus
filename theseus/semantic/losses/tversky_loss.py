@@ -1,6 +1,7 @@
+from typing import Dict
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from theseus.utilities.cuda import move_to
 
 class FocalTverskyLoss(nn.Module):
     def __init__(self, smooth=1, alpha=0.7, gamma=0.75, **kwargs):
@@ -10,8 +11,16 @@ class FocalTverskyLoss(nn.Module):
         self.beta = 1-alpha
         self.gamma = gamma
 
-    def forward(self, predict, batch, device):
-        targets = move_to(batch["targets"], device)
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device) -> torch.Tensor:
+        predict = outputs['outputs']
+        targets = batch["targets"].to(device)
+
+        if len(targets.shape) == 3:
+            num_classes = predict.shape[1]
+            targets = torch.nn.functional.one_hot(
+                  targets.long(), 
+                  num_classes=num_classes).permute(0, 3, 1, 2)
+
         prediction = F.softmax(predict, dim=1)  
         
         #flatten label and prediction tensors

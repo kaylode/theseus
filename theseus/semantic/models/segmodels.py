@@ -4,13 +4,13 @@ import torch.nn as nn
 import segmentation_models_pytorch as smp
 from theseus.utilities.cuda import move_to, detach
 
-# Source: https://github.com/qubvel/segmentation_models.pytorch
-
+"""
+Source: https://github.com/qubvel/segmentation_models.pytorch
+"""
 
 class BaseSegModel(nn.Module):
     """
     Some simple segmentation models with various pretrained backbones
-
     name: `str`
         model name [unet, deeplabv3, ...]
     encoder_name : `str` 
@@ -22,19 +22,26 @@ class BaseSegModel(nn.Module):
     """
     def __init__(
         self, 
-        name: str, 
+        model_name: str, 
         encoder_name : str = "resnet34", 
         num_classes: int = 1000,
         aux_params: Dict = None,
+        in_channels: int = 3,
+        pretrained: bool = True,
         **kwargs):
         super().__init__()
 
+        if pretrained:
+            encoder_weights = "imagenet"
+        else:
+            encoder_weights = None
+
         self.num_classes = num_classes
         self.model = smp.create_model(
-            arch = name,
+            arch = model_name,
             encoder_name = encoder_name,
-            in_channels = 3,
-            encoder_weights = "imagenet",
+            in_channels = in_channels,
+            encoder_weights = encoder_weights,
             classes = num_classes, 
             aux_params = aux_params)
 
@@ -54,13 +61,12 @@ class BaseSegModel(nn.Module):
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         """
         Inference using the model.
-
         adict: `Dict[str, Any]`
             dictionary of inputs
         device: `torch.device`
             current device 
         """
-        outputs = self.model(adict, device)['outputs']
+        outputs = self.forward(adict, device)['outputs']
 
         if self.num_classes == 1:
             thresh = adict['thresh']
@@ -69,7 +75,6 @@ class BaseSegModel(nn.Module):
             predicts = torch.argmax(outputs, dim=1)
 
         predicts = move_to(detach(predicts), torch.device('cpu')).squeeze().numpy()
-        
         return {
             'masks': predicts
-        }
+        } 

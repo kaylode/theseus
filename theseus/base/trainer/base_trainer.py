@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Tuple
 
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.optimizers.scalers import NativeScaler
@@ -37,7 +37,7 @@ class BaseTrainer():
         self.evaluate_interval = evaluate_interval
         self.iters = 0
         self.debug = debug
-        self.shutdown_all = False # Flag to stop trainer immediately
+        self.shutdown_all = False # Flag to stop trainer imediately
 
         if not isinstance(callbacks, CallbacksList):
             callbacks = callbacks if isinstance(callbacks, list) else [callbacks]

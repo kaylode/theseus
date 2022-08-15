@@ -1,7 +1,7 @@
 import gdown
 import os
 import os.path as osp
-import requests
+import urllib.request as urlreq
 from theseus.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
@@ -14,8 +14,8 @@ def download_from_drive(id_or_url, output, md5=None, quiet=False, cache=True):
 
     if not cache:
         return gdown.download(url, output, quiet=quiet)
-        
-    return gdown.cached_download(url, md5=md5, quiet=quiet)
+    else:
+        return gdown.cached_download(url, md5=md5, quiet=quiet)
 
 def download_from_url(url, root=None, filename=None):
     """Download a file from a url and place it in root.
@@ -24,10 +24,6 @@ def download_from_url(url, root=None, filename=None):
         root (str): Directory to place downloaded file in
         filename (str, optional): Name to save the file under. If None, use the basename of the URL
     """
-
-    def url_retrieve(url, fpath):
-        request = requests.get(url, allow_redirects=True)
-        fpath.write_bytes(request.content)
 
     if root is None:
         root = './.cache'
@@ -44,14 +40,14 @@ def download_from_url(url, root=None, filename=None):
 
     try:
         LOGGER.text('Downloading ' + url + ' to ' + fpath, level=LoggerObserver.DEBUG)
-        url_retrieve(url, fpath)
-    except requests.exceptions.SSLError as e:
+        urlreq.urlretrieve(url, fpath)
+    except (urlreq.error.URLError, IOError) as e:
         if url[:5] == 'https':
             url = url.replace('https:', 'http:')
             LOGGER.text(
                 'Failed download. Trying https -> http instead.Downloading ' + url + ' to ' + fpath, 
                 level=LoggerObserver.DEBUG)
-            url_retrieve(url, fpath)
+            urlreq.urlretrieve(url, fpath)
 
     return fpath
 
@@ -62,7 +58,7 @@ def download_from_wandb(filename, run_path, save_dir):
         path = wandb.restore(
             filename, run_path=run_path, root=save_dir)
         return path.name
-    except Exception:
+    except:
         LOGGER.text("Failed to download from wandb.",
                 level=LoggerObserver.ERROR)
         return None

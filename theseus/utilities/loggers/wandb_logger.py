@@ -37,8 +37,8 @@ class WandbLogger(LoggerSubscriber):
         if wandb_logger.run.resumed:
             state_dict = torch.load(wandb_logger.restore(path))
             return state_dict
-            
-        return None
+        else:
+            return None
 
     def log_file(self, tag, value, base_folder=None, **kwargs):
         """
@@ -142,6 +142,18 @@ class WandbLogger(LoggerSubscriber):
             'iterations': step
         })
 
+    def log_video(self, tag, value, step, fps, **kwargs):
+        """
+        Write a video to wandb
+        :param value: numpy array (time, channel, height, width)
+        :param fps: int
+        """
+        # axes are 
+        wandb_logger.log({
+            tag: wandb_logger.Video(value, fps=fps),
+            "iterations": step
+        })
+
     def __del__(self):
         wandb_logger.finish()
 
@@ -155,7 +167,7 @@ def find_run_id(dirname):
 
     if not osp.isfile(wandb_id_file):
         raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
-
-    with open(wandb_id_file, 'r') as f:
-        wandb_id = f.read().rstrip()
-    return wandb_id
+    else:
+        with open(wandb_id_file, 'r') as f:
+            wandb_id = f.read().rstrip()
+        return wandb_id
