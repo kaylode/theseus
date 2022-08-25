@@ -45,7 +45,7 @@ class Visualizer():
         """
         Save the image
         """
-        cv2.imwrite(path, self.get_image()[:,:,::-1])
+        cv2.imwrite(path, self.get_image())
 
     def draw_label(self, 
             label: str,
