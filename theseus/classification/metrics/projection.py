@@ -9,9 +9,12 @@ from theseus.utilities.visualization.visualizer import Visualizer
 from theseus.utilities.loggers import LoggerObserver
 
 # To fix tensorflow bug on Google Colab
-import tensorflow as tf
-import tensorboard as tb
-tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+try:
+    import tensorflow as tf
+    import tensorboard as tb
+    tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+except ModuleNotFoundError: 
+    pass
 
 class EmbeddingProjection(Metric):
     """

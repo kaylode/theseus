@@ -29,9 +29,8 @@ callbacks:
 model:
   name: BaseTimmModel
   args:
-    name: convnext_small
+    model_name: convnext_small
     from_pretrained: true
-    num_classes: 2
 loss:
   name: CELoss
 metrics:
