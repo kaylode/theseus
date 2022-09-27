@@ -32,7 +32,7 @@ model:
     model_name: convnext_small
     from_pretrained: true
 loss:
-  name: CELoss
+  name: ClassificationCELoss
 metrics:
   - name: Accuracy
     args: null
@@ -64,12 +64,12 @@ scheduler:
 data:
   dataset:
     train:
-      name: ImageFolderDataset
+      name: ClassificationImageFolderDataset
       args:
         image_dir: /content/main/data/dog-vs-cats/train
         txt_classnames: configs/classification/classes.txt
     val:
-      name: ImageFolderDataset
+      name: ClassificationImageFolderDataset
       args:
         image_dir: /content/main/data/dog-vs-cats/val
         txt_classnames: configs/classification/classes.txt
