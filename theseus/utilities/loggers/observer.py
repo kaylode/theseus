@@ -1,6 +1,8 @@
 import logging
 import torch
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+mpl.use("Agg")
 
 from typing import Dict, List
 from .subscriber import LoggerSubscriber
