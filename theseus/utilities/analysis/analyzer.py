@@ -34,7 +34,7 @@ class Analyzer:
             y="id", 
             data=self.instance_df, 
             estimator=len, 
-            ci=None, 
+            errorbar=None, 
             color='#69b3a2',
             ax=ax)
 
