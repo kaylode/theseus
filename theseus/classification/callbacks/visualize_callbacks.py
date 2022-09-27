@@ -181,10 +181,12 @@ class VisualizerCallbacks(Callbacks):
                 name='gradcam', 
                 model=model.model.get_model(), 
                 model_name=model_name, use_cuda=next(model.parameters()).is_cuda)
-        except:
-            return
+            
+            grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
 
-        grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
+        except:
+            LOGGER.text("Cannot calculate GradCAM", level=LoggerObserver.ERROR)
+            return
             
         gradcam_batch = []
         pred_batch = []
