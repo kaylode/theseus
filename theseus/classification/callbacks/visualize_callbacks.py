@@ -175,10 +175,14 @@ class VisualizerCallbacks(Callbacks):
         
         ## Calculate GradCAM
         model_name = model.model.name
-        grad_cam = CAMWrapper.get_method(
-            name='gradcam', 
-            model=model.model.get_model(), 
-            model_name=model_name, use_cuda=next(model.parameters()).is_cuda)
+
+        try:
+            grad_cam = CAMWrapper.get_method(
+                name='gradcam', 
+                model=model.model.get_model(), 
+                model_name=model_name, use_cuda=next(model.parameters()).is_cuda)
+        except:
+            return
 
         grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
             
