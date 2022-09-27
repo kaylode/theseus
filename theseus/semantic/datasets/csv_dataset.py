@@ -9,8 +9,8 @@ from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger('main')
 
 
-class CSVDataset(SemanticDataset):
-    r"""CSVDataset multi-labels segmentation dataset
+class SemanticCSVDataset(SemanticDataset):
+    r"""SemanticCSVDataset multi-labels segmentation dataset
 
     Reads in .csv file with structure below:
         filename   | label
@@ -33,7 +33,7 @@ class CSVDataset(SemanticDataset):
             txt_classnames: str,
             transform: Optional[List] = None,
             **kwargs):
-        super(CSVDataset, self).__init__(**kwargs)
+        super(SemanticCSVDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.csv_path = csv_path
