@@ -6,8 +6,8 @@ from .dataset import ClassificationDataset
 
 LOGGER = LoggerObserver.getLogger('main')
 
-class CSVDataset(ClassificationDataset):
-    r"""CSVDataset multi-labels classification dataset
+class ClassificationCSVDataset(ClassificationDataset):
+    r"""ClassificationCSVDataset multi-labels classification dataset
 
     Reads in .csv file with structure below:
         filename | label
@@ -34,7 +34,7 @@ class CSVDataset(ClassificationDataset):
         transform: Optional[List] = None,
         **kwargs
     ):
-        super(CSVDataset, self).__init__(**kwargs)
+        super(ClassificationCSVDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.csv_path = csv_path

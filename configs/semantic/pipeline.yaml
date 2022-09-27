@@ -66,14 +66,14 @@ scheduler:
 data:
   dataset:
     train:
-      name: CSVDataset
+      name: SemanticCSVDataset
       args:
         image_dir: data/images/train
         mask_dir: data/masks/train
         csv_path: data/train.csv
         txt_classnames: configs/semantic/classes.txt
     val:
-      name: CSVDataset
+      name: SemanticCSVDataset
       args:
         image_dir: data/images/val
         mask_dir: data/masks/val

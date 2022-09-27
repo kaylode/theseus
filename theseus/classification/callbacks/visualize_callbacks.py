@@ -12,7 +12,7 @@ from theseus.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
 
-class VisualizerCallbacks(Callbacks):
+class ClassificationVisualizerCallbacks(Callbacks):
     """
     Callbacks for visualizing stuff during training
     Features:

@@ -1,5 +1,5 @@
 from theseus.base.callbacks import CALLBACKS_REGISTRY
 
-from theseus.semantic.callbacks.visualize_callbacks import VisualizerCallbacks
+from theseus.semantic.callbacks.visualize_callbacks import SemanticVisualizerCallbacks
 
-CALLBACKS_REGISTRY.register(VisualizerCallbacks)
+CALLBACKS_REGISTRY.register(SemanticVisualizerCallbacks)

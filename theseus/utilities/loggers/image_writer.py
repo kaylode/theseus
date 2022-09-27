@@ -1,6 +1,4 @@
 import os
-import matplotlib as mpl
-
 from .subscriber import LoggerSubscriber
 
 class ImageWriter(LoggerSubscriber):
@@ -10,7 +8,7 @@ class ImageWriter(LoggerSubscriber):
     def __init__(self, savedir) -> None:
         self.savedir = savedir
 
-    def log_figure(self, tag: str, value: mpl.figure.Figure, **kwargs):
+    def log_figure(self, tag: str, value, **kwargs):
         savepath = os.path.join(self.savedir, tag)
         dirname = os.path.dirname(savepath)
         os.makedirs(dirname, exist_ok=True)

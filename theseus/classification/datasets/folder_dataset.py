@@ -7,8 +7,8 @@ from .dataset import ClassificationDataset
 
 LOGGER = LoggerObserver.getLogger('main')
 
-class ImageFolderDataset(ClassificationDataset):
-    r"""ImageFolderDataset multi-labels classification dataset
+class ClassificationImageFolderDataset(ClassificationDataset):
+    r"""ClassificationImageFolderDataset multi-labels classification dataset
 
     Reads in folder of images with structure below:
         |<classname1>
@@ -35,7 +35,7 @@ class ImageFolderDataset(ClassificationDataset):
         transform: Optional[List] = None,
         **kwargs
     ):
-        super(ImageFolderDataset, self).__init__(**kwargs)
+        super(ClassificationImageFolderDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.transform = transform

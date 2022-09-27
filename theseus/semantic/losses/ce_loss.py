@@ -3,11 +3,11 @@ import torch
 from torch import nn
 from theseus.utilities.cuda import move_to
 
-class CELoss(nn.Module):
+class SemanticCELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
     def __init__(self, weight=None, ignore_index=None, **kwargs):
-        super(CELoss, self).__init__()
+        super(SemanticCELoss, self).__init__()
         self.weight = weight
         if self.weight is not None:
             self.weight = torch.FloatTensor(self.weight)
@@ -29,11 +29,11 @@ class CELoss(nn.Module):
         loss_dict = {"CE": loss.item()}
         return loss, loss_dict
 
-class SmoothCELoss(nn.Module):
+class SemanticSmoothCELoss(nn.Module):
     r"""SmoothCELoss is warper of label smoothing cross-entropy loss"""
 
     def __init__(self, alpha = 1e-6, ignore_index = None, reduction = "mean", **kwargs):
-        super(SmoothCELoss, self).__init__()
+        super(SemanticSmoothCELoss, self).__init__()
         self.ignore_index = ignore_index
         self.reduction = reduction
         self.alpha = alpha
