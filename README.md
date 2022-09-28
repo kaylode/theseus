@@ -4,16 +4,12 @@
 > — Plutarch, Theseus
 
 -------------------------------------------------------
-<details close> <summary><strong>Dev logs</strong></summary>
- <strong><i>[26/02/2022]</i></strong> Support multiclass semantic segmentation <br> 
- <strong><i>[14/02/2022]</i></strong> Add semantic segmentation template <br> 
- <strong><i>[10/02/2022]</i></strong> SUPER POWER NINJA TURBO NEO ULTRA HYPER MEGA MULTI ALPHA META EXTRA UBER PREFIX -REFACTOR!!!! <a href="https://github.com/kaylode/custom-template/pull/7">#7</a> <br> 
-</details>
+
 
 # :pencil: Instructions
 
 ### Installation
-- Go to root folder, run `pip install -e .`
+- Inside your project, install this package by `pip install git+https://github.com/kaylode/theseus.git@master`
 
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
