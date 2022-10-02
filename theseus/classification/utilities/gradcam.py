@@ -64,6 +64,8 @@ class CAMWrapper(BaseCAM):
                     level=LoggerObserver.ERROR
                 )
 
+                raise ValueError()
+
             target_layers = get_layer_recursively(model, model_last_layers[model_name])
 
         super(CAMWrapper, self).__init__(model, target_layers, **kwargs)
