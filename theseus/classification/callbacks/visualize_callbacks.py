@@ -169,7 +169,7 @@ class ClassificationVisualizerCallbacks(Callbacks):
         model.eval()
         
         ## Get prediction on last batch
-        outputs = model.get_prediction(last_batch)
+        outputs = model.model.get_prediction(last_batch, device=model.device)
         label_indices = outputs['labels']
         scores = outputs['confidences']
             

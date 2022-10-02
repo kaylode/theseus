@@ -96,12 +96,12 @@ class BaseTimmModel(nn.Module):
         """
         outputs = self.forward(adict, device)['outputs']
 
-        if not adict['multilabel']:
+        if not adict.get('multilabel'):
             outputs, probs = logits2labels(outputs, label_type='multiclass', return_probs=True)
         else:
             outputs, probs = logits2labels(outputs, label_type='multilabel', threshold=adict['threshold'], return_probs=True)
 
-            if adict['no-zeroes']:
+            if adict.get('no-zeroes'):
                 argmaxs = torch.argmax(probs, dim=1)
                 tmp = torch.sum(outputs, dim=1)
                 one_hots = F.one_hot(argmaxs, outputs.shape[1])
@@ -110,9 +110,9 @@ class BaseTimmModel(nn.Module):
         probs = move_to(detach(probs), torch.device('cpu')).numpy()
         classids = move_to(detach(outputs), torch.device('cpu')).numpy()
 
-        if self.classnames and not adict['multilabel']:
+        if self.classnames and not adict.get('multilabel'):
             classnames = [self.classnames[int(clsid)] for clsid in classids]
-        elif self.classnames and adict['multilabel']:
+        elif self.classnames and adict.get('multilabel'):
             classnames = [
               [self.classnames[int(i)] for i, c in enumerate(clsid) if c]
               for clsid in classids
