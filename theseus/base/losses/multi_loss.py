@@ -11,7 +11,7 @@ class MultiLoss(nn.Module):
         self.losses = losses
         self.weights = [1.0 for _ in range(len(losses))] if weights is None else weights
 
-    def forward(self, pred: torch.Tensor, batch: Dict[str, Any], device: torch.device):
+    def forward(self, outputs: Dict[str, Any], batch: Dict[str, Any], device: torch.device):
         """
         Forward inputs and targets through multiple losses
         """
@@ -19,7 +19,7 @@ class MultiLoss(nn.Module):
         total_loss_dict = {}
 
         for weight, loss_fn in zip(self.weights, self.losses):
-          loss, loss_dict = loss_fn(pred, batch, device)
+          loss, loss_dict = loss_fn(outputs, batch, device)
           total_loss += (weight*loss)
           total_loss_dict.update(loss_dict)
 

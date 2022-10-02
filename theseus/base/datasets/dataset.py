@@ -18,6 +18,14 @@ class ConcatDataset(data.ConcatDataset):
         self.classnames = datasets[0].classnames
         self.collate_fn = datasets[0].collate_fn
 
+    def __getattr__(self, attr):
+        if hasattr(self, attr):
+            return getattr(self, attr)
+            
+        if hasattr(self.datasets[0], attr):
+            return getattr(self.datasets[0], attr)
+
+        raise AttributeError
 
 class ChainDataset(data.ConcatDataset):
     """
