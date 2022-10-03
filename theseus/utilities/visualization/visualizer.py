@@ -139,19 +139,23 @@ class Visualizer():
             self.image = new_img.copy()
 
 
-    def draw_bbox(self, boxes, labels=None) -> None:
+    def draw_bbox(self, boxes, labels=None, scores=None) -> None:
         assert self.image is not None
         
         tl = int(round(0.001 * max(self.image.shape[:2])))  # line thickness
         
         tup = zip(boxes, labels) if labels is not None else boxes
+        tup = zip(boxes, labels, scores) if scores is not None else tup
 
         for item in tup:
             if labels is not None:
-                box, label = item
+                if scores is not None:
+                    box, label, score = item
+                else:
+                    box, label = item
                 color = color_list[int(label)]
             else:
-                box, label = item, None
+                box, label, score = item, None, None
                 color = color_list[1]
 
             coord = [box[0], box[1], box[2], box[3]]
@@ -161,12 +165,25 @@ class Visualizer():
             if label is not None:
                 if self.class_names is not None:
                     label = self.class_names[label]
+
+                if score is not None:
+                    score = np.round(score, 3)
+                    label = f"{label}: {score}"
+
                 tf = max(tl - 2, 1)  # font thickness
                 s_size = cv2.getTextSize(f'{label}', 0, fontScale=float(tl) / 3, thickness=tf)[0]
                 c2 = c1[0] + s_size[0] + 15, c1[1] - s_size[1] - 3
                 cv2.rectangle(self.image, c1, c2, color, -1)  # filled
-                cv2.putText(self.image, f'{label}', (c1[0], c1[1] - 2), 0, float(tl) / 3, [0, 0, 0],
-                            thickness=tf, lineType=cv2.FONT_HERSHEY_SIMPLEX)
+                cv2.putText(
+                    self.image,
+                    f"{label}",
+                    (c1[0], c1[1] + 2),
+                    0,
+                    float(tl) / 3,
+                    [0, 0, 0],
+                    thickness=tf,
+                    lineType=cv2.FONT_HERSHEY_SIMPLEX,
+                )
 
     def _tensor_to_numpy(self, image: torch.Tensor) -> np.ndarray:
         """
