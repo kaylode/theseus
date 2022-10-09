@@ -108,6 +108,7 @@ class WandbCallbacks(Callbacks):
         # Save all config files
         self.wandb_logger.log_file(
             tag='configs', 
+            base_folder=self.save_dir,
             value = osp.join(self.save_dir, '*.yaml'))
         
         # Init logging model for debug

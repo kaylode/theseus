@@ -49,6 +49,8 @@ class CAMWrapper(BaseCAM):
         target_layers: Optional[List[torch.nn.Module]] = None,
         **kwargs) -> None:
 
+        self.activations_and_grads = type('DummyClass', (object,), {'release':{lambda: None}})()
+
 
         assert model_name is not None or target_layers is not None, "Should specify model name or target layers name"
       
@@ -63,6 +65,8 @@ class CAMWrapper(BaseCAM):
                     Please register in the `model_last_layers` dict above""", 
                     level=LoggerObserver.ERROR
                 )
+
+                raise ValueError()
 
             target_layers = get_layer_recursively(model, model_last_layers[model_name])
 

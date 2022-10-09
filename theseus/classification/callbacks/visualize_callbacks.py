@@ -150,7 +150,7 @@ class ClassificationVisualizerCallbacks(Callbacks):
         plt.clf()   # Clear figure
         plt.close()
 
-    @torch.enable_grad() #enable grad for CAM
+    @torch.no_grad() #enable grad for CAM
     def on_val_epoch_end(self, logs: Dict=None):
         """
         After finish validation
@@ -160,41 +160,24 @@ class ClassificationVisualizerCallbacks(Callbacks):
         last_batch = logs['last_batch']
         model = self.params['trainer'].model
         valloader = self.params['trainer'].valloader
-        optimizer = self.params['trainer'].optimizer
 
-        # Zeroing gradients in model and optimizer for supress warning
-        optimizer.zero_grad()
-        model.zero_grad()
-
-        # Vizualize Grad Class Activation Mapping and model predictions
+        # Vizualize model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
         images = last_batch["inputs"]
         targets = last_batch["targets"]
         model.eval()
         
-        ## Calculate GradCAM
-        model_name = model.model.name
-
-        try:
-            grad_cam = CAMWrapper.get_method(
-                name='gradcam', 
-                model=model.model.get_model(), 
-                model_name=model_name, use_cuda=next(model.parameters()).is_cuda)
+        ## Get prediction on last batch
+        outputs = model.model.get_prediction(last_batch, device=model.device)
+        label_indices = outputs['labels']
+        scores = outputs['confidences']
             
-            grayscale_cams, label_indices, scores = grad_cam(images, return_probs=True)
-
-        except:
-            LOGGER.text("Cannot calculate GradCAM", level=LoggerObserver.ERROR)
-            return
-            
-        gradcam_batch = []
         pred_batch = []
-        for idx in range(len(grayscale_cams)):
+        for idx in range(len(images)):
             image = images[idx]
             target = targets[idx].item()
             label = label_indices[idx]
-            grayscale_cam = grayscale_cams[idx, :]
             score = scores[idx]
 
             img_show = self.visualizer.denormalize(image)
@@ -217,32 +200,12 @@ class ClassificationVisualizerCallbacks(Callbacks):
                 offset=100
             )
             
-            img_cam =show_cam_on_image(img_show, grayscale_cam, use_rgb=True)
-
-            img_cam = TFF.to_tensor(img_cam)
-            gradcam_batch.append(img_cam)
-
             pred_img = self.visualizer.get_image()
             pred_img = TFF.to_tensor(pred_img)
             pred_batch.append(pred_img)
 
             if idx == 63: # limit number of images
                 break
-        
-        # GradCAM images
-        gradcam_grid_img = self.visualizer.make_grid(gradcam_batch)
-        fig = plt.figure(figsize=(8,8))
-        plt.imshow(gradcam_grid_img)
-        plt.axis("off")
-        plt.tight_layout(pad=0)
-        LOGGER.log([{
-            'tag': "Validation/gradcam",
-            'value': fig,
-            'type': LoggerObserver.FIGURE,
-            'kwargs': {
-                'step': iters
-            }
-        }])
 
         # Prediction images
         pred_grid_img = self.visualizer.make_grid(pred_batch)
@@ -262,7 +225,3 @@ class ClassificationVisualizerCallbacks(Callbacks):
         plt.cla()   # Clear axis
         plt.clf()   # Clear figure
         plt.close()
-
-        # Zeroing gradients in model and optimizer for safety
-        optimizer.zero_grad()
-        model.zero_grad()

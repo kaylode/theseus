@@ -13,7 +13,7 @@ class SemanticCELoss(nn.Module):
             self.weight = torch.FloatTensor(self.weight)
         self.ignore_index = ignore_index
 
-    def forward(self, outputs, batch, device):
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device) -> torch.Tensor:
         pred = outputs["outputs"]
         target = move_to(batch["targets"], device)
 
@@ -38,7 +38,7 @@ class SemanticSmoothCELoss(nn.Module):
         self.reduction = reduction
         self.alpha = alpha
 
-    def forward(self, outputs, batch, device):
+    def forward(self, outputs: Dict, batch: Dict, device: torch.device) -> torch.Tensor:
         pred = outputs["outputs"]
         targets = move_to(batch["targets"], device)
         
