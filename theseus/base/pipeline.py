@@ -138,11 +138,11 @@ class BasePipeline(object):
         self.pretrained = self.opt['global']['pretrained']
         self.last_epoch = -1
         if self.pretrained:
-            state_dict = torch.load(self.pretrained)
+            state_dict = torch.load(self.pretrained, map_location='cpu')
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
 
         if self.resume:
-            state_dict = torch.load(self.resume)
+            state_dict = torch.load(self.resume, map_location='cpu')
             self.model.model = load_state_dict(self.model.model, state_dict, 'model')
             self.optimizer = load_state_dict(self.optimizer, state_dict, 'optimizer')
             iters = load_state_dict(None, state_dict, 'iters')
@@ -295,10 +295,12 @@ class BaseTestPipeline(object):
             self.transform_cfg, registry=self.transform_registry
         )
 
+        transform_cfg = self.transform['test'] if 'test' in self.transform else self.transform['val']
+
         self.dataset = get_instance(
             self.opt['data']["dataset"],
             registry=DATASET_REGISTRY,
-            transform=self.transform['test'],
+            transform=transform_cfg,
         )
         
         self.dataloader = get_instance(
@@ -313,7 +315,7 @@ class BaseTestPipeline(object):
     def init_loading(self):
         self.weights = self.opt['global']['weights']
         if self.weights:
-            state_dict = torch.load(self.weights)
+            state_dict = torch.load(self.weights, map_location='cpu')
             self.model = load_state_dict(self.model, state_dict, 'model')
 
     def init_model(self):
