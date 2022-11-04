@@ -39,8 +39,13 @@ class ClassificationVisualizerCallbacks(Callbacks):
         val_batch = next(iter(valloader))
         trainset = trainloader.dataset
         valset = valloader.dataset
-
-        self.visualize_model(model, train_batch)
+        
+        try:
+            self.visualize_model(model, train_batch)
+        except TypeError as e:
+            LOGGER.text(
+                'Cannot log model architecture', level=LoggerObserver.ERROR
+            )
         self.params['trainer'].evaluate_epoch()
         self.visualize_gt(train_batch, val_batch, iters)
         self.analyze_gt(trainset, valset, iters)
