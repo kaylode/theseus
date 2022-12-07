@@ -1,8 +1,7 @@
 import re
+from pathlib import Path
 import os.path as osp
 import setuptools
-from theseus.utilities.folder import find_file_recursively
-
 
 ## Check repo version
 version = ''
@@ -15,7 +14,7 @@ with open("requirements.txt", 'r') as f:
 
 ## Check extra requirements recursively
 extras_requires = {}
-extra_req_files = find_file_recursively('theseus', filename="requirements.txt")
+extra_req_files = paths = list(Path('theseus').rglob("requirements.txt"))
 for req_file in extra_req_files:
     with open(req_file, 'r') as f:
         reqs = f.read().splitlines()
