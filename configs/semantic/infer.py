@@ -6,13 +6,13 @@ import os
 import cv2
 import torch
 from theseus.opt import Config
-from theseus.semantic.models import MODEL_REGISTRY
-from theseus.semantic.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
+from theseus.cv.semantic.models import MODEL_REGISTRY
+from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.cv.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
 from theseus.utilities.loggers import LoggerObserver
 from theseus.base.pipeline import BaseTestPipeline
-from theseus.utilities.visualization.visualizer import Visualizer
+from theseus.cv.utilities.visualization.visualizer import Visualizer
 
 class TestPipeline(BaseTestPipeline):
     def __init__(
