@@ -1,4 +1,4 @@
-from theseus.base.losses import LOSS_REGISTRY
+from theseus.cv.base.losses import LOSS_REGISTRY
 
 from .ce_loss import *
 from .focal_loss import FocalLoss

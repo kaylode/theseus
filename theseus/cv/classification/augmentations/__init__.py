@@ -1,4 +1,4 @@
-from theseus.base.augmentations import TRANSFORM_REGISTRY
+from theseus.cv.base.augmentations import TRANSFORM_REGISTRY
 from .custom import *
 
 TRANSFORM_REGISTRY.register(CustomCutout, prefix='Custom')

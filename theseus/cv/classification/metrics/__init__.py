@@ -1,4 +1,4 @@
-from theseus.base.metrics import METRIC_REGISTRY
+from theseus.cv.base.metrics import METRIC_REGISTRY
 
 from .accuracy import *
 from .bl_accuracy import *
