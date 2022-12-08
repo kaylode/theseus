@@ -14,8 +14,8 @@ __copyright__ = 'Copyright 2020-present Kaylode'
 __version__ = '1.1.0'
 
 from .base import *
-from .cv import *
-from .nlp import *
-from .tabular import *
-from .utilities import *
+# from .cv import *
+# from .nlp import *
+# from .tabular import *
+# from .utilities import *
 from .registry import Registry
