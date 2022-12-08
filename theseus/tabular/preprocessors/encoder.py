@@ -5,13 +5,12 @@ from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class LabelEncode(Preprocessor):
-    def __init__(self, encoder_type='le', column_names=None, verbose=False, **kwargs):
-        super().__init__(verbose, **kwargs)
+    def __init__(self, encoder_type='le',  **kwargs):
+        super().__init__(**kwargs)
 
         assert encoder_type in ['le', 'onehot', 'ordinal'], 'Encoder type not supported'
 
         self.encoder_type = encoder_type
-        self.column_names = column_names
 
         if self.encoder_type == 'le':
             self.encoder = LabelEncoder()
@@ -21,6 +20,7 @@ class LabelEncode(Preprocessor):
             self.encoder = OrdinalEncoder()
 
     def run(self, df):
+        self.prerun(df)
         if self.column_names is not None:
             for column_name in self.column_names:
                 df[column_name] = self.encoder.fit_transform(df[column_name].values) 

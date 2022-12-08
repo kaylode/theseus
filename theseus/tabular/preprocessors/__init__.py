@@ -5,7 +5,6 @@ from .datetime import ToDatetime, DateDecompose
 from .drop_col import (
     DropColumns, DropDuplicatedRows, 
     DropSingleValuedColumns, DropEmptyColumns,
-    DropColumnsWithNameFiltered
 )
 from .categorize import Categorize
 from theseus.registry import Registry
@@ -22,7 +21,6 @@ TRANSFORM_REGISTRY.register(ToDatetime)
 TRANSFORM_REGISTRY.register(DropColumns)
 TRANSFORM_REGISTRY.register(DropDuplicatedRows)
 TRANSFORM_REGISTRY.register(DropSingleValuedColumns)
-TRANSFORM_REGISTRY.register(DropColumnsWithNameFiltered)
 TRANSFORM_REGISTRY.register(DropEmptyColumns)
 TRANSFORM_REGISTRY.register(Categorize)
 TRANSFORM_REGISTRY.register(LabelEncode)

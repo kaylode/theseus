@@ -4,11 +4,11 @@ from theseus.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class Categorize(Preprocessor):
-    def __init__(self, column_names=None, verbose=False, **kwargs):
-        super().__init__(verbose, **kwargs)
-        self.column_names = column_names
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def run(self, df):
+        self.prerun(df)
         if self.column_names is not None:
             for column_name in self.column_names:
                 df[column_name] = df[column_name].astype("category")
