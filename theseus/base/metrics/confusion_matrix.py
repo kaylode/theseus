@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
-from theseus.cv.classification.utilities.logits import logits2labels
+from theseus.base.utilities.logits import logits2labels
 
 def plot_cfm(cm, ax, labels: List):
     """

@@ -22,6 +22,7 @@ class Pipeline(BasePipeline):
         self.opt = opt
 
     def init_registry(self):
+        super().init_registry()
         self.model_registry = MODEL_REGISTRY
         self.dataset_registry = DATASET_REGISTRY
         self.dataloader_registry = DATALOADER_REGISTRY

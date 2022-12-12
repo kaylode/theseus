@@ -1,1 +1,1 @@
-from theseus.base.augmentations import TRANSFORM_REGISTRY
+from theseus.cv.base.augmentations import TRANSFORM_REGISTRY
