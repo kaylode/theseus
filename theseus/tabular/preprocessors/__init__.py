@@ -9,9 +9,11 @@ from .drop_col import (
 from .categorize import Categorize
 from theseus.registry import Registry
 from .encoder import LabelEncode
+from .splitter import Splitter
+from .standardize import Standardize
+from .aggregation import Aggregate
 
-
-TRANSFORM_REGISTRY = Registry('TRANSFORM')
+from theseus.base.augmentations import TRANSFORM_REGISTRY
 
 TRANSFORM_REGISTRY.register(PreprocessCompose)
 TRANSFORM_REGISTRY.register(DateDecompose)
@@ -24,3 +26,6 @@ TRANSFORM_REGISTRY.register(DropSingleValuedColumns)
 TRANSFORM_REGISTRY.register(DropEmptyColumns)
 TRANSFORM_REGISTRY.register(Categorize)
 TRANSFORM_REGISTRY.register(LabelEncode)
+TRANSFORM_REGISTRY.register(Splitter)
+TRANSFORM_REGISTRY.register(Standardize)
+TRANSFORM_REGISTRY.register(Aggregate)
