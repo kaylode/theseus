@@ -2,7 +2,7 @@ from typing import Dict, List, Any, Optional
 import torch
 import torch.nn as nn
 from transformers import AutoModel, AutoConfig
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 from collections import OrderedDict
 
 # https://huggingface.co/docs/transformers/task_summary

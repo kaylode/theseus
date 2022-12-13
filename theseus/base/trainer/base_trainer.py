@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.optimizers.scalers import NativeScaler
 from theseus.base.callbacks import CallbacksList, LoggerCallbacks, CheckpointCallbacks
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class BaseTrainer():

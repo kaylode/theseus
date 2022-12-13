@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List, Optional
 
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 from .dataset import ClassificationDataset
 
 LOGGER = LoggerObserver.getLogger('main')

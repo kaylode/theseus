@@ -1,7 +1,7 @@
 from typing import Any, Dict
 import torch
 from torch import nn
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 
 class MeanSquaredErrorLoss(nn.Module):
     r"""MSELoss is warper of mean square error loss"""

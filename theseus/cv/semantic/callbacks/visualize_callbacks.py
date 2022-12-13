@@ -5,12 +5,12 @@ import torch
 import numpy as np
 
 from torchvision.transforms import functional as TFF
-from theseus.cv.utilities.visualization.colors import color_list
+from theseus.cv.base.utilities.visualization.colors import color_list
 from theseus.base.callbacks.base_callbacks import Callbacks
-from theseus.utilities.loggers.observer import LoggerObserver
-from theseus.cv.utilities.visualization.visualizer import Visualizer
-from theseus.cv.utilities.analysis.analyzer import SemanticAnalyzer
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.loggers.observer import LoggerObserver
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
+from theseus.cv.base.utilities.analysis.analyzer import SemanticAnalyzer
+from theseus.base.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
 

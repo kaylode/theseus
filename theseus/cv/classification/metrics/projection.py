@@ -5,8 +5,8 @@ from theseus.base.metrics.metric_template import Metric
 import cv2
 import numpy as np
 import hashlib
-from theseus.cv.utilities.visualization.visualizer import Visualizer
-from theseus.utilities.loggers import LoggerObserver
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
+from theseus.base.utilities.loggers import LoggerObserver
 
 # To fix tensorflow bug on Google Colab
 try:

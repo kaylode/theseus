@@ -2,8 +2,8 @@ from typing import Dict
 import os
 import os.path as osp
 from theseus.base.callbacks.base_callbacks import Callbacks
-from theseus.utilities.loggers.observer import LoggerObserver
-from theseus.utilities.loggers.wandb_logger import WandbLogger, find_run_id
+from theseus.base.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
 from datetime import datetime
 from theseus.opt import Config
 from copy import deepcopy

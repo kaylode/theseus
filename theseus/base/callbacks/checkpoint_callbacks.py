@@ -1,10 +1,10 @@
 from typing import Dict
 import os.path as osp
 import torch
-from theseus.utilities.loading import load_state_dict
+from theseus.base.utilities.loading import load_state_dict
 from theseus.base.callbacks import Callbacks
-from theseus.utilities.loggers.cp_logger import Checkpoint
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.cp_logger import Checkpoint
+from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class CheckpointCallbacks(Callbacks):

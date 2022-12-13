@@ -1,1 +1,1 @@
-from theseus.cv.base.losses import LOSS_REGISTRY
+from theseus.base.losses import LOSS_REGISTRY

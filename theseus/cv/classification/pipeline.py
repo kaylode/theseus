@@ -8,7 +8,7 @@ from theseus.cv.classification.trainer import TRAINER_REGISTRY
 from theseus.cv.classification.metrics import METRIC_REGISTRY
 from theseus.cv.classification.models import MODEL_REGISTRY
 from theseus.cv.classification.callbacks import CALLBACKS_REGISTRY
-from theseus.utilities.loggers import LoggerObserver
+from theseus.base.utilities.loggers import LoggerObserver
 
 
 class Pipeline(BasePipeline):

@@ -4,9 +4,9 @@ import torch
 from torchvision.transforms import functional as TFF
 
 from theseus.base.callbacks.base_callbacks import Callbacks
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
-from theseus.cv.utilities.visualization.visualizer import Visualizer
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 
 LOGGER = LoggerObserver.getLogger("main")
 

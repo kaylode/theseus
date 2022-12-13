@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any
 from tabulate import tabulate
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 

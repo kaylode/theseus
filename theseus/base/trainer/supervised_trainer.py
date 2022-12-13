@@ -6,7 +6,7 @@ from torch.cuda import amp
 
 from .base_trainer import BaseTrainer
 
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 class SupervisedTrainer(BaseTrainer):

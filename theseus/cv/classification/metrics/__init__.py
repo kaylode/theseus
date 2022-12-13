@@ -1,4 +1,4 @@
-from theseus.cv.base.metrics import METRIC_REGISTRY
+from theseus.base.metrics import METRIC_REGISTRY
 
 from .errorcases import *
 from .projection import *

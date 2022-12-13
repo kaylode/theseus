@@ -1,8 +1,8 @@
 import os
 from theseus.base.callbacks.base_callbacks import Callbacks
-from theseus.utilities.loggers.observer import LoggerObserver
-from theseus.utilities.loggers.tsb_logger import TensorboardLogger
-from theseus.utilities.loading import find_old_tflog
+from theseus.base.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.tsb_logger import TensorboardLogger
+from theseus.base.utilities.loading import find_old_tflog
 
 LOGGER = LoggerObserver.getLogger("main")
 

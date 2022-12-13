@@ -2,8 +2,8 @@ from typing import Dict, List, Any, Optional
 import timm
 import torch
 import torch.nn as nn
-from theseus.utilities.hooks import postfix_hook
-from theseus.utilities.cuda import move_to, detach
+from theseus.base.utilities.hooks import postfix_hook
+from theseus.base.utilities.cuda import move_to, detach
 from theseus.cv.classification.utilities.logits import logits2labels
 import torch.nn.functional as F
 

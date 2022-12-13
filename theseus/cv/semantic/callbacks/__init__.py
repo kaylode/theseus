@@ -1,4 +1,4 @@
-from theseus.cv.base.callbacks import CALLBACKS_REGISTRY
+from theseus.base.callbacks import CALLBACKS_REGISTRY
 
 from theseus.cv.semantic.callbacks.visualize_callbacks import SemanticVisualizerCallbacks
 

@@ -5,7 +5,7 @@ from torchvision.transforms import functional as TFF
 from theseus.base.metrics.metric_template import Metric
 from theseus.cv.classification.utilities.logits import logits2labels
 
-from theseus.cv.utilities.visualization.visualizer import Visualizer
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 
 class ErrorCases(Metric):
     """Workaround class to visualize wrong cases only

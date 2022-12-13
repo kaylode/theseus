@@ -1,4 +1,4 @@
-from theseus.cv.base.models import MODEL_REGISTRY
+from theseus.base.models import MODEL_REGISTRY
 
 from .segmodels import BaseSegModel
 

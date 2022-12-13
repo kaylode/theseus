@@ -12,11 +12,11 @@ from theseus.base.trainer import TRAINER_REGISTRY
 from theseus.base.metrics import METRIC_REGISTRY
 from theseus.base.models import MODEL_REGISTRY
 from theseus.base.callbacks import CALLBACKS_REGISTRY
-from theseus.utilities.getter import (get_instance, get_instance_recursively)
-from theseus.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
-from theseus.utilities.loading import load_state_dict
-from theseus.utilities.folder import get_new_folder_name
-from theseus.utilities.cuda import get_devices_info, move_to, get_device
+from theseus.base.utilities.getter import (get_instance, get_instance_recursively)
+from theseus.base.utilities.loggers import LoggerObserver, FileLogger, ImageWriter
+from theseus.base.utilities.loading import load_state_dict
+from theseus.base.utilities.folder import get_new_folder_name
+from theseus.base.utilities.cuda import get_devices_info, move_to, get_device
 
 class BasePipeline(object):
     """docstring for BasePipeline."""

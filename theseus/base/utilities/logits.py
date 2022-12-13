@@ -1,5 +1,5 @@
 import torch
-from theseus.utilities.cuda import move_to, detach
+from theseus.base.utilities.cuda import move_to, detach
 
 def multiclass_logits2labels(outputs, return_probs: bool = False):
     probs, outputs = torch.max(torch.softmax(outputs, dim=-1),dim=-1)

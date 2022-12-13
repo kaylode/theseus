@@ -5,9 +5,9 @@ Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.4/tools/p
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import yaml
 import json
-from theseus.utilities.loading import load_yaml
+from theseus.base.utilities.loading import load_yaml
 
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 

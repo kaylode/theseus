@@ -1,1 +1,0 @@
-from theseus.base.models import MODEL_REGISTRY

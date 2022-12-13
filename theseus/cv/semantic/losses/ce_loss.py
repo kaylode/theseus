@@ -1,7 +1,7 @@
 from typing import Dict, List
 import torch
 from torch import nn
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 
 class SemanticCELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 import torch
 import numpy as np
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 from theseus.base.metrics.metric_template import Metric
 
 class DiceScore(Metric):

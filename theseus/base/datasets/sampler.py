@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.utils.data.sampler import WeightedRandomSampler
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 

@@ -2,7 +2,7 @@ from typing import Any, Dict
 import torch
 import torch.nn as nn
 from torchvision.ops.focal_loss import sigmoid_focal_loss
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 
 class FocalLoss(nn.Module):
     r"""FocalLoss"""

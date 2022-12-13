@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from .dataset import SemanticDataset
-from theseus.utilities.loggers.observer import LoggerObserver
+from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger('main')
 

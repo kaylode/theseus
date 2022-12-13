@@ -2,7 +2,7 @@ from typing import Dict, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from theseus.utilities.cuda import move_to
+from theseus.base.utilities.cuda import move_to
 
 class DiceLoss(nn.Module):
     """Dice loss, need one hot encode input
