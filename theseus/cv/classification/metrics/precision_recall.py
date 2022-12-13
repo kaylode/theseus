@@ -2,7 +2,7 @@ from sklearn.metrics import precision_score, recall_score
 from typing import Any, Dict
 
 from theseus.base.metrics.metric_template import Metric
-from theseus.cv.classification.utilities.logits import logits2labels
+from theseus.base.utilities.logits import logits2labels
 
 class PrecisionRecall(Metric):
     """

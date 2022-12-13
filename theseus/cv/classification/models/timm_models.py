@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from theseus.base.utilities.hooks import postfix_hook
 from theseus.base.utilities.cuda import move_to, detach
-from theseus.cv.classification.utilities.logits import logits2labels
+from theseus.base.utilities.logits import logits2labels
 import torch.nn.functional as F
 
 class BaseTimmModel(nn.Module):

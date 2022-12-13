@@ -2,6 +2,8 @@ import logging
 import torch
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import plotly.graph_objs as go
+
 mpl.use("Agg")
 
 from typing import Dict, List
@@ -12,7 +14,7 @@ from inspect import getframeinfo, stack
 def get_type(value):
     if isinstance(value, torch.nn.Module):
         return LoggerObserver.TORCH_MODULE
-    if isinstance(value, mpl.figure.Figure):
+    if isinstance(value, mpl.figure.Figure) or isinstance(value, go.Figure):
         return LoggerObserver.FIGURE
     if isinstance(value, str):
         return LoggerObserver.TEXT

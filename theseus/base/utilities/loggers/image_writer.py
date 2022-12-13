@@ -1,6 +1,15 @@
 import os
 from .subscriber import LoggerSubscriber
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import plotly.graph_objs as go
+from theseus.base.utilities.loggers import LoggerObserver
+
+LOGGER = LoggerObserver.getLogger('main')
+
+mpl.use("Agg")
+
 class ImageWriter(LoggerSubscriber):
     """Logger for writing images
     
@@ -12,4 +21,10 @@ class ImageWriter(LoggerSubscriber):
         savepath = os.path.join(self.savedir, tag)
         dirname = os.path.dirname(savepath)
         os.makedirs(dirname, exist_ok=True)
-        value.savefig(savepath)
+
+        if isinstance(value, go._figure.Figure):
+            value.write_image(savepath+'.png')
+        if isinstance(value, mpl.figure.Figure):
+            value.savefig(savepath)
+
+        LOGGER.text(f"Saved image to {savepath}", level=LoggerObserver.INFO)
