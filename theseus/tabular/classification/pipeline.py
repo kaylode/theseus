@@ -4,14 +4,14 @@ from theseus.base.utilities.loggers import LoggerObserver
 from theseus.tabular.classification.callbacks import CALLBACKS_REGISTRY
 
 
-class Pipeline(BasePipeline):
+class TabularPipeline(BasePipeline):
     """docstring for Pipeline."""
 
     def __init__(
         self,
         opt: Config
     ):
-        super(Pipeline, self).__init__(opt)
+        super(TabularPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_registry(self):
