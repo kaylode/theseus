@@ -1,6 +1,8 @@
 from theseus.tabular.base.utilities.pprint import pretty_print_df
 from theseus.base.utilities.loggers import LoggerObserver
 from theseus.base.utilities.analyzer import Analyzer
+import matplotlib.pyplot as plt
+
 LOGGER = LoggerObserver.getLogger("main")
 
 def check_nan(df):
@@ -13,7 +15,7 @@ def check_duplicate(df):
 
 class DataFrameAnalyzer(Analyzer):
     def __init__(self, **kwargs):
-        pass
+        super().__init__()
 
     def init_dict(self):
         self.instance_dict['id'] = []
@@ -22,10 +24,12 @@ class DataFrameAnalyzer(Analyzer):
     def update_item(self, item):
         label = item['target']['labels'][0]
         self.instance_dict['id'].append(len(self.instance_dict['id'])+1)
-        self.instance_dict['image_id'].append(len(self.sample_dict['id'])+1)
         self.instance_dict['class'].append(label)
 
-    def analyze(self, df, figsize=(8,8)):
-        missing_df = check_nan(df)
-        pretty_print_df(missing_df)
-        check_duplicate(df)
+    def analyze(self, figsize=(8,8)):
+        # missing_df = check_nan(df)
+        # pretty_print_df(missing_df)
+        # check_duplicate(df)
+        fig, axs = plt.subplots(1, 1 ,figsize=figsize)
+        self.class_dist(axs)
+        return fig
