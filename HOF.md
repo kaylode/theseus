@@ -33,7 +33,7 @@
 - Tags: *detection*, *classification*
 
 <p align="center">
-    <img height="250" alt="screen" src="https://raw.githubusercontent.com/kaylode/shrec22-pothole/master/docs/figures/overlays.png">
+    <img height="250" alt="screen" src="null">
 </p>
 
 ### Semi-supervised organ segmentation with Mask Propagation Refinement and Uncertainty Estimation for Data Generation
