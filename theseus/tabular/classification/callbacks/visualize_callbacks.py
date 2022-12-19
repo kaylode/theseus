@@ -5,7 +5,7 @@ from torchvision.transforms import functional as TFF
 
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.utilities.loggers.observer import LoggerObserver
-from theseus.tabular.utilities.analysis.analyzer import DataFrameAnalyzer
+from theseus.tabular.base.utilities.analysis.analyzer import DataFrameAnalyzer
 from theseus.base.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
