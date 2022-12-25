@@ -30,15 +30,16 @@ class Registry(Iterable[Tuple[str, Any]]):
         self._name: str = name
         self._obj_map: Dict[str, Any] = {}
 
-    def _do_register(self, name: str, obj: Any) -> None:
-        assert (
-            name not in self._obj_map
-        ), "An object named '{}' was already registered in '{}' registry!".format(
-            name, self._name
-        )
+    def _do_register(self, name: str, obj: Any, override: bool = False) -> None:
+        if not override:
+            assert (
+                name not in self._obj_map
+            ), "An object named '{}' was already registered in '{}' registry!".format(
+                name, self._name
+            )
         self._obj_map[name] = obj
 
-    def register(self, obj: Any = None, prefix: str = '') -> Any:
+    def register(self, obj: Any = None, prefix: str = '', override: bool = False) -> Any:
         """
         Register the given object under the the name `obj.__name__`.
         Can be used as either a decorator or not. See docstring of this class for usage.
@@ -47,7 +48,7 @@ class Registry(Iterable[Tuple[str, Any]]):
             # used as a decorator
             def deco(func_or_class: Any) -> Any:
                 name = func_or_class.__name__
-                self._do_register(prefix + name, func_or_class)
+                self._do_register(prefix + name, func_or_class, override)
                 return func_or_class
 
             return deco
