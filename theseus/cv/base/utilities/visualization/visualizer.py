@@ -21,7 +21,7 @@ class Visualizer():
         """
         Set the current image
         """
-        self.image = image
+        self.image = image.copy()
 
         if self.image.dtype == 'uint8':
             self.image = self.image / 255.0
@@ -153,6 +153,7 @@ class Visualizer():
                     box, label, score = item
                 else:
                     box, label = item
+                    score = None
                 color = color_list[int(label)]
             else:
                 box, label, score = item, None, None
