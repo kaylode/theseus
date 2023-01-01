@@ -2,7 +2,7 @@ from albumentations import (Compose, Normalize, RandomBrightnessContrast,
                             RandomCrop, Resize, RGBShift, ShiftScaleRotate,
                             SmallestMaxSize, MotionBlur, GaussianBlur, MedianBlur,
                             Blur, RandomRotate90, HorizontalFlip, VerticalFlip,
-                            HueSaturationValue, RandomSizedCrop, IAASharpen, BboxParams)
+                            HueSaturationValue, RandomSizedCrop, IAASharpen)
 from albumentations.pytorch.transforms import ToTensorV2
 
 from . import TRANSFORM_REGISTRY

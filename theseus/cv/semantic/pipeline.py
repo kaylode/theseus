@@ -1,6 +1,5 @@
 from theseus.opt import Config
 from theseus.base.pipeline import BasePipeline
-from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.cv.semantic.losses import LOSS_REGISTRY
 from theseus.cv.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
