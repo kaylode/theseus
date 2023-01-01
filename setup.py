@@ -14,7 +14,8 @@ with open("requirements.txt", 'r') as f:
 
 ## Check extra requirements recursively
 extras_requires = {}
-extra_req_files = paths = list(Path('theseus').rglob("requirements.txt"))
+extra_req_files = list(Path('theseus').rglob("requirements.txt"))
+all_extra_reqs = []
 for req_file in extra_req_files:
     with open(req_file, 'r') as f:
         reqs = f.read().splitlines()
@@ -22,6 +23,9 @@ for req_file in extra_req_files:
     extras_requires.update({
         pardir: reqs,
     })
+    all_extra_reqs.extend(reqs)
+
+extras_requires['all'] = all_extra_reqs
 
 setuptools.setup(
     name="theseus",

@@ -100,14 +100,19 @@ class BasePipeline(object):
             self.opt["model"], 
             registry=self.model_registry, 
             num_classes=len(CLASSNAMES),
-            classnames=CLASSNAMES)
+            classnames=CLASSNAMES
+        )
         model = move_to(model, self.device)
         return model
 
     def init_criterion(self):
+        CLASSNAMES = self.val_dataset.classnames
         criterion = get_instance_recursively(
             self.opt["loss"], 
-            registry=self.loss_registry)
+            registry=self.loss_registry,
+            num_classes=len(CLASSNAMES),
+            classnames=CLASSNAMES
+        )
         criterion = move_to(criterion, self.device)
         return criterion
 
@@ -124,7 +129,9 @@ class BasePipeline(object):
         self.metrics = get_instance_recursively(
             self.opt['metrics'], 
             registry=self.metric_registry, 
-            classnames=CLASSNAMES)
+            num_classes=len(CLASSNAMES),
+            classnames=CLASSNAMES
+        )
 
     def init_optimizer(self):
         self.optimizer = get_instance(
