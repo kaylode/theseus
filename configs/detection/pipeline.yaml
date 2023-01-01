@@ -1,0 +1,94 @@
+global:
+  exp_name: null
+  exist_ok: false
+  debug: true
+  cfg_transform: ./configs/detection/transform.yaml
+  save_dir: /runs
+  device: cuda:0
+  pretrained: null
+  resume: null
+trainer:
+  name: SupervisedTrainer
+  args:
+    num_iterations: 100000
+    clip_grad: 0.1
+    evaluate_interval: 1
+    print_interval: 20
+    save_interval: 1000
+    use_fp16: false
+callbacks:
+  - name: LoggerCallbacks
+  - name: CheckpointCallbacks
+  - name: DetectionVisualizerCallbacks
+model:
+  name: DETRConvnext
+  args:
+    model_name: detr
+    backbone_name: resnet50
+    num_queries: 100
+    min_conf: 0.25
+    hidden_dim: 256
+    position_embedding: sine
+    freeze_backbone: false
+    dilation: false
+    dropout: 0.1
+    nheads: 8
+    dim_feedforward: 2048
+    enc_layers: 6
+    dec_layers: 6
+    pre_norm: false
+    aux_loss: true
+loss:
+  name: DETRLosses
+  args:
+    loss_ce: 1
+    loss_bbox: 5
+    loss_giou: 2
+    loss_mask: null
+    loss_dice: null
+    cost_class: 1
+    cost_bbox: 5
+    cost_giou: 2
+    eos_coef: 0.1
+metrics: 
+  - name: DetectionPrecisionRecall
+    args: 
+       min_conf: 0.2
+       min_iou: 0.5
+       eps: 1e-6
+optimizer:
+  name: AdamW
+  args:
+    lr: 0.00001
+    weight_decay: 0.0001
+scheduler:
+  name: SchedulerWrapper
+  args:
+    scheduler_name: multistep
+    milestones: [20000, 50000]
+    gamma: 0.1
+data:
+  dataset:
+    train:
+      name: COCODataset
+      args:
+        image_dir: ./data/coco/train2017
+        label_path: ./data/coco/annotations/instances_train2017.json
+    val:
+      name: COCODataset
+      args:
+        image_dir: ./data/coco/val2017
+        label_path: ./data/coco/annotations/instances_val2017.json
+  dataloader:
+    train:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 2
+        drop_last: true
+        shuffle: true
+    val:
+      name: DataLoaderWithCollator
+      args:
+        batch_size: 2
+        drop_last: false
+        shuffle: false

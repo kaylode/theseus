@@ -234,6 +234,22 @@ class Visualizer():
         img_show = np.clip(img_show,0,1)
         return img_show
 
+    def denormalize_bboxes(self, boxes, order, image_shape=None) -> np.ndarray:
+        """
+        Denormalize bboxes and return
+        image: `torch.Tensor` or `np.ndarray`
+            image to be denormalized
+        """
+        if image_shape is not None:
+            boxes[:, [0,2]] *= image_shape[1]
+            boxes[:, [1,3]] *= image_shape[0]
+
+        from theseus.cv.detection.augmentations.bbox_transforms import BoxOrder
+        denom = BoxOrder(order)
+        new_boxes = denom.apply_to_bboxes(boxes)
+        new_boxes = np.stack([torch.stack(i, dim=0).numpy() for i in new_boxes])
+        return new_boxes.astype(int)
+
     def decode_segmap(self, segmap: np.ndarray, num_classes: Optional[int] = None) -> np.ndarray:
         """
         Decode an segmentation mask into colored mask based on class indices

@@ -1,0 +1,2 @@
+ensemble_boxes==1.0.9
+pycocotools==2.0.6

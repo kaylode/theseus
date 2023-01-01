@@ -1,0 +1,68 @@
+train:
+  name: DetCompose
+  args:
+    transforms:
+      - name: DetCompose
+        args:
+          transforms:
+            - name: BoxOrder
+              args:
+                order: xywh2cxcywh
+            - name: BoxNormalize
+              args:
+                order: cxcywh
+      - name: AlbCompose
+        args:
+          bbox_params: 
+            name: AlbBboxParams
+            args: 
+              format: 'yolo' 
+              min_area: 0 
+              min_visibility: 0
+              label_fields: ['class_labels']
+          transforms:
+            - name: AlbResize
+              args:
+                width: 640
+                height: 640
+            - name: AlbNormalize
+              args:
+                mean: [0.485, 0.456, 0.406]
+                std: [0.229, 0.224, 0.225]
+                max_pixel_value: 1.0
+                p: 1.0
+            - name: AlbToTensorV2
+val:
+  name: DetCompose
+  args:
+    transforms:
+      - name: DetCompose
+        args:
+          transforms:
+            - name: BoxOrder
+              args:
+                order: xywh2cxcywh
+            - name: BoxNormalize
+              args:
+                order: cxcywh
+      - name: AlbCompose
+        args:
+          bbox_params: 
+            name: AlbBboxParams
+            args: 
+              format: 'yolo' 
+              min_area: 0 
+              min_visibility: 0
+              label_fields: ['class_labels']
+          transforms:
+            - name: AlbResize
+              args:
+                width: 640
+                height: 640
+            - name: AlbNormalize
+              args:
+                mean: [0.485, 0.456, 0.406]
+                std: [0.229, 0.224, 0.225]
+                max_pixel_value: 1.0
+                p: 1.0
+            - name: AlbToTensorV2
