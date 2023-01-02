@@ -119,5 +119,7 @@ class DetectionPrecisionRecall(Metric):
         precision_all = sum(np_precisions[np_precisions!=-1]) / (self.num_classes - sum(np_precisions==-1))
         recall_all = sum(np_recalls[np_recalls!=-1]) / (self.num_classes - sum(np_recalls==-1))
 
-        return {f"precision": precision_all, f"recall": recall_all}
+        f1_score = 2*precision_all*recall_all / (precision_all + recall_all)
+
+        return {f"simple_precision": precision_all, f"simple_recall": recall_all, 'simple_f1_score': f1_score}
         
