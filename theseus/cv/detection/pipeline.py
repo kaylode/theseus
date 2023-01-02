@@ -8,6 +8,7 @@ from theseus.cv.detection.metrics import METRIC_REGISTRY
 from theseus.cv.detection.models import MODEL_REGISTRY, ModelWithLossandPostprocess
 from theseus.cv.detection.callbacks import CALLBACKS_REGISTRY
 from theseus.base.utilities.loggers import LoggerObserver
+from theseus.base.utilities.cuda import get_devices_info
 
 class Pipeline(BasePipeline):
     """docstring for Pipeline."""
