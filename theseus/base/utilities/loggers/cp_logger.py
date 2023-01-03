@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from theseus.base.utilities.loggers.observer import LoggerObserver
+from .observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
 

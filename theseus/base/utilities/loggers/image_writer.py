@@ -4,8 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 
-from theseus.base.utilities.loggers import LoggerObserver
-
+from .observer import LoggerObserver
 from .subscriber import LoggerSubscriber
 
 LOGGER = LoggerObserver.getLogger("main")

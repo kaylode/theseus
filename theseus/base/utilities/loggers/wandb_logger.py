@@ -9,7 +9,7 @@ import os.path as osp
 
 import torch
 
-from theseus.base.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
+from .observer import LoggerObserver, LoggerSubscriber
 
 LOGGER = LoggerObserver.getLogger("main")
 

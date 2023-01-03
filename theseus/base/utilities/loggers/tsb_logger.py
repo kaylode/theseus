@@ -10,7 +10,7 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import ToTensor
 
-from theseus.base.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
+from .observer import LoggerObserver, LoggerSubscriber
 
 LOGGER = LoggerObserver.getLogger("main")
 
