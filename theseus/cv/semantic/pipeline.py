@@ -27,8 +27,6 @@ class Pipeline(BasePipeline):
         self.dataloader_registry = DATALOADER_REGISTRY
         self.metric_registry = METRIC_REGISTRY
         self.loss_registry = LOSS_REGISTRY
-        self.optimizer_registry = OPTIM_REGISTRY
-        self.scheduler_registry = SCHEDULER_REGISTRY
         self.callbacks_registry = CALLBACKS_REGISTRY
         self.trainer_registry = TRAINER_REGISTRY
         self.transform_registry = TRANSFORM_REGISTRY

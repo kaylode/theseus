@@ -1,6 +1,7 @@
 from typing import Iterable, List
 import os
 from PIL import Image
+import numpy as np
 import torch
 import torch.utils.data as data
 
@@ -79,8 +80,12 @@ class ImageDataset(data.Dataset):
         im = Image.open(image_path).convert('RGB')
         width, height = im.width, im.height
 
-        if self.transform is not None: 
-            im = self.transform(im)
+        if self.transform is not None:
+            try:    
+                im = self.transform(im)
+            except:
+                im = self.transform(image=np.array(im))['image']
+
 
         return {
             "input": im, 

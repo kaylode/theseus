@@ -10,9 +10,9 @@ from theseus.cv.semantic.models import MODEL_REGISTRY
 from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.cv.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loggers import LoggerObserver
+from theseus.base.utilities.loggers import LoggerObserver
 from theseus.base.pipeline import BaseTestPipeline
-from theseus.cv.utilities.visualization.visualizer import Visualizer
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 
 class TestPipeline(BaseTestPipeline):
     def __init__(
@@ -20,7 +20,7 @@ class TestPipeline(BaseTestPipeline):
             opt: Config
         ):
 
-        super(TestPipeline, self).__init__()
+        super(TestPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_globals(self):

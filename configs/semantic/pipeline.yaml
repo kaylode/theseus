@@ -21,22 +21,20 @@ callbacks:
     args: null
   - name: CheckpointCallbacks
     args:
-      best_key: bl_acc
-  - name: VisualizerCallbacks
-    args: null
-  - name: TensorboardCallbacks
+      best_key: dice
+  - name: SemanticVisualizerCallbacks
     args: null
 model:
   name: BaseSegModel
   args:
-    name: unetplusplus
+    model_name: unetplusplus
     encoder_name: efficientnet-b0
 loss:
   name: MultiLoss
   args:
     weights: null
     losses:
-      - name: CELoss
+      - name: SemanticCELoss
         args: {}
       - name: DiceLoss
         args: {}
@@ -44,9 +42,11 @@ metrics:
   - name: PixelAccuracy
     args:
       ignore_index: 0
+      thresh: 0.5
   - name: DiceScore
     args:
       ignore_index: 0
+      thresh: 0.5
 optimizer:
   name: AdamW
   args:
@@ -68,17 +68,17 @@ data:
     train:
       name: SemanticCSVDataset
       args:
-        image_dir: data/images/train
-        mask_dir: data/masks/train
-        csv_path: data/train.csv
-        txt_classnames: configs/semantic/classes.txt
+        image_dir: samples/carvana-masking/images
+        mask_dir: samples/carvana-masking/masks
+        csv_path: samples/carvana-masking/train.csv
+        txt_classnames: samples/carvana-masking/classnames.txt
     val:
       name: SemanticCSVDataset
       args:
-        image_dir: data/images/val
-        mask_dir: data/masks/val
-        csv_path: data/val.csv
-        txt_classnames: configs/semantic/classes.txt
+        image_dir: samples/carvana-masking/images
+        mask_dir: samples/carvana-masking/masks
+        csv_path: samples/carvana-masking/val.csv
+        txt_classnames: samples/carvana-masking/classnames.txt
   dataloader:
     train:
       name: DataLoaderWithCollator
@@ -86,11 +86,11 @@ data:
         batch_size: 32
         drop_last: false
         shuffle: true
-        collate_fn:
-          name: MosaicCollator
-          args:
-            scale_range: [0.3, 0.7]
-            p: 0.3
+        # collate_fn:
+        #   name: MosaicCollator
+        #   args:
+        #     scale_range: [0.3, 0.7]
+        #     p: 0.3
     val:
       name: DataLoaderWithCollator
       args:

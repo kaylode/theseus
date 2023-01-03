@@ -2,24 +2,21 @@ global:
   exp_name: null
   exist_ok: false
   debug: True
-  cfg_transform: configs/sample/transform.yaml
+  cfg_transform: configs/semantic/transform.yaml
   save_dir: runs
   device: cuda:0
   weights: null
-
 model:
   name: BaseSegModel
   args:
-    name: unetplusplus
+    model_name: unetplusplus
     encoder_name: efficientnet-b0
-
 data:
   dataset:
-    name: TestCSVDataset
+    name: ImageDataset
     args:
-      image_dir: data/images
-      txt_classnames: configs/sample/classes.txt
-
+      image_dir: samples/carvana-masking/test_images
+      txt_classnames: samples/carvana-masking/classnames.txt
   dataloader:
     name: DataLoaderWithCollator
     args:

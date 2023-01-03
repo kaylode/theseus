@@ -34,14 +34,15 @@ class PixelAccuracy(Metric):
         
         self.reset()
 
-    def update(self, outputs: torch.Tensor, batch: Dict[str, Any]): 
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]): 
         """
         Perform calculation based on prediction and targets
         """
         # outputs: (batch, num_classes, W, H)
         # targets: (batch, num_classes, W, H)
-
         targets = batch['targets']
+        outputs = outputs['outputs']
+        
         assert len(targets.shape) == 4, "Wrong shape for targets"
         assert len(outputs.shape) == 4, "Wrong shape for targets"
         self.sample_size += outputs.shape[0]

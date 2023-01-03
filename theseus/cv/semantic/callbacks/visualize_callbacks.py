@@ -10,7 +10,6 @@ from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 from theseus.cv.base.utilities.analysis.analyzer import SemanticAnalyzer
-from theseus.base.utilities.cuda import move_to
 
 LOGGER = LoggerObserver.getLogger("main")
 

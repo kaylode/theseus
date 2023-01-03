@@ -82,7 +82,8 @@ class SemanticCSVDataset(SemanticDataset):
         Input masks from _load_mask(), but in shape [B, H, W]
         Output should be one-hot encoding of segmentation masks [B, NC, H, W]
         """
-        
+        if self.num_classes == 2:
+            masks[masks>0] = 1.0
         one_hot = torch.nn.functional.one_hot(masks.long(), num_classes=self.num_classes) # (B,H,W,NC)
         one_hot = one_hot.permute(0, 3, 1, 2) # (B,NC,H,W)
         return one_hot.float()
