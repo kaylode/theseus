@@ -1,5 +1,8 @@
-name: Python package
-on: [push]
+name: autobuild
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   build:
     runs-on: ubuntu-latest
