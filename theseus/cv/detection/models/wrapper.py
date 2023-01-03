@@ -1,6 +1,8 @@
 import torch
 from torch import nn
+
 from theseus.base.models.wrapper import ModelWithLoss
+
 
 class ModelWithLossandPostprocess(ModelWithLoss):
     """Add utilitarian functions for module to work with pipeline
@@ -25,8 +27,4 @@ class ModelWithLossandPostprocess(ModelWithLoss):
             for metric in metrics:
                 metric.update(output=outputs, batch=batch)
 
-        return {
-            'loss': loss,
-            'loss_dict': loss_dict,
-            'model_outputs': outputs
-        }
+        return {"loss": loss, "loss_dict": loss_dict, "model_outputs": outputs}

@@ -1,5 +1,6 @@
 from theseus.registry import Registry
 
+
 def get_instance(config, registry: Registry, **kwargs):
     # ref https://github.com/vltanh/torchan/blob/master/torchan/utils/getter.py
     assert "name" in config
@@ -7,25 +8,32 @@ def get_instance(config, registry: Registry, **kwargs):
     if config.get("args", None) is None:
         config["args"] = {}
 
-    return registry.get(config['name'])(**config.get('args', {}), **kwargs)
+    return registry.get(config["name"])(**config.get("args", {}), **kwargs)
 
 
 def get_instance_recursively(config, registry: Registry, **kwargs):
     if isinstance(config, (list, tuple)):
-        out = [get_instance_recursively(item, registry=registry, **kwargs) for item in config]
+        out = [
+            get_instance_recursively(item, registry=registry, **kwargs)
+            for item in config
+        ]
         return out
     if isinstance(config, dict):
-        if 'name' in config.keys():
+        if "name" in config.keys():
             if registry:
-                args = get_instance_recursively(config.get('args', {}), registry, **kwargs)
+                args = get_instance_recursively(
+                    config.get("args", {}), registry, **kwargs
+                )
                 if args is None:
-                    return registry.get(config['name'])(**kwargs)
+                    return registry.get(config["name"])(**kwargs)
                 if isinstance(args, list):
-                    return registry.get(config['name'])(*args, **kwargs)
+                    return registry.get(config["name"])(*args, **kwargs)
                 if isinstance(args, dict):
-                    kwargs.update(args) # override kwargs (from parent) with args (from config)
-                    return registry.get(config['name'])(**kwargs)
-                raise ValueError(f'Unknown type: {type(args)}')
+                    kwargs.update(
+                        args
+                    )  # override kwargs (from parent) with args (from config)
+                    return registry.get(config["name"])(**kwargs)
+                raise ValueError(f"Unknown type: {type(args)}")
         else:
             out = {}
             for k, v in config.items():

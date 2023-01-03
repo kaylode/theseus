@@ -1,20 +1,23 @@
-from typing import Dict, List, Any, Optional
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional
+
 import torch
 import torch.nn as nn
-from transformers import AutoModel, AutoConfig
+from transformers import AutoConfig, AutoModel
+
 from theseus.base.utilities.cuda import move_to
-from collections import OrderedDict
 
 # https://huggingface.co/docs/transformers/task_summary
 
+
 class HuggingFaceModel(nn.Module):
     """Convolution models from timm
-    
+
     model_name: `str`
         huggingface model name
     num_classes: `int`
         number of classes
-    from_pretrained: `bool` 
+    from_pretrained: `bool`
         whether to use pretrained
     classnames: `Optional[List]`
         list of classnames
@@ -26,7 +29,7 @@ class HuggingFaceModel(nn.Module):
         num_classes: int = 1000,
         from_pretrained: bool = True,
         classnames: Optional[List] = None,
-        pooling: str = 'first',
+        pooling: str = "first",
         freeze: bool = False,
         **kwargs
     ):
@@ -45,9 +48,18 @@ class HuggingFaceModel(nn.Module):
 
         self.feature_dim = self.model.config.hidden_size
 
-        self.head = nn.Sequential(OrderedDict([
-            ('fc', nn.Linear(self.feature_dim, num_classes) if num_classes > 0 else nn.Identity())
-        ]))
+        self.head = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "fc",
+                        nn.Linear(self.feature_dim, num_classes)
+                        if num_classes > 0
+                        else nn.Identity(),
+                    )
+                ]
+            )
+        )
 
         if self.freeze:
             self.freeze_backbone()
@@ -65,16 +77,14 @@ class HuggingFaceModel(nn.Module):
     def forward_features(self, batch: Dict, device: torch.device):
 
         input_ids, attention_mask = batch["input_ids"], batch["attention_mask"]
-        transformer_out = self.model(
-            input_ids=input_ids, attention_mask=attention_mask
-        )
+        transformer_out = self.model(input_ids=input_ids, attention_mask=attention_mask)
 
         features = transformer_out.last_hidden_state
 
-        if self.pooling == 'average':
-            features = torch.mean(features, dim=1) #features[:,0,:]
-        elif self.pooling == 'first':
-            features = features[:,0,:]
+        if self.pooling == "average":
+            features = torch.mean(features, dim=1)  # features[:,0,:]
+        elif self.pooling == "first":
+            features = features[:, 0, :]
         else:
             raise ValueError()
 
@@ -85,11 +95,7 @@ class HuggingFaceModel(nn.Module):
         features = self.forward_features(batch, device)
         outputs = self.head(features)
 
-        return {
-            'outputs': outputs,
-            'features': features
-        }
-
+        return {"outputs": outputs, "features": features}
 
     def get_prediction(self, adict: Dict[str, Any], device: torch.device):
         """
@@ -98,9 +104,9 @@ class HuggingFaceModel(nn.Module):
         adict: `Dict[str, Any]`
             dictionary of inputs
         device: `torch.device`
-            current device 
+            current device
         """
-        outputs = self.model(adict, device)['outputs']
+        outputs = self.model(adict, device)["outputs"]
 
         probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)
 
@@ -113,7 +119,7 @@ class HuggingFaceModel(nn.Module):
             classnames = []
 
         return {
-            'labels': classids,
-            'confidences': probs, 
-            'names': classnames,
+            "labels": classids,
+            "confidences": probs,
+            "names": classnames,
         }

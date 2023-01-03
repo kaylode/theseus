@@ -1,9 +1,11 @@
-import fnmatch 
+import fnmatch
 
-class FilterColumnNames():
-    '''
+
+class FilterColumnNames:
+    """
     Return all columns name match the filter
-    '''
+    """
+
     def __init__(self, patterns, excludes=None) -> None:
         self.patterns = patterns
         self.excludes = excludes

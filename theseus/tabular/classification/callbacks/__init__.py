@@ -1,7 +1,8 @@
-from .visualize_callbacks import TabularVisualizerCallbacks
 from theseus.base.callbacks import CALLBACKS_REGISTRY
-from .logging_callbacks import MLLoggerCallbacks
+
 from .explainer import *
+from .logging_callbacks import MLLoggerCallbacks
+from .visualize_callbacks import TabularVisualizerCallbacks
 
 CALLBACKS_REGISTRY.register(MLLoggerCallbacks)
 CALLBACKS_REGISTRY.register(ShapValueExplainer)

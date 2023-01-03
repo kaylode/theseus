@@ -1,8 +1,8 @@
 from theseus.base.metrics import METRIC_REGISTRY
 
-from .precision_recall import SKLPrecisionRecall
-from .f1_score import SKLF1ScoreMetric
 from .acccuracy import SKLAccuracy, SKLBalancedAccuracyMetric
+from .f1_score import SKLF1ScoreMetric
+from .precision_recall import SKLPrecisionRecall
 
 METRIC_REGISTRY.register(SKLPrecisionRecall)
 METRIC_REGISTRY.register(SKLF1ScoreMetric)

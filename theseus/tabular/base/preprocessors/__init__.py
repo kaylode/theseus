@@ -1,18 +1,20 @@
-from .compose import PreprocessCompose
-from .fill_nan import FillNaN
-from .csv_saver import CSVSaver
-from .datetime import ToDatetime, DateDecompose
-from .drop_col import (
-    DropColumns, DropDuplicatedRows, 
-    DropSingleValuedColumns, DropEmptyColumns,
-)
+from theseus.base.augmentations import TRANSFORM_REGISTRY
+
+from .aggregation import Aggregate
 from .categorize import Categorize
+from .compose import PreprocessCompose
+from .csv_saver import CSVSaver
+from .datetime import DateDecompose, ToDatetime
+from .drop_col import (
+    DropColumns,
+    DropDuplicatedRows,
+    DropEmptyColumns,
+    DropSingleValuedColumns,
+)
 from .encoder import LabelEncode
+from .fill_nan import FillNaN
 from .splitter import Splitter
 from .standardize import Standardize
-from .aggregation import Aggregate
-
-from theseus.base.augmentations import TRANSFORM_REGISTRY
 
 TRANSFORM_REGISTRY.register(PreprocessCompose)
 TRANSFORM_REGISTRY.register(DateDecompose)

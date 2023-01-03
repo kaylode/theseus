@@ -1,15 +1,19 @@
 import logging
-import torch
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import plotly.graph_objs as go
+import torch
 
 mpl.use("Agg")
 
-from typing import Dict, List
-from .subscriber import LoggerSubscriber
-from tabulate import tabulate
 from inspect import getframeinfo, stack
+from typing import Dict, List
+
+from tabulate import tabulate
+
+from .subscriber import LoggerSubscriber
+
 
 def get_type(value):
     if isinstance(value, torch.nn.Module):
@@ -23,22 +27,27 @@ def get_type(value):
             return LoggerObserver.EMBED
     if isinstance(value, (int, float)):
         return LoggerObserver.SCALAR
-    
-    LoggerObserver.text(f'Fail to log undefined type: {type(value)}', level=LoggerObserver.CRITICAL)
+
+    LoggerObserver.text(
+        f"Fail to log undefined type: {type(value)}",
+        level=LoggerObserver.CRITICAL,
+    )
     raise ValueError()
+
 
 class LoggerObserver(object):
     """Logger Oberserver Degisn Pattern
     notifies every subscribers when .log() is called
     """
-    SCALAR = 'scalar'
-    FIGURE = 'figure'
-    TORCH_MODULE = 'torch_module'
-    TEXT = 'text'
-    SPECIAL_TEXT = 'special_text'
-    EMBED = 'embedding'
-    TABLE = 'table'
-    VIDEO = 'video'
+
+    SCALAR = "scalar"
+    FIGURE = "figure"
+    TORCH_MODULE = "torch_module"
+    TEXT = "text"
+    SPECIAL_TEXT = "special_text"
+    EMBED = "embedding"
+    TABLE = "table"
+    VIDEO = "video"
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -52,11 +61,11 @@ class LoggerObserver(object):
     def __new__(cls, name, *args, **kwargs):
         if name in LoggerObserver.instances.keys():
             return LoggerObserver.instances[name]
-            
+
         return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
-        from .stdout_logger import StdoutLogger # to circumvent circular import
+        from .stdout_logger import StdoutLogger  # to circumvent circular import
 
         self.subscriber = []
         self.name = name
@@ -64,7 +73,7 @@ class LoggerObserver(object):
         # Init with a stdout logger
         logger = StdoutLogger(__name__, debug=True)
         self.subscribe(logger)
-        
+
         LoggerObserver.instances[name] = self
 
     @classmethod
@@ -80,66 +89,34 @@ class LoggerObserver(object):
     def log(self, logs: List[Dict]):
         for subscriber in self.subscriber:
             for log in logs:
-                tag = log['tag']
-                value = log['value']
-                log_type = log['type'] if 'type' in log.keys() else get_type(value)
-                kwargs = log['kwargs'] if 'kwargs' in log.keys() else {}
+                tag = log["tag"]
+                value = log["value"]
+                log_type = log["type"] if "type" in log.keys() else get_type(value)
+                kwargs = log["kwargs"] if "kwargs" in log.keys() else {}
 
                 if log_type == LoggerObserver.SCALAR:
-                    subscriber.log_scalar(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_scalar(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.FIGURE:
-                    subscriber.log_figure(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_figure(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.TORCH_MODULE:
-                    subscriber.log_torch_module(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_torch_module(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.TEXT:
-                    subscriber.log_text(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_text(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.EMBED:
-                    subscriber.log_embedding(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_embedding(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.SPECIAL_TEXT:
-                    subscriber.log_spec_text(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_spec_text(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.TABLE:
-                    subscriber.log_table(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_table(tag=tag, value=value, **kwargs)
 
                 if log_type == LoggerObserver.VIDEO:
-                    subscriber.log_video(
-                        tag=tag,
-                        value=value,
-                        **kwargs
-                    )
+                    subscriber.log_video(tag=tag, value=value, **kwargs)
 
     def text(self, value, level):
         """
@@ -147,24 +124,32 @@ class LoggerObserver(object):
         """
         caller = getframeinfo(stack()[1][0])
         function_name = stack()[1][3]
-        filename = '//'.join(caller.filename.split('theseus')[1:])[1:] # split filename based on project name
+        filename = "//".join(caller.filename.split("theseus")[1:])[
+            1:
+        ]  # split filename based on project name
         lineno = caller.lineno
 
-        self.log([{
-            'tag': 'stdout',
-            'value': value,
-            'type': LoggerObserver.TEXT,
-            'kwargs': {
-                'level': level,
-                'lineno': lineno,
-                'filename': filename,
-                'funcname': function_name
-            }
-        }])
+        self.log(
+            [
+                {
+                    "tag": "stdout",
+                    "value": value,
+                    "type": LoggerObserver.TEXT,
+                    "kwargs": {
+                        "level": level,
+                        "lineno": lineno,
+                        "filename": filename,
+                        "funcname": function_name,
+                    },
+                }
+            ]
+        )
 
     def __repr__(self) -> str:
         table_headers = ["Subscribers"]
         table = tabulate(
-            [[type(i).__name__] for i in self.subscriber], headers=table_headers, tablefmt="fancy_grid"
+            [[type(i).__name__] for i in self.subscriber],
+            headers=table_headers,
+            tablefmt="fancy_grid",
         )
         return "Logger subscribers: \n" + table

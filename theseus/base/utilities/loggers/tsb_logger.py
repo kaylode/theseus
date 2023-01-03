@@ -1,24 +1,28 @@
+import glob
 import io
 import os
-import glob
-import torch
 import traceback
+
 import pandas as pd
+import torch
 from PIL import Image
-from torchvision.transforms import ToTensor
-from torch.utils.tensorboard import SummaryWriter
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import ToTensor
 
 from theseus.base.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
-LOGGER = LoggerObserver.getLogger('main')
+
+LOGGER = LoggerObserver.getLogger("main")
+
 
 class TensorboardLogger(LoggerSubscriber):
     """
     Logger for Tensorboard visualization
     :param log_dir: Path to save checkpoint
     """
+
     def __init__(self, log_dir, resume=None):
-        self.log_dir = log_dir      
+        self.log_dir = log_dir
         self.writer = SummaryWriter(log_dir=self.log_dir)
 
         # Load old logging
@@ -56,7 +60,16 @@ class TensorboardLogger(LoggerSubscriber):
         """
         self.writer.add_graph(value, inputs)
 
-    def log_embedding(self, tag, value, label_img=None, step=0, metadata=None, metadata_header=None, **kwargs):
+    def log_embedding(
+        self,
+        tag,
+        value,
+        label_img=None,
+        step=0,
+        metadata=None,
+        metadata_header=None,
+        **kwargs
+    ):
         """
         Write a embedding projection to tensorboard
         :param value: (torch.Tensor) embedding (N, D)
@@ -65,11 +78,12 @@ class TensorboardLogger(LoggerSubscriber):
         """
         self.writer.add_embedding(
             tag=tag,
-            mat=value, 
-            label_img = label_img, 
-            metadata=metadata, 
-            metadata_header = metadata_header,
-            global_step=step)
+            mat=value,
+            label_img=label_img,
+            metadata=metadata,
+            metadata_header=metadata_header,
+            global_step=step,
+        )
 
     def load(self, old_log):
         """
@@ -80,7 +94,7 @@ class TensorboardLogger(LoggerSubscriber):
 
         for _, row in all_logs.iterrows():
             tag, value, step = row
-            self.log_scalar(tag,value,step)
+            self.log_scalar(tag, value, step)
 
         for _, row in all_figs.iterrows():
             tag, value, step = row
@@ -138,9 +152,13 @@ def tflog2pandas(path: str) -> pd.DataFrame:
 
     # Dirty catch of DataLossError
     except Exception:
-        LOGGER.text("Event file possibly corrupt: {}".format(path), level=LoggerObserver.WARN)
+        LOGGER.text(
+            "Event file possibly corrupt: {}".format(path),
+            level=LoggerObserver.WARN,
+        )
         traceback.print_exc()
     return runlog_data, runfig_data
+
 
 def find_old_log(weight_path):
     """

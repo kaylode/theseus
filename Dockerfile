@@ -23,7 +23,7 @@ RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
     libjpeg-dev \
     unzip bzip2 ffmpeg libsm6 libxext6 \
     libpng-dev && \
-    rm -rf /var/lib/apt/lists/* 
+    rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
     chmod +x ~/miniconda.sh && \

@@ -7,7 +7,9 @@ from typing import Dict, List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from theseus.base.utilities.cuda import move_to
+
 
 def lovasz_grad(gt_sorted):
     """

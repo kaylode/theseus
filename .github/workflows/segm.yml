@@ -1,11 +1,11 @@
 name: autobuild
 on:
   push:
-    branches: 
+    branches:
       - master
       - 'V**'
   pull_request:
-    branches:    
+    branches:
       - master
       - 'V**'
 jobs:

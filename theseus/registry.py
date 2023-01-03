@@ -39,7 +39,9 @@ class Registry(Iterable[Tuple[str, Any]]):
             )
         self._obj_map[name] = obj
 
-    def register(self, obj: Any = None, prefix: str = '', override: bool = False) -> Any:
+    def register(
+        self, obj: Any = None, prefix: str = "", override: bool = False
+    ) -> Any:
         """
         Register the given object under the the name `obj.__name__`.
         Can be used as either a decorator or not. See docstring of this class for usage.

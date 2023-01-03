@@ -1,0 +1,66 @@
+[project]
+name = "theseus"
+version = "1.1.0"
+description = "A general template for various Deep Learning tasks. Strongly relies on Pytorch"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {file = "LICENSE"}
+keywords = ["pytorch", "template", "deep learning"]
+authors = [
+  {name = "Minh-Khoi Pham", email = "minhkhoi.pham@adaptcentre.ie" },
+  {name = "Hoang-Lan Nguyen", email = ""}
+]
+maintainers = [
+  {name = "Minh-Khoi Pham", email = "minhkhoi.pham@adaptcentre.ie" }
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Topic :: Deep Learning :: Template",
+  "License :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "pre-commit>=2.21.0",
+    "seaborn==0.12.0",
+    "plotly==5.10.0",
+    "matplotlib==3.4.3",
+    "webcolors==1.12",
+    "wandb==0.13.3",
+    "tensorboard==2.10.0",
+    "pyyaml==6.0",
+    "tqdm==4.64.1",
+    "gdown==4.5.1",
+    "tabulate==0.8.10",
+    "loguru==0.6.0",
+    "pytest-order==1.0.1",
+]
+
+[project.optional-dependencies]
+cv = [
+    "albumentations==1.1.0",
+    "omegaconf==2.2.3"
+]
+cv_classification = [
+    "timm",
+    "grad-cam==1.4.5"
+]
+cv_semantic = [
+    "segmentation-models-pytorch==0.3.0"
+]
+cv_detection = [
+    "ensemble_boxes==1.0.9",
+    "pycocotools==2.0.6",
+]
+
+[project.urls]  # Optional
+"Homepage" = "https://github.com/kaylode/theseus"
+
+[build-system]
+# These are the assumed default build requirements from pip:
+# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black"

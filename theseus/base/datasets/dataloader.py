@@ -1,5 +1,7 @@
 from torch.utils.data import DataLoader
+
 from .collator import ChainCollatorWrapper
+
 
 class DataLoaderWithCollator(DataLoader):
     def __init__(self, dataset, collate_fn=None, sampler=None, **kwargs) -> None:
@@ -15,7 +17,5 @@ class DataLoaderWithCollator(DataLoader):
             collate_fn = dataset.collate_fn
 
         super().__init__(
-          dataset=dataset, 
-          collate_fn=collate_fn, 
-          sampler=sampler,
-          **kwargs)
+            dataset=dataset, collate_fn=collate_fn, sampler=sampler, **kwargs
+        )

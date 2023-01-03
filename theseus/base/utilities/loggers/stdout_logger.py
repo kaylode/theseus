@@ -1,14 +1,17 @@
 import sys
+
 from loguru import logger
-from .observer import LoggerSubscriber, LoggerObserver
+
+from .observer import LoggerObserver, LoggerSubscriber
 
 logger.remove()
+
 
 class BaseTextLogger(LoggerSubscriber):
     """
     Logger class for showing text in prompt and file
     For more documents, look into https://docs.python.org/3/library/logging.html
-    
+
     Usage:
         from modules.logger import BaseTextLogger
         LOGGER = BaseTextLogger.init_logger(__name__)
@@ -35,13 +38,13 @@ class BaseTextLogger(LoggerSubscriber):
 
         if level == LoggerObserver.SUCCESS:
             logger.success(value)
-        
+
 
 class FileLogger(BaseTextLogger):
     """
     Logger class for showing text in prompt and file
     For more documents, look into https://docs.python.org/3/library/logging.html
-    
+
     Usage:
         from modules.logger import FileLogger
         LOGGER = FileLogger.init_logger(__name__)
@@ -50,7 +53,7 @@ class FileLogger(BaseTextLogger):
 
     def __init__(self, name, logdir, rotation="10 MB", debug=False):
         self.logdir = logdir
-        self.filename = f'{self.logdir}/log.txt'
+        self.filename = f"{self.logdir}/log.txt"
         super().__init__(name)
 
         if debug:
@@ -59,24 +62,27 @@ class FileLogger(BaseTextLogger):
             level = "INFO"
 
         logger.add(
-            self.filename, 
-            rotation=rotation, 
+            self.filename,
+            rotation=rotation,
             level=level,
-            filter=lambda record: "filelog" in record["extra"]
+            filter=lambda record: "filelog" in record["extra"],
         )
-    
+
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        filename = kwargs.get('filename', None)
-        funcname = kwargs.get('funcname', None)
-        lineno = kwargs.get('lineno', None)
-        with logger.contextualize(filelog=True, filename=filename, funcname=funcname, lineno=lineno):
+        filename = kwargs.get("filename", None)
+        funcname = kwargs.get("funcname", None)
+        lineno = kwargs.get("lineno", None)
+        with logger.contextualize(
+            filelog=True, filename=filename, funcname=funcname, lineno=lineno
+        ):
             return super().log_text(tag, value, level, **kwargs)
+
 
 class StdoutLogger(BaseTextLogger):
     """
     Logger class for showing text in prompt and file
     For more documents, look into https://docs.python.org/3/library/logging.html
-    
+
     Usage:
         from modules.logger import StdoutLogger
         LOGGER = StdoutLogger.init_logger(__name__)
@@ -92,17 +98,19 @@ class StdoutLogger(BaseTextLogger):
             level = "INFO"
 
         logger.add(
-            sys.stdout, 
-            backtrace=True, 
+            sys.stdout,
+            backtrace=True,
             diagnose=True,
-            level=level, 
-            format = self.message_format,
-            filter=lambda record: "stdout" in record["extra"]
+            level=level,
+            format=self.message_format,
+            filter=lambda record: "stdout" in record["extra"],
         )
 
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        filename = kwargs.get('filename', None)
-        funcname = kwargs.get('funcname', None)
-        lineno = kwargs.get('lineno', None)
-        with logger.contextualize(stdout=True, filename=filename, funcname=funcname, lineno=lineno):
+        filename = kwargs.get("filename", None)
+        funcname = kwargs.get("funcname", None)
+        lineno = kwargs.get("lineno", None)
+        with logger.contextualize(
+            stdout=True, filename=filename, funcname=funcname, lineno=lineno
+        ):
             return super().log_text(tag, value, level, **kwargs)

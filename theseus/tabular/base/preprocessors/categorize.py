@@ -1,7 +1,9 @@
-from .base import Preprocessor
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
+from .base import Preprocessor
+
 LOGGER = LoggerObserver.getLogger("main")
+
 
 class Categorize(Preprocessor):
     def __init__(self, **kwargs):
@@ -13,9 +15,12 @@ class Categorize(Preprocessor):
             for column_name in self.column_names:
                 df[column_name] = df[column_name].astype("category")
         else:
-            self.log('Column names not specified. Automatically categorizing columns with non-defined types', level=LoggerObserver.WARN)
-            self.column_names = [ col  for col, dt in df.dtypes.items() if dt == object]
+            self.log(
+                "Column names not specified. Automatically categorizing columns with non-defined types",
+                level=LoggerObserver.WARN,
+            )
+            self.column_names = [col for col, dt in df.dtypes.items() if dt == object]
             for column_name in self.column_names:
                 df[column_name] = df[column_name].astype("category")
-        self.log(f'Categorized columns: {self.column_names}')
+        self.log(f"Categorized columns: {self.column_names}")
         return df

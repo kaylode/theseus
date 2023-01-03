@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class ModelWithLoss(nn.Module):
     """Add utilitarian functions for module to work with pipeline
 
@@ -28,11 +29,7 @@ class ModelWithLoss(nn.Module):
             for metric in metrics:
                 metric.update(outputs, batch)
 
-        return {
-            'loss': loss,
-            'loss_dict': loss_dict,
-            'model_outputs': outputs
-        }
+        return {"loss": loss, "loss_dict": loss_dict, "model_outputs": outputs}
 
     def training_step(self, batch):
         return self.forward(batch)

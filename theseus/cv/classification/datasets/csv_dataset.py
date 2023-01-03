@@ -1,10 +1,13 @@
-import pandas as pd
 from typing import List, Optional
 
+import pandas as pd
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
+
 from .dataset import ClassificationDataset
 
-LOGGER = LoggerObserver.getLogger('main')
+LOGGER = LoggerObserver.getLogger("main")
+
 
 class ClassificationCSVDataset(ClassificationDataset):
     r"""ClassificationCSVDataset multi-labels classification dataset
@@ -23,7 +26,7 @@ class ClassificationCSVDataset(ClassificationDataset):
         transformatin functions
     test: bool
         whether the dataset is used for training or test
-        
+
     """
 
     def __init__(
@@ -45,10 +48,10 @@ class ClassificationCSVDataset(ClassificationDataset):
         """
         Read data from csv and load into memory
         """
-       
-        with open(self.txt_classnames, 'r') as f:
+
+        with open(self.txt_classnames, "r") as f:
             self.classnames = f.read().splitlines()
-        
+
         # Mapping between classnames and indices
         for idx, classname in enumerate(self.classnames):
             self.classes_idx[classname] = idx

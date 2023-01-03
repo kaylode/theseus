@@ -1,2 +1,2 @@
-from .visualization import *
 from .analysis import *
+from .visualization import *

@@ -1,7 +1,8 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+
 
 class Analyzer:
     def __init__(self):
@@ -29,31 +30,24 @@ class Analyzer:
     def class_dist(self, ax=None):
         # plot a bar chart
         ax2 = sns.barplot(
-            x="class", 
-            y="id", 
-            data=self.instance_df, 
-            estimator=len, 
-            errorbar=None, 
-            color='#69b3a2',
-            ax=ax)
+            x="class",
+            y="id",
+            data=self.instance_df,
+            estimator=len,
+            errorbar=None,
+            color="#69b3a2",
+            ax=ax,
+        )
 
-        ax2.set(xlabel='class id', ylabel='number of instances')
+        ax2.set(xlabel="class id", ylabel="number of instances")
 
     def sample_dimension_dist(self, ax=None):
         # plot a bar chart
-        ax = sns.scatterplot(
-            x="width", 
-            y="height", 
-            data=self.sample_df,
-            ax=ax)
+        ax = sns.scatterplot(x="width", y="height", data=self.sample_df, ax=ax)
 
     def instance_dimension_dist(self, ax=None):
         # plot a bar chart
-        sns.scatterplot(
-            x="width", 
-            y="height", 
-            data=self.instance_df,
-            ax=ax)
+        sns.scatterplot(x="width", y="height", data=self.instance_df, ax=ax)
 
     def save(self, path):
         plt.savefig(path)

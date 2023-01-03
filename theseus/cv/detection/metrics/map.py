@@ -16,19 +16,23 @@ Example execution:
 python evaluate.py --gt_csv=0_val.csv --pred_csv=0_predict.csv
 """
 
+import argparse
+import json
 import os
 import os.path as osp
-import json
-import argparse
+
 import numpy as np
-from PIL import Image
-from tqdm import tqdm
 import pandas as pd
+from PIL import Image
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tabulate import tabulate
+from tqdm import tqdm
+
 from theseus.base.metrics.metric_template import Metric
+
 from .misc import BoxWithLabel
+
 
 class MeanAveragePrecision(Metric):
     """
@@ -47,16 +51,23 @@ class MeanAveragePrecision(Metric):
     *Under the COCO context, there is no difference between AP and mAP
     """
 
-    def __init__(self, num_classes, classnames, min_iou=0.5, tmp_save_dir='./.cache', **kwargs):
-        
+    def __init__(
+        self,
+        num_classes,
+        classnames,
+        min_iou=0.5,
+        tmp_save_dir="./.cache",
+        **kwargs,
+    ):
+
         self.num_classes = num_classes
         self.classnames = classnames
         self.min_iou = min_iou
         self.tmp_save_dir = tmp_save_dir
         os.makedirs(self.tmp_save_dir, exist_ok=True)
 
-        self.gt_json = osp.join(self.tmp_save_dir, 'gt_coco.json')
-        self.pred_json = osp.join(self.tmp_save_dir, 'pred_coco.json')
+        self.gt_json = osp.join(self.tmp_save_dir, "gt_coco.json")
+        self.pred_json = osp.join(self.tmp_save_dir, "pred_coco.json")
         self.reset()
 
     def reset(self):
@@ -68,35 +79,40 @@ class MeanAveragePrecision(Metric):
         self.idx = 0
 
     def update(self, output, batch):
-        img_sizes = batch['img_sizes']
+        img_sizes = batch["img_sizes"]
         width, height = img_sizes[0, -2:]
-        target = batch["targets"] 
-        img_ids = batch['img_ids']
-        image_names = batch['img_names']
-        self.img_infos.extend([{
-            'image_id': img_id,
-            'image_name': img_name,
-            'width': int(width),
-            'height': int(height)
-        } for img_id, img_name in zip(img_ids, image_names)])
+        target = batch["targets"]
+        img_ids = batch["img_ids"]
+        image_names = batch["img_names"]
+        self.img_infos.extend(
+            [
+                {
+                    "image_id": img_id,
+                    "image_name": img_name,
+                    "width": int(width),
+                    "height": int(height),
+                }
+                for img_id, img_name in zip(img_ids, image_names)
+            ]
+        )
 
         for pred, gt in zip(output, target):
-            pred_boxes = pred['boxes'].cpu().numpy().tolist()
-            pred_clss = pred['labels'].cpu().numpy().tolist()
-            pred_scores = pred['scores'].cpu().numpy().tolist()
+            pred_boxes = pred["boxes"].cpu().numpy().tolist()
+            pred_clss = pred["labels"].cpu().numpy().tolist()
+            pred_scores = pred["scores"].cpu().numpy().tolist()
 
-            gt_boxes = gt['boxes'].numpy().tolist()
-            gt_clss = gt['labels'].numpy().tolist()
+            gt_boxes = gt["boxes"].numpy().tolist()
+            gt_clss = gt["labels"].numpy().tolist()
 
             gt_instances = [
-                BoxWithLabel(self.idx, box, int(cls), 1.0) 
+                BoxWithLabel(self.idx, box, int(cls), 1.0)
                 for box, cls in zip(gt_boxes, gt_clss)
             ]
             pred_instances = [
-                BoxWithLabel(self.idx, box, int(cls), scr) 
+                BoxWithLabel(self.idx, box, int(cls), scr)
                 for (box, cls, scr) in zip(pred_boxes, pred_clss, pred_scores)
             ]
-            self.idx+=1
+            self.idx += 1
             self.all_gt_instances.append(gt_instances)
             self.all_pred_instances.append(pred_instances)
 
@@ -110,20 +126,19 @@ class MeanAveragePrecision(Metric):
 
         img_count = 0
         item_count = 0
-        
 
         for label_idx, label in enumerate(self.classnames):
             class_dict = {
                 "supercategory": None,
-                "id": label_idx, 
+                "id": label_idx,
                 "name": label,
             }
             my_dict["categories"].append(class_dict)
 
         for instance_info, instance in zip(self.img_infos, self.all_gt_instances):
-            instance_id = instance_info['image_id']
-            instance_name = instance_info['image_name']
-            height, width = instance_info['height'], instance_info['width']
+            instance_id = instance_info["image_id"]
+            instance_name = instance_info["image_name"]
+            height, width = instance_info["height"], instance_info["width"]
             if instance_id not in self.image_id_dict.keys():
                 self.image_id_dict[instance_id] = img_count
                 img_count += 1
@@ -149,7 +164,7 @@ class MeanAveragePrecision(Metric):
                     "image_id": image_id,
                     "bbox": [int(xmin), int(ymin), int(ann_w), int(ann_h)],
                     "area": ann_w * ann_h,
-                    "category_id": int(class_id),  
+                    "category_id": int(class_id),
                     "iscrowd": 0,
                 }
                 item_count += 1
@@ -162,19 +177,19 @@ class MeanAveragePrecision(Metric):
 
     def make_pred_json_file(self, path):
         """
-           Output .json format example: (source: https://cocodataset.org/#format-results)
-            [{
-                "image_id": int, 
-                "category_id": int, 
-                "bbox": [x,y,width,height], 
-                "score": float,
-            }]
+        Output .json format example: (source: https://cocodataset.org/#format-results)
+         [{
+             "image_id": int,
+             "category_id": int,
+             "bbox": [x,y,width,height],
+             "score": float,
+         }]
         """
 
         results = []
 
         for instance_info, instance in zip(self.img_infos, self.all_pred_instances):
-            instance_id = instance_info['image_id']
+            instance_id = instance_info["image_id"]
             for item in instance:
                 class_id = int(item.get_label())
                 xmin, ymin, xmax, ymax = item.get_box()
@@ -184,7 +199,12 @@ class MeanAveragePrecision(Metric):
                     {
                         "image_id": int(self.image_id_dict[instance_id]),
                         "category_id": class_id,
-                        "bbox": [int(xmin), int(ymin), int(xmax-xmin), int(ymax-ymin)],
+                        "bbox": [
+                            int(xmin),
+                            int(ymin),
+                            int(xmax - xmin),
+                            int(ymax - ymin),
+                        ],
                         "score": float(score),
                     }
                 )
@@ -192,9 +212,8 @@ class MeanAveragePrecision(Metric):
         if osp.isfile(self.pred_json):
             os.remove(self.pred_json)
         with open(self.pred_json, "w") as outfile:
-            json.dump(results, outfile) 
+            json.dump(results, outfile)
 
-    
     def value(self):
         self.make_gt_json_file(self.gt_json)
         self.make_pred_json_file(self.pred_json)
@@ -218,9 +237,9 @@ class MeanAveragePrecision(Metric):
 
         coco_eval.evaluate()
         coco_eval.accumulate()
-        
-        recall_stat = coco_eval.eval['recall']
-        precision_stat = coco_eval.eval['precision']
+
+        recall_stat = coco_eval.eval["recall"]
+        precision_stat = coco_eval.eval["precision"]
 
         num_classes = recall_stat.shape[1]
 
@@ -229,12 +248,12 @@ class MeanAveragePrecision(Metric):
 
         for i in range(num_classes):
             recall_class = recall_stat[:, i, 0, -1]
-            precision_class = precision_stat[:, :,i, 0, -1]
-            
-            recall_class = recall_class[recall_class>-1]
+            precision_class = precision_stat[:, :, i, 0, -1]
+
+            recall_class = recall_class[recall_class > -1]
             ar = np.mean(recall_class) if recall_class.size else -1
 
-            precision_class = precision_class[precision_class>-1]
+            precision_class = precision_class[precision_class > -1]
             ap = np.mean(precision_class) if precision_class.size else -1
 
             recalls.append(ar)
@@ -243,10 +262,16 @@ class MeanAveragePrecision(Metric):
         np_precisions = np.array(precisions)
         np_recalls = np.array(recalls)
 
+        precision_all = sum(np_precisions[np_precisions != -1]) / (
+            num_classes - sum(np_precisions == -1)
+        )
+        recall_all = sum(np_recalls[np_recalls != -1]) / (
+            num_classes - sum(np_recalls == -1)
+        )
 
-
-        precision_all = sum(np_precisions[np_precisions!=-1]) / (num_classes - sum(np_precisions==-1))
-        recall_all = sum(np_recalls[np_recalls!=-1]) / (num_classes - sum(np_recalls==-1))
-
-        f1_score = 2*precision_all*recall_all / (precision_all + recall_all)
-        return {f"precision": precision_all, f"recall": recall_all, 'f1_score': f1_score}
+        f1_score = 2 * precision_all * recall_all / (precision_all + recall_all)
+        return {
+            f"precision": precision_all,
+            f"recall": recall_all,
+            "f1_score": f1_score,
+        }

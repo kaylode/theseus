@@ -1,20 +1,35 @@
 from typing import Dict
+
 try:
     import wandb as wandb_logger
 except ModuleNotFoundError:
     pass
 
 import os.path as osp
+
 import torch
+
 from theseus.base.utilities.loggers.observer import LoggerObserver, LoggerSubscriber
-LOGGER = LoggerObserver.getLogger('main')
+
+LOGGER = LoggerObserver.getLogger("main")
+
 
 class WandbLogger(LoggerSubscriber):
     """
     Logger for wandb intergration
     :param log_dir: Path to save checkpoint
     """
-    def __init__(self, unique_id:str, username:str, project_name:str, run_name:str, group_name:str = None, save_dir:str = None, config_dict:Dict = None):
+
+    def __init__(
+        self,
+        unique_id: str,
+        username: str,
+        project_name: str,
+        run_name: str,
+        group_name: str = None,
+        save_dir: str = None,
+        config_dict: Dict = None,
+    ):
         self.project_name = project_name
         self.username = username
         self.run_name = run_name
@@ -22,17 +37,18 @@ class WandbLogger(LoggerSubscriber):
         self.id = unique_id
         self.save_dir = save_dir
         self.group_name = group_name
-        
+
         wandb_logger.init(
-            id = self.id,
-            dir = self.save_dir,
+            id=self.id,
+            dir=self.save_dir,
             config=config_dict,
-            entity=username, 
+            entity=username,
             group=self.group_name,
-            project=project_name, 
-            name=run_name, 
-            resume="allow")
-            
+            project=project_name,
+            name=run_name,
+            resume="allow",
+        )
+
         wandb_logger.watch_called = False
 
     def load_state_dict(self, path):
@@ -52,7 +68,6 @@ class WandbLogger(LoggerSubscriber):
         """
         wandb_logger.save(value, base_path=base_folder)
 
-
     def log_scalar(self, tag, value, step, **kwargs):
         """
         Write a log to specified directory
@@ -61,10 +76,7 @@ class WandbLogger(LoggerSubscriber):
         :param step: (int) logging step
         """
 
-        wandb_logger.log({
-            tag: value,
-            'iterations': step
-        })
+        wandb_logger.log({tag: value, "iterations": step})
 
     def log_figure(self, tag, value, step, **kwargs):
         """
@@ -76,15 +88,9 @@ class WandbLogger(LoggerSubscriber):
 
         if isinstance(value, torch.Tensor):
             image = wandb_logger.Image(value)
-            wandb_logger.log({
-               tag: image,
-               'iterations': step
-            })
+            wandb_logger.log({tag: image, "iterations": step})
         else:
-            wandb_logger.log({
-               tag: value,
-               'iterations': step
-            })
+            wandb_logger.log({tag: value, "iterations": step})
 
     def log_torch_module(self, tag, value, log_freq, **kwargs):
         """
@@ -92,10 +98,7 @@ class WandbLogger(LoggerSubscriber):
         :param value: (nn.Module) torch model
         :param inputs: sample tensor
         """
-        wandb_logger.watch(
-          value, 
-          log="gradients", 
-          log_freq=log_freq)
+        wandb_logger.watch(value, log="gradients", log_freq=log_freq)
 
     def log_spec_text(self, tag, value, step, **kwargs):
         """
@@ -103,10 +106,7 @@ class WandbLogger(LoggerSubscriber):
         :param value: (str) captions
         """
         texts = wandb_logger.Html(value)
-        wandb_logger.log({
-            tag: texts,
-            'iterations': step
-        })
+        wandb_logger.log({tag: texts, "iterations": step})
 
     def log_table(self, tag, value, columns, step, **kwargs):
         """
@@ -122,12 +122,12 @@ class WandbLogger(LoggerSubscriber):
             [3, fig4, 1]
         ]
         columns=[
-            "id", 
-            "image", 
+            "id",
+            "image",
             "prediction"
         ]
         """
-        
+
         # Workaround for tensor image, have not figured out how to use plt.Figure :<
         new_value = []
         for record in value:
@@ -139,10 +139,7 @@ class WandbLogger(LoggerSubscriber):
             new_value.append(new_record)
 
         table = wandb_logger.Table(data=new_value, columns=columns)
-        wandb_logger.log({
-            tag: table,
-            'iterations': step
-        })
+        wandb_logger.log({tag: table, "iterations": step})
 
     def log_video(self, tag, value, step, fps, **kwargs):
         """
@@ -150,11 +147,8 @@ class WandbLogger(LoggerSubscriber):
         :param value: numpy array (time, channel, height, width)
         :param fps: int
         """
-        # axes are 
-        wandb_logger.log({
-            tag: wandb_logger.Video(value, fps=fps),
-            "iterations": step
-        })
+        # axes are
+        wandb_logger.log({tag: wandb_logger.Video(value, fps=fps), "iterations": step})
 
     def __del__(self):
         wandb_logger.finish()
@@ -165,11 +159,11 @@ def find_run_id(dirname):
     Read a .txt file which contains wandb run id
     """
 
-    wandb_id_file = osp.join(dirname, 'wandb_id.txt')
+    wandb_id_file = osp.join(dirname, "wandb_id.txt")
 
     if not osp.isfile(wandb_id_file):
         raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
     else:
-        with open(wandb_id_file, 'r') as f:
+        with open(wandb_id_file, "r") as f:
             wandb_id = f.read().rstrip()
         return wandb_id

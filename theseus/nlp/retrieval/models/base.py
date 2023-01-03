@@ -1,11 +1,13 @@
 import os
 import os.path as osp
-import scipy
-import numpy as np
 import pickle
-import torch
+
+import numpy as np
+import scipy
 import sentence_transformers.util as sentfms_utils
+import torch
 from sklearn.metrics.pairwise import linear_kernel
+
 
 class BaseRetrieval:
     def __init__(self, *args, **kwargs):
@@ -21,11 +23,11 @@ class BaseRetrieval:
         folder_name = osp.dirname(outpath)
         os.makedirs(folder_name, exist_ok=True)
         pickle.dump(embeddings, open(outpath, "wb"))
-        print(f'Save pickle to {outpath}')
+        print(f"Save pickle to {outpath}")
 
     @staticmethod
     def load_embeddings(path):
-        return pickle.load(open(path, 'rb'))
+        return pickle.load(open(path, "rb"))
 
     def get_top_k_similarity(self, encoded_query, encoded_corpus, top_k=5):
         results = []
@@ -40,28 +42,32 @@ class BaseRetrieval:
             outputs = sentfms_utils.semantic_search(
                 query_embeddings=encoded_query,
                 corpus_embeddings=encoded_corpus,
-                top_k=top_k
+                top_k=top_k,
             )
             for batch in outputs:
                 tmp = []
                 for item in batch:
-                    tmp.append((item['corpus_id'], item['score']))
+                    tmp.append((item["corpus_id"], item["score"]))
                 results.append(tmp)
 
         return results
 
     def retrieve_similar(self, querys, corpus, top_k=5):
         if isinstance(querys, list):
-            encoded_query  = self.encode_query(querys)
-        elif isinstance(querys, str): ## load from pickle path
-            encoded_query = self.load_embeddings(querys) # return encoded querys and query ids
+            encoded_query = self.encode_query(querys)
+        elif isinstance(querys, str):  ## load from pickle path
+            encoded_query = self.load_embeddings(
+                querys
+            )  # return encoded querys and query ids
         else:
             raise ValueError()
 
         if isinstance(corpus, list):
-            encoded_corpus  = self.encode_corpus(corpus)
-        elif isinstance(corpus, str): ## load from pickle path
-            encoded_corpus = self.load_embeddings(corpus) # return encoded querys and query ids
+            encoded_corpus = self.encode_corpus(corpus)
+        elif isinstance(corpus, str):  ## load from pickle path
+            encoded_corpus = self.load_embeddings(
+                corpus
+            )  # return encoded querys and query ids
         else:
             raise ValueError()
 
@@ -74,4 +80,4 @@ class BaseRetrieval:
             if self.device:
                 encoded_corpus = encoded_corpus.to(self.device)
 
-        return self.get_top_k_similarity(encoded_query, encoded_corpus,top_k=top_k)
+        return self.get_top_k_similarity(encoded_query, encoded_corpus, top_k=top_k)

@@ -1,9 +1,11 @@
-from typing import Iterable, List
 import os
-from PIL import Image
+from typing import Iterable, List
+
 import numpy as np
 import torch
 import torch.utils.data as data
+from PIL import Image
+
 
 class ConcatDataset(data.ConcatDataset):
     """
@@ -12,6 +14,7 @@ class ConcatDataset(data.ConcatDataset):
     datasets: `Iterable[data.Dataset]`
         list of datasets
     """
+
     def __init__(self, datasets: Iterable[data.Dataset], **kwargs) -> None:
         super().__init__(datasets)
 
@@ -22,11 +25,12 @@ class ConcatDataset(data.ConcatDataset):
     def __getattr__(self, attr):
         if hasattr(self, attr):
             return getattr(self, attr)
-            
+
         if hasattr(self.datasets[0], attr):
             return getattr(self.datasets[0], attr)
 
         raise AttributeError
+
 
 class ChainDataset(data.ConcatDataset):
     """
@@ -35,6 +39,7 @@ class ChainDataset(data.ConcatDataset):
     datasets: `Iterable[data.Dataset]`
         list of datasets
     """
+
     def __init__(self, datasets: Iterable[data.Dataset], **kwargs) -> None:
         super().__init__(datasets)
 
@@ -42,9 +47,10 @@ class ChainDataset(data.ConcatDataset):
         self.classnames = datasets[0].classnames
         self.collate_fn = datasets[0].collate_fn
 
+
 class ImageDataset(data.Dataset):
     """
-    Dataset contains folder of images 
+    Dataset contains folder of images
 
     image_dir: `str`
         path to folder of images
@@ -53,7 +59,10 @@ class ImageDataset(data.Dataset):
     transform: `List`
         list of transformation
     """
-    def __init__(self, image_dir: str, txt_classnames:str, transform: List =None, **kwargs):
+
+    def __init__(
+        self, image_dir: str, txt_classnames: str, transform: List = None, **kwargs
+    ):
         super().__init__()
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
@@ -64,7 +73,7 @@ class ImageDataset(data.Dataset):
         """
         Load filepaths into memory
         """
-        with open(self.txt_classnames, 'r') as f:
+        with open(self.txt_classnames, "r") as f:
             self.classnames = f.read().splitlines()
         self.fns = []
         image_names = os.listdir(self.image_dir)
@@ -77,32 +86,27 @@ class ImageDataset(data.Dataset):
         """
         image_name = self.fns[index]
         image_path = os.path.join(self.image_dir, image_name)
-        im = Image.open(image_path).convert('RGB')
+        im = Image.open(image_path).convert("RGB")
         width, height = im.width, im.height
 
         if self.transform is not None:
-            try:    
+            try:
                 im = self.transform(im)
             except:
-                im = self.transform(image=np.array(im))['image']
-
+                im = self.transform(image=np.array(im))["image"]
 
         return {
-            "input": im, 
-            'img_name': image_name,
-            'ori_size': [width, height]
+            "input": im,
+            "img_name": image_name,
+            "ori_size": [width, height],
         }
 
     def __len__(self):
         return len(self.fns)
 
     def collate_fn(self, batch: List):
-        imgs = torch.stack([s['input'] for s in batch])
-        img_names = [s['img_name'] for s in batch]
-        ori_sizes = [s['ori_size'] for s in batch]
+        imgs = torch.stack([s["input"] for s in batch])
+        img_names = [s["img_name"] for s in batch]
+        ori_sizes = [s["ori_size"] for s in batch]
 
-        return {
-            'inputs': imgs,
-            'img_names': img_names,
-            'ori_sizes': ori_sizes
-        }
+        return {"inputs": imgs, "img_names": img_names, "ori_sizes": ori_sizes}

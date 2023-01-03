@@ -1,11 +1,14 @@
 import os
-import pandas as pd
 from typing import List, Optional
 
+import pandas as pd
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
+
 from .dataset import ClassificationDataset
 
-LOGGER = LoggerObserver.getLogger('main')
+LOGGER = LoggerObserver.getLogger("main")
+
 
 class ClassificationImageFolderDataset(ClassificationDataset):
     r"""ClassificationImageFolderDataset multi-labels classification dataset
@@ -47,9 +50,9 @@ class ClassificationImageFolderDataset(ClassificationDataset):
         """
 
         # Get classnames
-        with open(self.txt_classnames, 'r') as f:
+        with open(self.txt_classnames, "r") as f:
             self.classnames = f.read().splitlines()
-        
+
         # Mapping between classnames and indices
         for idx, classname in enumerate(self.classnames):
             self.classes_idx[classname] = idx
@@ -61,7 +64,7 @@ class ClassificationImageFolderDataset(ClassificationDataset):
             image_names = os.listdir(folder_name)
             for image_name in image_names:
                 self.fns.append([os.path.join(folder_name, image_name), label])
-    
+
     def _calculate_classes_dist(self):
         """
         Calculate distribution of classes

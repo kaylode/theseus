@@ -1,12 +1,15 @@
 from typing import List, Optional
-import torch
+
 import numpy as np
 import pandas as pd
+import torch
 from PIL import Image
-from .dataset import SemanticDataset
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
-LOGGER = LoggerObserver.getLogger('main')
+from .dataset import SemanticDataset
+
+LOGGER = LoggerObserver.getLogger("main")
 
 
 class SemanticCSVDataset(SemanticDataset):
@@ -23,16 +26,18 @@ class SemanticCSVDataset(SemanticDataset):
         path to directory contains masks
     transform: Optional[List]
         transformatin functions
-        
+
     """
+
     def __init__(
-            self, 
-            image_dir: str, 
-            mask_dir: str, 
-            csv_path: str, 
-            txt_classnames: str,
-            transform: Optional[List] = None,
-            **kwargs):
+        self,
+        image_dir: str,
+        mask_dir: str,
+        csv_path: str,
+        txt_classnames: str,
+        transform: Optional[List] = None,
+        **kwargs
+    ):
         super(SemanticCSVDataset, self).__init__(**kwargs)
         self.image_dir = image_dir
         self.mask_dir = mask_dir
@@ -46,14 +51,14 @@ class SemanticCSVDataset(SemanticDataset):
         Read data from csv and load into memory
         """
 
-        with open(self.txt_classnames, 'r') as f:
+        with open(self.txt_classnames, "r") as f:
             self.classnames = f.read().splitlines()
-        
+
         # Mapping between classnames and indices
         for idx, classname in enumerate(self.classnames):
             self.classes_idx[classname] = idx
         self.num_classes = len(self.classnames)
-        
+
         df = pd.read_csv(self.csv_path)
         for idx, row in df.iterrows():
             img_name, mask_name = row
@@ -71,11 +76,10 @@ class SemanticCSVDataset(SemanticDataset):
             self.classes_dist.append(label)
         return self.classes_dist
 
-
     def _load_mask(self, label_path):
-        mask = Image.open(label_path).convert('L')
+        mask = Image.open(label_path).convert("L")
         mask = np.array(mask)  # (H,W) with each pixel value represent one class
-        return mask 
+        return mask
 
     def _encode_masks(self, masks):
         """
@@ -83,7 +87,9 @@ class SemanticCSVDataset(SemanticDataset):
         Output should be one-hot encoding of segmentation masks [B, NC, H, W]
         """
         if self.num_classes == 2:
-            masks[masks>0] = 1.0
-        one_hot = torch.nn.functional.one_hot(masks.long(), num_classes=self.num_classes) # (B,H,W,NC)
-        one_hot = one_hot.permute(0, 3, 1, 2) # (B,NC,H,W)
+            masks[masks > 0] = 1.0
+        one_hot = torch.nn.functional.one_hot(
+            masks.long(), num_classes=self.num_classes
+        )  # (B,H,W,NC)
+        one_hot = one_hot.permute(0, 3, 1, 2)  # (B,NC,H,W)
         return one_hot.float()

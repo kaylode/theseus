@@ -1,23 +1,21 @@
 import os
 import os.path as osp
-import torch
-from PIL import Image
 from typing import Dict, List
 
-class ClassificationDataset(torch.utils.data.Dataset):
-    r"""Base dataset for classification tasks
-    """
+import torch
+from PIL import Image
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+
+class ClassificationDataset(torch.utils.data.Dataset):
+    r"""Base dataset for classification tasks"""
+
+    def __init__(self, **kwargs):
         super(ClassificationDataset, self).__init__(**kwargs)
         self.classes_idx = {}
         self.classnames = None
         self.transform = None
-        self.fns = [] # list of [filename, label]
-        self.classes_dist = [] # Classes distribution (for balanced sampler)
+        self.fns = []  # list of [filename, label]
+        self.classes_dist = []  # Classes distribution (for balanced sampler)
 
     def _load_data(self):
         raise NotImplementedError
@@ -29,7 +27,7 @@ class ClassificationDataset(torch.utils.data.Dataset):
         image_path, label_name = self.fns[idx]
         image_name = osp.basename(image_path)
 
-        im = Image.open(image_path).convert('RGB')
+        im = Image.open(image_path).convert("RGB")
         width, height = im.width, im.height
         class_idx = self.classes_idx[label_name]
 
@@ -37,14 +35,14 @@ class ClassificationDataset(torch.utils.data.Dataset):
             im = self.transform(im)
 
         target = {}
-        target['labels'] = [class_idx]
-        target['label_name'] = label_name
+        target["labels"] = [class_idx]
+        target["label_name"] = label_name
 
         return {
-            "input": im, 
-            'target': target,
-            'img_name': image_name,
-            'ori_size': [width, height]
+            "input": im,
+            "target": target,
+            "img_name": image_name,
+            "ori_size": [width, height],
         }
 
     def __len__(self) -> int:
@@ -54,14 +52,14 @@ class ClassificationDataset(torch.utils.data.Dataset):
         """
         Collator for wrapping a batch
         """
-        imgs = torch.stack([s['input'] for s in batch])
-        targets = torch.stack([torch.LongTensor(s['target']['labels']) for s in batch])
-        img_names = [s['img_name'] for s in batch]
-        ori_sizes = [s['ori_size'] for s in batch]
+        imgs = torch.stack([s["input"] for s in batch])
+        targets = torch.stack([torch.LongTensor(s["target"]["labels"]) for s in batch])
+        img_names = [s["img_name"] for s in batch]
+        ori_sizes = [s["ori_size"] for s in batch]
 
         return {
-            'inputs': imgs,
-            'targets': targets,
-            'img_names': img_names,
-            'ori_sizes': ori_sizes,
+            "inputs": imgs,
+            "targets": targets,
+            "img_names": img_names,
+            "ori_sizes": ori_sizes,
         }

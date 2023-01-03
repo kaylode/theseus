@@ -50,9 +50,9 @@ loss:
     cost_bbox: 5
     cost_giou: 2
     eos_coef: 0.1
-metrics: 
+metrics:
   - name: DetectionPrecisionRecall
-    args: 
+    args:
        min_conf: 0.2
        min_iou: 0.5
        eps: 1e-6

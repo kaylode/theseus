@@ -1,31 +1,39 @@
 """ CUDA / AMP utils
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import torch
 from typing import Any
+
+import torch
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
-LOGGER = LoggerObserver.getLogger('main')
+LOGGER = LoggerObserver.getLogger("main")
+
 
 def get_devices_info(device_names="0"):
 
-    if device_names.startswith('cuda'):
-        device_names = device_names.split('cuda:')[1]
-    elif device_names.startswith('cpu'):
+    if device_names.startswith("cuda"):
+        device_names = device_names.split("cuda:")[1]
+    elif device_names.startswith("cpu"):
         return "CPU"
 
     devices_info = ""
-    for i, device_id in enumerate(device_names.split(',')):
+    for i, device_id in enumerate(device_names.split(",")):
         p = torch.cuda.get_device_properties(i)
         devices_info += f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
     return devices_info
 
-def get_device(name='cpu') -> torch.device:
-    if name.startswith('cuda'):
+
+def get_device(name="cpu") -> torch.device:
+    if name.startswith("cuda"):
         if not torch.cuda.is_available():
-            LOGGER.text("CUDA is not available. Using CPU...", level=LoggerObserver.WARN)
-            name = 'cpu'
+            LOGGER.text(
+                "CUDA is not available. Using CPU...",
+                level=LoggerObserver.WARN,
+            )
+            name = "cpu"
     return torch.device(name)
+
 
 def move_to(obj: Any, device: torch.device):
     """Credit: https://discuss.pytorch.org/t/pytorch-tensor-to-device-for-a-list-of-dict/66283
@@ -46,8 +54,9 @@ def move_to(obj: Any, device: torch.device):
         return [move_to(v, device) for v in obj]
     if isinstance(obj, tuple):
         return tuple(move_to(list(obj), device))
-    
+
     return obj
+
 
 def detach(obj: Any):
     """Credit: https://discuss.pytorch.org/t/pytorch-tensor-to-device-for-a-list-of-dict/66283

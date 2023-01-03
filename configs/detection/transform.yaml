@@ -13,11 +13,11 @@ train:
                 order: cxcywh
       - name: AlbCompose
         args:
-          bbox_params: 
+          bbox_params:
             name: AlbBboxParams
-            args: 
-              format: 'yolo' 
-              min_area: 0 
+            args:
+              format: 'yolo'
+              min_area: 0
               min_visibility: 0
               label_fields: ['class_labels']
           transforms:
@@ -47,11 +47,11 @@ val:
                 order: cxcywh
       - name: AlbCompose
         args:
-          bbox_params: 
+          bbox_params:
             name: AlbBboxParams
-            args: 
-              format: 'yolo' 
-              min_area: 0 
+            args:
+              format: 'yolo'
+              min_area: 0
               min_visibility: 0
               label_fields: ['class_labels']
           transforms:
