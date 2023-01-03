@@ -8,7 +8,7 @@ license = {file = "LICENSE"}
 keywords = ["pytorch", "template", "deep learning"]
 authors = [
   {name = "Minh-Khoi Pham", email = "minhkhoi.pham@adaptcentre.ie" },
-  {name = "Hoang-Lan Nguyen", email = ""}
+  {name = "Hoang-Lan Nguyen", email = "nhlan091000@gmail.com"}
 ]
 maintainers = [
   {name = "Minh-Khoi Pham", email = "minhkhoi.pham@adaptcentre.ie" }
@@ -61,6 +61,9 @@ cv_detection = [
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["theseus"]
 
 [tool.isort]
 profile = "black"
