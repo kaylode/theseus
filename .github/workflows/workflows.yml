@@ -1,8 +1,13 @@
 name: autobuild
 on:
   push:
-    branches: [main]
+    branches: 
+      - master
+      - 'V**'
   pull_request:
+    branches:    
+      - master
+      - 'V**'
 jobs:
   build:
     runs-on: ubuntu-latest
