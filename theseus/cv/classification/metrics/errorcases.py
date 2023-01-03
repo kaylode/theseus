@@ -38,7 +38,7 @@ class ErrorCases(Metric):
         images = batch["inputs"]
         targets = batch["targets"] 
         outputs, probs = logits2labels(outputs, label_type=self.type, return_probs=True, threshold=self.threshold)
-        targets = targets.squeeze().long()
+        targets = targets.squeeze(-1).long()
     
         outputs = outputs.numpy().tolist()
         targets = targets.numpy().tolist()

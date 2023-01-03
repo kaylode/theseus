@@ -9,7 +9,7 @@ from theseus.cv.classification.models import MODEL_REGISTRY
 from theseus.cv.classification.augmentations import TRANSFORM_REGISTRY
 from theseus.cv.classification.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loggers import LoggerObserver
+from theseus.base.utilities.loggers import LoggerObserver
 from theseus.base.pipeline import BaseTestPipeline
 
 import os
@@ -22,7 +22,7 @@ class TestPipeline(BaseTestPipeline):
             opt: Config
         ):
 
-        super(TestPipeline, self).__init__()
+        super(TestPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_globals(self):

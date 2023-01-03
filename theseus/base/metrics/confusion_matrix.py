@@ -77,7 +77,7 @@ class ConfusionMatrix(Metric):
         outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 
         self.outputs +=  outputs.numpy().tolist()
-        self.targets +=  targets.squeeze().numpy().tolist()
+        self.targets +=  targets.numpy().tolist()
         
     def reset(self):
         self.outputs = []

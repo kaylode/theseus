@@ -22,7 +22,6 @@ class Accuracy(Metric):
         target = batch["targets"] 
 
         prediction = logits2labels(output, label_type=self.type, threshold=self.threshold)
-        target = target.squeeze()
 
         correct = (prediction.view(-1) == target.view(-1)).sum()
 

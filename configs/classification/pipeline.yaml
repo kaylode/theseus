@@ -1,9 +1,9 @@
 global:
   exp_name: null
   exist_ok: false
-  debug: true
+  debug: false
   cfg_transform: configs/classification/transform.yaml
-  save_dir: /content/main/runs
+  save_dir: runs
   device: cuda:0
   pretrained: null
   resume: null
@@ -11,21 +11,17 @@ trainer:
   name: SupervisedTrainer
   args:
     num_iterations: 10000
-    clip_grad: 10.0
+    clip_grad: 1.0
     evaluate_interval: 1
-    print_interval: 20
-    save_interval: 1000
+    print_interval: 100
+    save_interval: 2000
     use_fp16: true
 callbacks:
   - name: LoggerCallbacks
-    args: null
   - name: CheckpointCallbacks
     args:
       best_key: bl_acc
-  - name: VisualizerCallbacks
-    args: null
-  - name: TensorboardCallbacks
-    args: null
+  - name: ClassificationVisualizerCallbacks
 model:
   name: BaseTimmModel
   args:
@@ -35,16 +31,12 @@ loss:
   name: ClassificationCELoss
 metrics:
   - name: Accuracy
-    args: null
   - name: BalancedAccuracyMetric
-    args: null
   - name: F1ScoreMetric
     args:
       average: weighted
   - name: ConfusionMatrix
-    args: null
   - name: ErrorCases
-    args:
 optimizer:
   name: AdamW
   args:
@@ -66,19 +58,19 @@ data:
     train:
       name: ClassificationImageFolderDataset
       args:
-        image_dir: /content/main/data/dog-vs-cats/train
-        txt_classnames: configs/classification/classes.txt
+        image_dir: samples/dog-vs-cats/train
+        txt_classnames: samples/dog-vs-cats/classnames.txt
     val:
       name: ClassificationImageFolderDataset
       args:
-        image_dir: /content/main/data/dog-vs-cats/val
-        txt_classnames: configs/classification/classes.txt
+        image_dir: samples/dog-vs-cats/val
+        txt_classnames: samples/dog-vs-cats/classnames.txt
   dataloader:
     train:
       name: DataLoaderWithCollator
       args:
-        batch_size: 32
-        drop_last: true
+        batch_size: 16
+        drop_last: false
         shuffle: false
         collate_fn:
           name: MixupCutmixCollator
@@ -92,6 +84,6 @@ data:
     val:
       name: DataLoaderWithCollator
       args:
-        batch_size: 32
+        batch_size: 16
         drop_last: false
         shuffle: true

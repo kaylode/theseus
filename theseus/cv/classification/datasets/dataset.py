@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 import torch
 from PIL import Image
 from typing import Dict, List
@@ -25,8 +26,8 @@ class ClassificationDataset(torch.utils.data.Dataset):
         """
         Get one item
         """
-        image_name, label_name = self.fns[idx]
-        image_path = os.path.join(self.image_dir, image_name)
+        image_path, label_name = self.fns[idx]
+        image_name = osp.basename(image_path)
 
         im = Image.open(image_path).convert('RGB')
         width, height = im.width, im.height
