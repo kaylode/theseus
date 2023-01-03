@@ -1,4 +1,4 @@
-name: autobuild
+name: autobuild_segm
 on:
   push:
     branches:

@@ -1,4 +1,4 @@
-name: autobuild
+name: autobuild_clf
 on:
   push:
     branches:
