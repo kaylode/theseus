@@ -1,5 +1,0 @@
-pyvi==0.1.1
-py_vncorenlp==0.1.3
-spacy==3.4.2
-transformers==4.25.1
-nltk==3.7
