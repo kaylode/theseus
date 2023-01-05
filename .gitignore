@@ -3,3 +3,5 @@ __pycache__/
 .pytest_cache
 runs/
 *.zip
+catboost_info/
+.cache

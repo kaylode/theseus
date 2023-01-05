@@ -31,6 +31,14 @@ class BasePipeline(object):
         # Main Loggers
         self.logger = LoggerObserver.getLogger("main")
 
+        # Global variables
+        self.exp_name = self.opt["global"].get("exp_name", None)
+        self.exist_ok = self.opt["global"].get("exist_ok", False)
+        self.debug = self.opt["global"].get("debug", False)
+        self.device_name = self.opt["global"].get("device", "cpu")
+        self.resume = self.opt["global"].get("resume", None)
+        self.pretrained = self.opt["global"].get("pretrained", None)
+
         # Experiment name
         if self.exp_name:
             self.savedir = os.path.join(self.opt["global"]["save_dir"], self.exp_name)
@@ -51,11 +59,6 @@ class BasePipeline(object):
         image_logger = ImageWriter(self.savedir)
         self.logger.subscribe(image_logger)
 
-        # Global variables
-        self.exp_name = self.opt["global"]["exp_name"]
-        self.exist_ok = self.opt["global"]["exist_ok"]
-        self.debug = self.opt["global"]["debug"]
-        self.device_name = self.opt["global"]["device"]
         self.transform_cfg = Config.load_yaml(self.opt["global"]["cfg_transform"])
         self.device = get_device(self.device_name)
 
@@ -117,7 +120,7 @@ class BasePipeline(object):
         )
 
     def init_model(self):
-        CLASSNAMES = self.val_dataset.classnames
+        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
         model = get_instance(
             self.opt["model"],
             registry=self.model_registry,
@@ -128,7 +131,7 @@ class BasePipeline(object):
         return model
 
     def init_criterion(self):
-        CLASSNAMES = self.val_dataset.classnames
+        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
         criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
@@ -150,7 +153,7 @@ class BasePipeline(object):
         self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
 
     def init_metrics(self):
-        CLASSNAMES = self.val_dataset.classnames
+        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
         self.metrics = get_instance_recursively(
             self.opt["metrics"],
             registry=self.metric_registry,
@@ -166,14 +169,12 @@ class BasePipeline(object):
         )
 
     def init_loading(self):
-        self.resume = self.opt["global"]["resume"]
-        self.pretrained = self.opt["global"]["pretrained"]
         self.last_epoch = -1
-        if self.pretrained:
+        if getattr(self, "pretrained", None):
             state_dict = torch.load(self.pretrained, map_location="cpu")
             self.model.model = load_state_dict(self.model.model, state_dict, "model")
 
-        if self.resume:
+        if getattr(self, "resume", None):
             state_dict = torch.load(self.resume, map_location="cpu")
             self.model.model = load_state_dict(self.model.model, state_dict, "model")
             self.optimizer = load_state_dict(self.optimizer, state_dict, "optimizer")
@@ -193,11 +194,11 @@ class BasePipeline(object):
                     "batch_size": self.opt["data"]["dataloader"]["val"]["args"][
                         "batch_size"
                     ],
-                    "last_epoch": self.last_epoch,
+                    "last_epoch": getattr(self, "last_epoch", -1),
                 },
             )
 
-            if self.resume:
+            if getattr(self, "resume", None):
                 state_dict = torch.load(self.resume)
                 self.scheduler = load_state_dict(
                     self.scheduler, state_dict, "scheduler"
@@ -210,8 +211,8 @@ class BasePipeline(object):
             self.opt["callbacks"],
             print_interval=self.opt["trainer"]["args"]["print_interval"],
             save_interval=self.opt["trainer"]["args"]["save_interval"],
-            save_dir=self.savedir,
-            resume=self.resume,
+            save_dir=getattr(self, "save_dir", "runs"),
+            resume=getattr(self, "resume", None),
             config_dict=self.opt,
             registry=self.callbacks_registry,
         )
@@ -226,7 +227,7 @@ class BasePipeline(object):
             metrics=getattr(self, "metrics", None),
             optimizer=getattr(self, "optimizer", None),
             scheduler=getattr(self, "scheduler", None),
-            debug=self.debug,
+            debug=getattr(self, "debug", False),
             registry=self.trainer_registry,
             callbacks=callbacks,
         )
@@ -278,9 +279,6 @@ class BasePipeline(object):
 
     def evaluate(self):
         self.init_pipeline(train=False)
-        writer = ImageWriter(os.path.join(self.savedir, "samples"))
-        self.logger.subscribe(writer)
-
         self.logger.text("Evaluating...", level=LoggerObserver.INFO)
         self.trainer.evaluate_epoch()
 

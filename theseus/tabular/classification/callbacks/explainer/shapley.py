@@ -13,11 +13,14 @@ LOGGER = LoggerObserver.getLogger("main")
 
 
 class ShapValueExplainer(Callbacks):
-    def __init__(self, save_dir, plot_type="bar", **kwargs) -> None:
+    def __init__(
+        self, save_dir, plot_type="bar", check_additivity=True, **kwargs
+    ) -> None:
         super().__init__()
         self.plot_type = plot_type
         self.explainer = None
         self.save_dir = save_dir
+        self.check_additivity = check_additivity
 
     def on_train_epoch_end(self, logs: Dict = None):
         """
@@ -31,7 +34,9 @@ class ShapValueExplainer(Callbacks):
         )
         feature_names = logs["trainset"]["feature_names"]
         classnames = logs["trainset"]["classnames"]
-        shap_values = self.explainer.shap_values(x_train)
+        shap_values = self.explainer.shap_values(
+            x_train, check_additivity=self.check_additivity
+        )
         shap.summary_plot(
             shap_values,
             plot_type=self.plot_type,
@@ -68,7 +73,9 @@ class ShapValueExplainer(Callbacks):
         x_val, y_val = logs["valset"]["inputs"], logs["valset"]["targets"]
         feature_names = logs["valset"]["feature_names"]
         classnames = logs["valset"]["classnames"]
-        shap_values = self.explainer.shap_values(x_val)
+        shap_values = self.explainer.shap_values(
+            x_val, check_additivity=self.check_additivity
+        )
         shap.summary_plot(
             shap_values,
             plot_type=self.plot_type,

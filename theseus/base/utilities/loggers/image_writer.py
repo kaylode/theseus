@@ -23,7 +23,7 @@ class ImageWriter(LoggerSubscriber):
         dirname = os.path.dirname(savepath)
         os.makedirs(dirname, exist_ok=True)
 
-        if isinstance(value, go._figure.Figure):
+        if isinstance(value, go.Figure):
             value.write_image(savepath + ".png")
         if isinstance(value, mpl.figure.Figure):
             value.savefig(savepath)

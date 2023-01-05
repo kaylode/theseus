@@ -13,6 +13,7 @@ class GBClassifiers:
     ):
         self.training_params = training_params
         self.model_name = model_name
+        self.num_classes = num_classes
         if model_name == "catboost":
             self.model = cb.CatBoostClassifier(**model_config)
         elif model_name == "lightgbm":

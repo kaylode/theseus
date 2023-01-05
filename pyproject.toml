@@ -77,6 +77,9 @@ tabular_classification = [
   "shap==0.41.0",
   "lime==0.2.0.1"
 ]
+all = [
+  "theseus[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,tabular,tabular_classification]",
+]
 
 [project.urls]  # Optional
 "Homepage" = "https://github.com/kaylode/theseus"

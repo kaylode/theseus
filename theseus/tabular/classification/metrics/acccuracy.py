@@ -20,8 +20,10 @@ class SKLAccuracy(Metric):
         """
         output = output["outputs"]
         target = batch["targets"]
+
         probs = softmax(output, axis=-1)
         predictions = np.argmax(probs, axis=-1)
+
         correct = (predictions.reshape(-1) == target.reshape(-1)).sum()
         score = correct * 1.0 / target.shape[0]
         return {"acc": score}
