@@ -211,7 +211,7 @@ class BasePipeline(object):
             self.opt["callbacks"],
             print_interval=self.opt["trainer"]["args"]["print_interval"],
             save_interval=self.opt["trainer"]["args"]["save_interval"],
-            save_dir=getattr(self, "save_dir", "runs"),
+            save_dir=getattr(self, "savedir", "runs"),
             resume=getattr(self, "resume", None),
             config_dict=self.opt,
             registry=self.callbacks_registry,
