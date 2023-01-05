@@ -25,3 +25,6 @@ class LoggerSubscriber:
 
     def log_video(self, **kwargs):
         return
+
+    def log_html(self, **kwargs):
+        return

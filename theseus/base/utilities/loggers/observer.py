@@ -20,13 +20,16 @@ def get_type(value):
         return LoggerObserver.TORCH_MODULE
     if isinstance(value, mpl.figure.Figure) or isinstance(value, go.Figure):
         return LoggerObserver.FIGURE
-    if isinstance(value, str):
-        return LoggerObserver.TEXT
     if isinstance(value, torch.Tensor):
         if len(value.shape) == 2:
             return LoggerObserver.EMBED
     if isinstance(value, (int, float)):
         return LoggerObserver.SCALAR
+    if isinstance(value, str):
+        if value.endswith('.html'):
+            return LoggerObserver.HTML
+        else:
+            return LoggerObserver.TEXT
 
     LoggerObserver.text(
         f"Fail to log undefined type: {type(value)}",
@@ -48,6 +51,7 @@ class LoggerObserver(object):
     EMBED = "embedding"
     TABLE = "table"
     VIDEO = "video"
+    HTML = 'html'
 
     WARN = logging.WARN
     ERROR = logging.ERROR
@@ -117,6 +121,9 @@ class LoggerObserver(object):
 
                 if log_type == LoggerObserver.VIDEO:
                     subscriber.log_video(tag=tag, value=value, **kwargs)
+
+                if log_type == LoggerObserver.HTML:
+                    subscriber.log_html(tag=tag, value=value, **kwargs)
 
     def text(self, value, level):
         """

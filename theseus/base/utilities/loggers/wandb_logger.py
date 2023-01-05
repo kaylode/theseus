@@ -78,7 +78,7 @@ class WandbLogger(LoggerSubscriber):
 
         wandb_logger.log({tag: value, "iterations": step})
 
-    def log_figure(self, tag, value, step, **kwargs):
+    def log_figure(self, tag, value, step=0, **kwargs):
         """
         Write a matplotlib fig to wandb
         :param tags: (str) tag for log
@@ -149,6 +149,53 @@ class WandbLogger(LoggerSubscriber):
         """
         # axes are
         wandb_logger.log({tag: wandb_logger.Video(value, fps=fps), "iterations": step})
+
+    def log_html(self, tag, value, step=0, **kwargs):
+        """
+        Display a html
+        :param value: path to html file
+        """
+        table = wandb_logger.Table(columns = [tag])
+        table.add_data(wandb_logger.Html(value))
+        wandb_logger.log({tag: table, "iterations": step})
+
+    def log_embedding(
+        self,
+        tag,
+        value,
+        label_img=None,
+        step=0,
+        metadata=None,
+        metadata_header=None,
+        **kwargs
+    ):
+        """
+        Write a embedding projection to tensorboard
+        :param value: embeddings array (N, D)
+        :param label_img: (torch.Tensor) normalized image tensors (N, 3, H, W)
+        :param metadata: (List) zipped list of metadata
+        :param metadata_header: (List) list of metadata names according to the metadata provided
+        """
+
+        import pandas as pd
+        
+        df_dict = {'embeddings': [e for e in value]}
+        if metadata is not None and metadata_header is not None:
+            for meta in metadata:
+                for idx, item in enumerate(meta):
+                    if metadata_header[idx] not in df_dict.keys():
+                        df_dict[metadata_header[idx]] = []
+                    df_dict[metadata_header[idx]].append(item)
+        if label_img is not None:
+            df_dict['images'] = [wandb_logger.Image(i.values) for i in label_img]
+
+        df = pd.DataFrame(df_dict)
+
+        table = wandb_logger.Table(
+            columns=df.columns.to_list(), 
+            data=df.values
+        )
+        wandb_logger.log({tag: table, "iterations": step})
 
     def __del__(self):
         wandb_logger.finish()
