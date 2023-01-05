@@ -31,14 +31,6 @@ class BasePipeline(object):
         # Main Loggers
         self.logger = LoggerObserver.getLogger("main")
 
-        # Global variables
-        self.exp_name = self.opt["global"]["exp_name"]
-        self.exist_ok = self.opt["global"]["exist_ok"]
-        self.debug = self.opt["global"]["debug"]
-        self.device_name = self.opt["global"]["device"]
-        self.transform_cfg = Config.load_yaml(self.opt["global"]["cfg_transform"])
-        self.device = get_device(self.device_name)
-
         # Experiment name
         if self.exp_name:
             self.savedir = os.path.join(self.opt["global"]["save_dir"], self.exp_name)
@@ -54,11 +46,26 @@ class BasePipeline(object):
         # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(file_logger)
+
+        # Logging images
+        image_logger = ImageWriter(self.savedir)
+        self.logger.subscribe(image_logger)
+
+        # Global variables
+        self.exp_name = self.opt["global"]["exp_name"]
+        self.exist_ok = self.opt["global"]["exist_ok"]
+        self.debug = self.opt["global"]["debug"]
+        self.device_name = self.opt["global"]["device"]
+        self.transform_cfg = Config.load_yaml(self.opt["global"]["cfg_transform"])
+        self.device = get_device(self.device_name)
+
+        # Logging out configs
         self.logger.text(self.opt, level=LoggerObserver.INFO)
         self.logger.text(
             f"Everything will be saved to {self.savedir}",
             level=LoggerObserver.INFO,
         )
+        
 
     def init_train_dataloader(self):
         # DataLoaders
