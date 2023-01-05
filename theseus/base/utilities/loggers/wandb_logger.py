@@ -155,7 +155,7 @@ class WandbLogger(LoggerSubscriber):
         Display a html
         :param value: path to html file
         """
-        table = wandb_logger.Table(columns = [tag])
+        table = wandb_logger.Table(columns=[tag])
         table.add_data(wandb_logger.Html(value))
         wandb_logger.log({tag: table, "iterations": step})
 
@@ -167,7 +167,7 @@ class WandbLogger(LoggerSubscriber):
         step=0,
         metadata=None,
         metadata_header=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Write a embedding projection to tensorboard
@@ -178,8 +178,8 @@ class WandbLogger(LoggerSubscriber):
         """
 
         import pandas as pd
-        
-        df_dict = {'embeddings': [e for e in value]}
+
+        df_dict = {"embeddings": [e for e in value]}
         if metadata is not None and metadata_header is not None:
             for meta in metadata:
                 for idx, item in enumerate(meta):
@@ -187,14 +187,11 @@ class WandbLogger(LoggerSubscriber):
                         df_dict[metadata_header[idx]] = []
                     df_dict[metadata_header[idx]].append(item)
         if label_img is not None:
-            df_dict['images'] = [wandb_logger.Image(i.values) for i in label_img]
+            df_dict["images"] = [wandb_logger.Image(i.values) for i in label_img]
 
         df = pd.DataFrame(df_dict)
 
-        table = wandb_logger.Table(
-            columns=df.columns.to_list(), 
-            data=df.values
-        )
+        table = wandb_logger.Table(columns=df.columns.to_list(), data=df.values)
         wandb_logger.log({tag: table, "iterations": step})
 
     def __del__(self):

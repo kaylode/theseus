@@ -65,7 +65,6 @@ class BasePipeline(object):
             f"Everything will be saved to {self.savedir}",
             level=LoggerObserver.INFO,
         )
-        
 
     def init_train_dataloader(self):
         # DataLoaders

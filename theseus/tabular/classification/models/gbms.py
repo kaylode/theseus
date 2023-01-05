@@ -8,16 +8,18 @@ LOGGER = LoggerObserver.getLogger("main")
 
 
 class GBClassifiers:
-    def __init__(self, model_name, num_classes, model_config={}, training_params={}, **kwargs):
+    def __init__(
+        self, model_name, num_classes, model_config={}, training_params={}, **kwargs
+    ):
         self.training_params = training_params
         self.model_name = model_name
         if model_name == "catboost":
             self.model = cb.CatBoostClassifier(**model_config)
         elif model_name == "lightgbm":
-            model_config.update({'num_class': num_classes})
+            model_config.update({"num_class": num_classes})
             self.model = lgb.LGBMClassifier(**model_config)
         elif model_name == "xgboost":
-            model_config.update({'num_class': num_classes})
+            model_config.update({"num_class": num_classes})
             self.model = xgb.XGBClassifier(**model_config)
         else:
             LOGGER.text("Model not supported", level=LoggerObserver.ERROR)

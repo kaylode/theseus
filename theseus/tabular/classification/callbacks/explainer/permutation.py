@@ -42,7 +42,7 @@ class PermutationImportance(Callbacks):
 
         plt.xlabel("Permutation Importance")
         save_path = osp.join(self.save_dir, "permutation_train.html")
-        fig.write_html(save_path, auto_play = False)
+        fig.write_html(save_path, auto_play=False)
 
         LOGGER.log(
             [
@@ -82,7 +82,7 @@ class PermutationImportance(Callbacks):
 
         plt.xlabel("Permutation Importance")
         save_path = osp.join(self.save_dir, "permutation_val.html")
-        fig.write_html(save_path, auto_play = False)
+        fig.write_html(save_path, auto_play=False)
 
         LOGGER.log(
             [

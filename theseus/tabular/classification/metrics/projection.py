@@ -2,12 +2,13 @@ import os
 from typing import Any, Dict
 
 import numpy as np
+from scipy.special import softmax
 
 from theseus.base.metrics.metric_template import Metric
 from theseus.base.utilities.loggers import LoggerObserver
-from scipy.special import softmax
 
 LOGGER = LoggerObserver.getLogger("main")
+
 
 class SKLEmbeddingProjection(Metric):
     """
@@ -34,7 +35,10 @@ class SKLEmbeddingProjection(Metric):
         ## Metadata, in column style
         if self.has_labels:
             if self.classnames is not None:
-                metadata = [(self.classnames[int(a)], self.classnames[int(b)]) for a,b in zip(targets, predictions)]
+                metadata = [
+                    (self.classnames[int(a)], self.classnames[int(b)])
+                    for a, b in zip(targets, predictions)
+                ]
             else:
                 metadata = [a for a in zip(targets, predictions)]
             metadata_header = ["ground truth", "prediction"]

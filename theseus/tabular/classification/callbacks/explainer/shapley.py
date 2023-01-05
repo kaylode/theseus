@@ -48,7 +48,7 @@ class ShapValueExplainer(Callbacks):
                     "tag": "Importance/SHAP/train",
                     "value": fig,
                     "type": LoggerObserver.FIGURE,
-                    'kwargs': {"step": 0}
+                    "kwargs": {"step": 0},
                 }
             ]
         )
@@ -85,7 +85,7 @@ class ShapValueExplainer(Callbacks):
                     "tag": "Importance/SHAP/val",
                     "value": fig,
                     "type": LoggerObserver.FIGURE,
-                    'kwargs': {"step": 0}
+                    "kwargs": {"step": 0},
                 }
             ]
         )

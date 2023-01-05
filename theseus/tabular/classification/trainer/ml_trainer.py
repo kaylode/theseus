@@ -59,6 +59,8 @@ class MLTrainer:
         if self.metrics is not None:
             for metric in self.metrics:
                 score_dict.update(
-                    metric.value({"outputs": y_pred}, {"inputs": X_test, "targets": y_test})
+                    metric.value(
+                        {"outputs": y_pred}, {"inputs": X_test, "targets": y_test}
+                    )
                 )
         return score_dict

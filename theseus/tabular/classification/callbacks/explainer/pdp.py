@@ -67,7 +67,7 @@ class PartialDependencePlots(Callbacks):
                     "tag": "Importance/PDP/train",
                     "value": fig,
                     "type": LoggerObserver.FIGURE,
-                    'kwargs': {"step": 0}
+                    "kwargs": {"step": 0},
                 }
             ]
         )
@@ -100,14 +100,14 @@ class PartialDependencePlots(Callbacks):
         )
         fig.suptitle("Partial Dependence Plots")
         fig.tight_layout()
-        
+
         LOGGER.log(
             [
                 {
                     "tag": "Importance/PDP/val",
                     "value": fig,
                     "type": LoggerObserver.FIGURE,
-                    'kwargs': {"step": 0}
+                    "kwargs": {"step": 0},
                 }
             ]
         )

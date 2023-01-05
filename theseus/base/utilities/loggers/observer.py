@@ -26,7 +26,7 @@ def get_type(value):
     if isinstance(value, (int, float)):
         return LoggerObserver.SCALAR
     if isinstance(value, str):
-        if value.endswith('.html'):
+        if value.endswith(".html"):
             return LoggerObserver.HTML
         else:
             return LoggerObserver.TEXT
@@ -51,7 +51,7 @@ class LoggerObserver(object):
     EMBED = "embedding"
     TABLE = "table"
     VIDEO = "video"
-    HTML = 'html'
+    HTML = "html"
 
     WARN = logging.WARN
     ERROR = logging.ERROR
