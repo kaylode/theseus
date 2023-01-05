@@ -55,8 +55,20 @@ class LIMEExplainer(Callbacks):
             feature_names=feature_names,
             class_names=classnames,
         )
+        
         save_path = osp.join(self.save_dir, f"lime_{item_id}.html")
         exp.save_to_file(save_path)
+
+        LOGGER.log(
+            [
+                {
+                    "tag": f"Importance/LIME/{item_id}",
+                    "value": save_path,
+                    "type": LoggerObserver.HTML,
+                }
+            ]
+        )
+
         LOGGER.text(
             f"LIME figure for a random instance saved at {save_path}",
             level=LoggerObserver.INFO,

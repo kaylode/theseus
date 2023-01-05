@@ -39,7 +39,6 @@ class Splitter(Preprocessor):
 
         if self.splitter_type == "stratified":
             assert label_column is not None, "Label column should be specified"
-            assert n_splits is not None, "number of splits should be specified"
             self.splitter = train_test_split
         elif self.splitter_type == "stratifiedkfold":
             assert label_column is not None, "Label column should be specified"

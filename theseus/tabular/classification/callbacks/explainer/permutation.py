@@ -41,13 +41,24 @@ class PermutationImportance(Callbacks):
         )
 
         plt.xlabel("Permutation Importance")
-        save_path = osp.join(self.save_dir, "permutation_train.png")
-        fig.write_image(save_path)
-        plt.clf()
+        save_path = osp.join(self.save_dir, "permutation_train.html")
+        fig.write_html(save_path, auto_play = False)
+
+        LOGGER.log(
+            [
+                {
+                    "tag": f"Importance/permutation/train",
+                    "value": save_path,
+                    "type": LoggerObserver.HTML,
+                }
+            ]
+        )
+
         LOGGER.text(
-            f"Permutation figure saved at {save_path+'.jpg'}",
+            f"Permutation figure saved at {save_path}",
             level=LoggerObserver.INFO,
         )
+        plt.clf()
 
     def on_val_epoch_end(self, logs: Dict = None):
         """
@@ -70,10 +81,21 @@ class PermutationImportance(Callbacks):
         )
 
         plt.xlabel("Permutation Importance")
-        save_path = osp.join(self.save_dir, "permutation_val.png")
-        fig.write_image(save_path)
-        plt.clf()
+        save_path = osp.join(self.save_dir, "permutation_val.html")
+        fig.write_html(save_path, auto_play = False)
+
+        LOGGER.log(
+            [
+                {
+                    "tag": f"Importance/permutation/val",
+                    "value": save_path,
+                    "type": LoggerObserver.HTML,
+                }
+            ]
+        )
+
         LOGGER.text(
-            f"Permutation figure saved at {save_path+'.jpg'}",
+            f"Permutation figure saved at {save_path}",
             level=LoggerObserver.INFO,
         )
+        plt.clf()

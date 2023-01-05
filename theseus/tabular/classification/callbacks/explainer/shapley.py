@@ -40,10 +40,21 @@ class ShapValueExplainer(Callbacks):
             show=False,
         )
 
-        save_path = osp.join(self.save_dir, "shapley_train")
-        plt.savefig(save_path)
+        fig = plt.gcf()
+
+        LOGGER.log(
+            [
+                {
+                    "tag": "Importance/SHAP/train",
+                    "value": fig,
+                    "type": LoggerObserver.FIGURE,
+                    'kwargs': {"step": 0}
+                }
+            ]
+        )
+
         LOGGER.text(
-            f"Shapley figure saved at {save_path+'.jpg'}",
+            f"Shapley figure saved",
             level=LoggerObserver.INFO,
         )
         plt.clf()
@@ -66,10 +77,21 @@ class ShapValueExplainer(Callbacks):
             show=False,
         )
 
-        save_path = osp.join(self.save_dir, "shapley_val")
-        plt.savefig(save_path)
+        fig = plt.gcf()
+
+        LOGGER.log(
+            [
+                {
+                    "tag": "Importance/SHAP/val",
+                    "value": fig,
+                    "type": LoggerObserver.FIGURE,
+                    'kwargs': {"step": 0}
+                }
+            ]
+        )
+
         LOGGER.text(
-            f"Shapley figure saved at {save_path+'.jpg'}",
+            f"Shapley figure saved",
             level=LoggerObserver.INFO,
         )
         plt.clf()

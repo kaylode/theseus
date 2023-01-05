@@ -61,10 +61,19 @@ class PartialDependencePlots(Callbacks):
         fig.suptitle("Partial Dependence Plots")
         fig.tight_layout()
 
-        save_path = osp.join(self.save_dir, "partial_dependence_train")
-        plt.savefig(save_path)
+        LOGGER.log(
+            [
+                {
+                    "tag": "Importance/PDP/train",
+                    "value": fig,
+                    "type": LoggerObserver.FIGURE,
+                    'kwargs': {"step": 0}
+                }
+            ]
+        )
+
         LOGGER.text(
-            f"PDP figure saved at {save_path+'.jpg'}",
+            f"PDP figure saved",
             level=LoggerObserver.INFO,
         )
         plt.clf()
@@ -91,11 +100,20 @@ class PartialDependencePlots(Callbacks):
         )
         fig.suptitle("Partial Dependence Plots")
         fig.tight_layout()
+        
+        LOGGER.log(
+            [
+                {
+                    "tag": "Importance/PDP/val",
+                    "value": fig,
+                    "type": LoggerObserver.FIGURE,
+                    'kwargs': {"step": 0}
+                }
+            ]
+        )
 
-        save_path = osp.join(self.save_dir, "partial_dependence_val")
-        plt.savefig(save_path)
         LOGGER.text(
-            f"PDP figure saved at {save_path+'.jpg'}",
+            f"PDP figure saved",
             level=LoggerObserver.INFO,
         )
         plt.clf()
