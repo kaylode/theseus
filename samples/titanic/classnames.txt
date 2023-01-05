@@ -1,0 +1,2 @@
+Survived
+Not Survived

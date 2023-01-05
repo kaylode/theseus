@@ -1,0 +1,30 @@
+name: autobuild_tablr
+on:
+  push:
+    branches:
+      - master
+      - 'V**'
+  pull_request:
+    branches:
+      - master
+      - 'V**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+          architecture: 'x64'
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install -e '.[tabular]'
+      - name: Test with pytest
+        run: |
+          pytest tests/tabular --capture=no
