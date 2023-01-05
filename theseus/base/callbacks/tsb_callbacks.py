@@ -20,7 +20,7 @@ class TensorboardCallbacks(Callbacks):
         iteration cycle to log out
     """
 
-    def __init__(self, save_dir: str = "runs", resume: str = 10, **kwargs) -> None:
+    def __init__(self, save_dir: str = "runs", resume: str = None, **kwargs) -> None:
         super().__init__()
 
         self.save_dir = save_dir

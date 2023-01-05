@@ -124,11 +124,6 @@ class WandbCallbacks(Callbacks):
             value=osp.join(self.save_dir, "*.yaml"),
         )
 
-        # Init logging model for debug
-        self.wandb_logger.log_torch_module(
-            tag="models", value=self.params["trainer"].model.model, log_freq=10
-        )
-
     def on_finish(self, logs: Dict = None):
         """
         After finish training
