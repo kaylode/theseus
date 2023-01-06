@@ -1,7 +1,7 @@
 from theseus.base.augmentations import TRANSFORM_REGISTRY
 
 from .aggregation import Aggregate
-from .categorize import Categorize
+from .categorize import Categorize, EnforceType
 from .compose import PreprocessCompose
 from .csv_saver import CSVSaver
 from .datetime import DateDecompose, ToDatetime
@@ -30,3 +30,4 @@ TRANSFORM_REGISTRY.register(LabelEncode)
 TRANSFORM_REGISTRY.register(Splitter)
 TRANSFORM_REGISTRY.register(Standardize)
 TRANSFORM_REGISTRY.register(Aggregate)
+TRANSFORM_REGISTRY.register(EnforceType)
