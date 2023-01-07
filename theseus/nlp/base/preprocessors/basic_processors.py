@@ -17,14 +17,24 @@ def vietnamese_stop_words():
     return vi_stop_words
 
 
-class Stopwords(BaseProcessor):
+class WordTokenize(BaseProcessor):
+    def __init__(self, language="english") -> None:
+        super().__init__()
+        self.language = language
+
+    def __call__(self, x):
+        tokens = word_tokenize(x, language=self.language)
+        return tokens
+
+
+class RemoveStopwords(BaseProcessor):
     """
     Remove stopwords from text
     """
 
     def __init__(self, language="english"):
         nltk.download("stopwords")
-        if language == "vietnam_phrases":
+        if language == "vietnamese":
             self.stopwords_list = vietnamese_stop_words()
         else:
             self.stopwords_list = stopwords.words(language)
@@ -36,7 +46,7 @@ class Stopwords(BaseProcessor):
         return result
 
 
-class Punctuation(BaseProcessor):
+class RemovePunctuation(BaseProcessor):
     """
     Remove punctuation from text
     """
@@ -48,7 +58,7 @@ class Punctuation(BaseProcessor):
         return x.translate(str.maketrans("", "", string.punctuation))
 
 
-class Consecutive(BaseProcessor):
+class RemoveConsecutive(BaseProcessor):
     """
     Remove consecutive from text (reduce above 3 consecutives to 2)
     """
@@ -61,7 +71,7 @@ class Consecutive(BaseProcessor):
         return x
 
 
-class Digits(BaseProcessor):
+class RemoveDigits(BaseProcessor):
     """
     Remove digits from texts
     """
@@ -74,7 +84,7 @@ class Digits(BaseProcessor):
         return result
 
 
-class Lower(BaseProcessor):
+class Lowercase(BaseProcessor):
     """
     Lowercase texts
     """
@@ -157,7 +167,7 @@ class SentenceTokenizer(BaseProcessor):
         return sent_tokenize(x)
 
 
-class Compose(BaseProcessor):
+class PreprocessCompose(BaseProcessor):
     """
     Text preprocessing
     :input: list of texts
@@ -179,15 +189,15 @@ if __name__ == "__main__":
         "Hello there, i'm Kay",
     ]
 
-    prep = Compose(
+    prep = PreprocessCompose(
         [
-            Stopwords(),
-            Punctuation(),
-            Consecutive(),
-            Lower(),
+            RemoveStopwords(),
+            RemovePunctuation(),
+            RemoveConsecutive(),
+            Lowercase(),
             Stemmer(),
             RemoveEmoji(),
         ]
     )
 
-    print(prep(text))
+    print(prep.run(text))

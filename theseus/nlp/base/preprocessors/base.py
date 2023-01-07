@@ -5,7 +5,7 @@ class BaseProcessor:
     def __call__(self, text):
         return text
 
-    def process(self, texts):
+    def run(self, texts):
         if not isinstance(texts, list):
             texts = [texts]
         result = []

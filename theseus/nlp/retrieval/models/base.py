@@ -4,7 +4,12 @@ import pickle
 
 import numpy as np
 import scipy
-import sentence_transformers.util as sentfms_utils
+
+try:
+    import sentence_transformers.util as sentfms_utils
+    USE_TRANSFORMERS = True
+except:
+    USE_TRANSFORMERS = False
 import torch
 from sklearn.metrics.pairwise import linear_kernel
 
@@ -31,7 +36,7 @@ class BaseRetrieval:
 
     def get_top_k_similarity(self, encoded_query, encoded_corpus, top_k=5):
         results = []
-        if isinstance(encoded_query, scipy.sparse.csr_matrix):
+        if isinstance(encoded_query, scipy.sparse.csr_matrix) or not USE_TRANSFORMERS:
             cosine_scores = linear_kernel(encoded_query, encoded_corpus)
             for cosine_score in cosine_scores:
                 cosine_score = list(enumerate(cosine_score))

@@ -9,7 +9,7 @@ repos:
   rev: 5.11.2
   hooks:
     - id: isort
-      name: isort (python)
+      args: ["--profile", "black"]
 - repo: https://github.com/python/black.git
   rev: 22.12.0
   hooks:

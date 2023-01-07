@@ -1,3 +1,4 @@
+from .base import Preprocessor, FilterColumnNames
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 from .base import Preprocessor
@@ -21,6 +22,9 @@ class Aggregate(Preprocessor):
             target_name = item["target_name"]
             based_columns = item["based_columns"]
 
+            filter = FilterColumnNames(patterns=based_columns)
+            based_columns = filter.run(df)
+
             if isinstance(method_name, str):
                 if method_name == "sum":
                     df[target_name] = df[based_columns].sum(axis=1)
@@ -28,6 +32,8 @@ class Aggregate(Preprocessor):
                     df[target_name] = df[based_columns].mean(axis=1)
                 if method_name == "subtract":
                     df[target_name] = df[based_columns].sub(axis=1)
+                if method_name == 'concat':
+                    df[target_name] = df[based_columns].astype(str).agg(' '.join, axis=1)
 
             elif callable(method_name):
                 df[target_name] = self.apply(
