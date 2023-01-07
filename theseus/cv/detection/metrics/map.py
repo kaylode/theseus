@@ -1,33 +1,10 @@
-"""
-COCO Mean Average Precision Evaluation
-True Positive (TP): Predicted as positive as was correct
-False Positive (FP): Predicted as positive but was incorrect
-False Negative (FN): Failed to predict an object that was there
-if IOU prediction >= IOU threshold, prediction is TP
-if 0 < IOU prediction < IOU threshold, prediction is FP
-Precision measures how accurate your predictions are. Precision = TP/(TP+FP)
-Recall measures how well you find all the positives. Recal = TP/(TP+FN)
-Average Precision (AP) is finding the area under the precision-recall curve.
-Mean Average  Precision (MAP) is AP averaged over all categories.
-AP@[.5:.95] corresponds to the average AP for IoU from 0.5 to 0.95 with a step size of 0.05
-AP@.75 means the AP with IoU=0.75
-*Under the COCO context, there is no difference between AP and mAP
-Example execution:
-python evaluate.py --gt_csv=0_val.csv --pred_csv=0_predict.csv
-"""
-
-import argparse
 import json
 import os
 import os.path as osp
 
 import numpy as np
-import pandas as pd
-from PIL import Image
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from tabulate import tabulate
-from tqdm import tqdm
 
 from theseus.base.metrics.metric_template import Metric
 
