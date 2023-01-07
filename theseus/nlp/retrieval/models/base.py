@@ -7,6 +7,7 @@ import scipy
 
 try:
     import sentence_transformers.util as sentfms_utils
+
     USE_TRANSFORMERS = True
 except:
     USE_TRANSFORMERS = False
