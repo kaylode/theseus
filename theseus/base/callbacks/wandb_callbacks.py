@@ -35,6 +35,7 @@ class WandbCallbacks(Callbacks):
         self,
         username: str,
         project_name: str,
+        group_name: str = None,
         save_dir: str = None,
         resume: str = None,
         config_dict: Dict = None,
@@ -106,6 +107,7 @@ class WandbCallbacks(Callbacks):
             project_name=self.project_name,
             run_name=self.run_name,
             config_dict=self.config_dict,
+            group_name=group_name,
         )
         LOGGER.subscribe(self.wandb_logger)
 
