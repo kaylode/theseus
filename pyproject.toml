@@ -1,3 +1,12 @@
+[build-system]
+# These are the assumed default build requirements from pip:
+# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
+requires = ["setuptools>=43.0.0", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["theseus"]
+
 [project]
 name = "theseus"
 version = "1.1.0"
@@ -83,15 +92,6 @@ all = [
 
 [project.urls]  # Optional
 "Homepage" = "https://github.com/kaylode/theseus"
-
-[build-system]
-# These are the assumed default build requirements from pip:
-# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=43.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-packages = ["theseus"]
 
 [tool.isort]
 profile = "black"
