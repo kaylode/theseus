@@ -17,9 +17,9 @@ trainer:
     save_interval: 1000
     use_fp16: false
 callbacks:
-  - name: LoggerCallbacks
-  - name: CheckpointCallbacks
+  - name: TorchCheckpointCallbacks
   - name: DetectionVisualizerCallbacks
+  - name: TensorboardCallbacks
 model:
   name: DETRConvnext
   args:

@@ -43,7 +43,6 @@ class DetectionVisualizerCallbacks(Callbacks):
         classnames = valset.classnames
 
         self.visualizer.set_classnames(classnames)
-        self.params["trainer"].evaluate_epoch()
         self.visualize_gt(train_batch, val_batch, iters, classnames)
 
     def visualize_gt(self, train_batch, val_batch, iters, classnames):

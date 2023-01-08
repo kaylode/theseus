@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from theseus.base.callbacks import CallbacksList, CheckpointCallbacks, LoggerCallbacks
+from theseus.base.callbacks import CallbacksList, TimerCallbacks
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.optimizers.scalers import NativeScaler
 from theseus.base.utilities.loggers.observer import LoggerObserver
@@ -30,8 +30,7 @@ class BaseTrainer:
         clip_grad: float = 10.0,
         evaluate_interval: int = 1,
         callbacks: List[Callbacks] = [
-            LoggerCallbacks(),
-            CheckpointCallbacks(),
+            TimerCallbacks(),
         ],
         debug: bool = False,
         **kwargs

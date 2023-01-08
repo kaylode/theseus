@@ -9,7 +9,7 @@ global:
 model:
   name: BaseTimmModel
   args:
-    model_name: convnext_small
+    model_name: efficientnet_b0
     from_pretrained: False
 data:
   dataset:

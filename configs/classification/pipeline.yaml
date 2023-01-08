@@ -17,15 +17,15 @@ trainer:
     save_interval: 2000
     use_fp16: true
 callbacks:
-  - name: LoggerCallbacks
-  - name: CheckpointCallbacks
+  - name: TorchCheckpointCallbacks
     args:
       best_key: bl_acc
   - name: ClassificationVisualizerCallbacks
+  - name: TensorboardCallbacks
 model:
   name: BaseTimmModel
   args:
-    model_name: convnext_small
+    model_name: efficientnet_b0
     from_pretrained: true
 loss:
   name: ClassificationCELoss

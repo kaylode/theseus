@@ -11,11 +11,11 @@ from theseus.cv.detection.trainer import TRAINER_REGISTRY
 from theseus.opt import Config
 
 
-class Pipeline(BasePipeline):
+class DetectionPipeline(BasePipeline):
     """docstring for Pipeline."""
 
     def __init__(self, opt: Config):
-        super(Pipeline, self).__init__(opt)
+        super(DetectionPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_registry(self):

@@ -17,10 +17,13 @@ def get_devices_info(device_names="0"):
     elif device_names.startswith("cpu"):
         return "CPU"
 
-    devices_info = ""
+    devices_info = []
     for i, device_id in enumerate(device_names.split(",")):
         p = torch.cuda.get_device_properties(i)
-        devices_info += f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
+        devices_info.append(
+            f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024 ** 2}MB)"
+        )  # bytes to MB
+    devices_info = "\n".join(devices_info)
     return devices_info
 
 

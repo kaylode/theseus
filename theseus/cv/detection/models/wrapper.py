@@ -14,12 +14,12 @@ class ModelWithLossandPostprocess(ModelWithLoss):
     def __init__(self, model: nn.Module, criterion: nn.Module, device: torch.device):
         super().__init__(model, criterion, device)
 
-    def forward(self, batch, metrics=None):
+    def forward_batch(self, batch, metrics=None):
         """
         Forward the batch through models, losses and metrics
         If some parameters are needed, it's best to include in the batch
         """
-        outputs = self.model(batch, self.device)
+        outputs = self.model.forward_batch(batch, self.device)
         loss, loss_dict = self.criterion(outputs, batch, self.device)
 
         if metrics is not None:

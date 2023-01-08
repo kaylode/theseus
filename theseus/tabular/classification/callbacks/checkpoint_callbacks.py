@@ -1,10 +1,7 @@
 import os.path as osp
 from typing import Dict
 
-import torch
-
 from theseus.base.callbacks import Callbacks
-from theseus.base.utilities.loading import load_state_dict
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")

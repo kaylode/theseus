@@ -38,8 +38,7 @@ class TabularPipeline(BasePipeline):
             self.opt["model"], num_classes=num_classes, registry=self.model_registry
         )
 
-    def init_datasets(self):
-
+    def init_train_dataloader(self):
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=self.transform_registry
         )
@@ -49,6 +48,15 @@ class TabularPipeline(BasePipeline):
             transform=self.transform["train"],
         ).load_data()
 
+        self.logger.text(
+            f"Training shape: {self.train_dataset['inputs'].shape}",
+            level=LoggerObserver.INFO,
+        )
+
+    def init_validation_dataloader(self):
+        self.transform = get_instance_recursively(
+            self.transform_cfg, registry=self.transform_registry
+        )
         self.val_dataset = get_instance_recursively(
             self.opt["data"]["dataset"]["val"],
             registry=self.dataset_registry,
@@ -58,10 +66,6 @@ class TabularPipeline(BasePipeline):
         classnames = self.val_dataset["classnames"]
         num_classes = len(classnames)
 
-        self.logger.text(
-            f"Training shape: {self.train_dataset['inputs'].shape}",
-            level=LoggerObserver.INFO,
-        )
         self.logger.text(
             f"Validation shape: {self.val_dataset['inputs'].shape}",
             level=LoggerObserver.INFO,
@@ -102,15 +106,25 @@ class TabularPipeline(BasePipeline):
             registry=self.trainer_registry,
         )
 
-    def init_pipeline(self):
+    def init_pipeline(self, train=False):
         self.init_globals()
         self.init_registry()
-        self.init_datasets()
-        self.init_model()
-        self.init_metrics()
-        callbacks = self.init_callbacks()
-        self.init_trainer(callbacks=callbacks)
+        if train:
+            self.init_train_dataloader()
+            self.init_validation_dataloader()
+            self.init_model()
+            self.init_metrics()
+            callbacks = self.init_callbacks()
+            self.save_configs()
+        else:
+            self.init_validation_dataloader()
+            self.init_model()
+            self.init_metrics()
+            self.init_loading()
+            callbacks = []
 
-    def fit(self):
-        self.init_pipeline()
-        self.trainer.fit()
+        if getattr(self, "metrics", None):
+            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+        callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
+
+        self.init_trainer(callbacks=callbacks)

@@ -17,13 +17,11 @@ trainer:
     save_interval: 1000
     use_fp16: true
 callbacks:
-  - name: LoggerCallbacks
-    args: null
-  - name: CheckpointCallbacks
+  - name: TorchCheckpointCallbacks
     args:
       best_key: dice
   - name: SemanticVisualizerCallbacks
-    args: null
+  - name: TensorboardCallbacks
 model:
   name: BaseSegModel
   args:

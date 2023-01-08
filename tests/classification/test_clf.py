@@ -1,12 +1,12 @@
 import pytest
 
 from configs.classification.infer import TestPipeline
-from theseus.cv.classification.pipeline import Pipeline
+from theseus.cv.classification.pipeline import ClassificationPipeline
 
 
 @pytest.mark.order(1)
 def test_train_clf(override_config):
-    train_pipeline = Pipeline(override_config)
+    train_pipeline = ClassificationPipeline(override_config)
     train_pipeline.fit()
 
 
@@ -14,7 +14,7 @@ def test_train_clf(override_config):
 def test_eval_clf(override_config):
     override_config["global"]["pretrained"] = "runs/pytest_clf/checkpoints/best.pth"
     override_config["global"]["cfg_transform"] = "runs/pytest_clf/transform.yaml"
-    val_pipeline = Pipeline(override_config)
+    val_pipeline = ClassificationPipeline(override_config)
     val_pipeline.evaluate()
 
 

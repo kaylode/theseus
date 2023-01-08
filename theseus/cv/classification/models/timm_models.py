@@ -81,7 +81,7 @@ class BaseTimmModel(nn.Module):
         """
         return self.model
 
-    def forward(self, batch: Dict, device: torch.device):
+    def forward_batch(self, batch: Dict, device: torch.device):
         x = move_to(batch["inputs"], device)
         self.features = None  # Clear current features
         outputs = self.model(x)
@@ -98,7 +98,7 @@ class BaseTimmModel(nn.Module):
         device: `torch.device`
             current device
         """
-        outputs = self.forward(adict, device)["outputs"]
+        outputs = self.forward_batch(adict, device)["outputs"]
 
         if not adict.get("multilabel"):
             outputs, probs = logits2labels(

@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 from typing import Dict
 
@@ -5,13 +6,12 @@ import torch
 
 from theseus.base.callbacks import Callbacks
 from theseus.base.utilities.loading import load_state_dict
-from theseus.base.utilities.loggers.cp_logger import Checkpoint
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
 
 
-class CheckpointCallbacks(Callbacks):
+class TorchCheckpointCallbacks(Callbacks):
     """
     Callbacks for saving checkpoints.
     Features:
@@ -42,9 +42,9 @@ class CheckpointCallbacks(Callbacks):
 
         self.best_value = 0
         self.best_key = best_key
-        self.save_dir = save_dir
+        self.save_dir = osp.join(save_dir, "checkpoints")
+        os.makedirs(self.save_dir, exist_ok=True)
         self.save_interval = save_interval
-        self.checkpoint = Checkpoint(osp.join(self.save_dir, "checkpoints"))
         self.resume = resume
 
     def load_checkpoint(self, path, trainer):
@@ -78,7 +78,11 @@ class CheckpointCallbacks(Callbacks):
         if trainer.scaler:
             weights[trainer.scaler.state_dict_key] = trainer.scaler.state_dict()
 
-        self.checkpoint.save(weights, outname)
+        torch.save(weights, os.path.join(self.save_dir, outname) + ".pth")
+        LOGGER.text(
+            f"Save checkpoints to {os.path.join(self.save_dir, outname)}" + ".pth",
+            level=LoggerObserver.INFO,
+        )
 
     def sanitycheck(self, logs: Dict = None):
         """

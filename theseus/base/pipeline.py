@@ -38,15 +38,18 @@ class BasePipeline(object):
         self.device_name = self.opt["global"].get("device", "cpu")
         self.resume = self.opt["global"].get("resume", None)
         self.pretrained = self.opt["global"].get("pretrained", None)
+        self.transform_cfg = self.opt["global"].get("cfg_transform", None)
 
         # Experiment name
         if self.exp_name:
-            self.savedir = os.path.join(self.opt["global"]["save_dir"], self.exp_name)
+            self.savedir = os.path.join(
+                self.opt["global"].get("save_dir", "runs"), self.exp_name
+            )
             if not self.exist_ok:
                 self.savedir = get_new_folder_name(self.savedir)
         else:
             self.savedir = os.path.join(
-                self.opt["global"]["save_dir"],
+                self.opt["global"].get("save_dir", "runs"),
                 datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
             )
         os.makedirs(self.savedir, exist_ok=True)
@@ -59,7 +62,9 @@ class BasePipeline(object):
         image_logger = ImageWriter(self.savedir)
         self.logger.subscribe(image_logger)
 
-        self.transform_cfg = Config.load_yaml(self.opt["global"]["cfg_transform"])
+        if self.transform_cfg is not None:
+            self.transform_cfg = Config.load_yaml(self.transform_cfg)
+
         self.device = get_device(self.device_name)
 
         # Logging out configs
@@ -71,9 +76,13 @@ class BasePipeline(object):
 
     def init_train_dataloader(self):
         # DataLoaders
-        self.transform = get_instance_recursively(
-            self.transform_cfg, registry=self.transform_registry
-        )
+        if self.transform_cfg is not None:
+            self.transform = get_instance_recursively(
+                self.transform_cfg, registry=self.transform_registry
+            )
+        else:
+            self.transform = {"train": None, "val": None}
+
         self.train_dataset = get_instance_recursively(
             self.opt["data"]["dataset"]["train"],
             registry=self.dataset_registry,
@@ -95,10 +104,14 @@ class BasePipeline(object):
         )
 
     def init_validation_dataloader(self):
-        # Transforms & Datasets
-        self.transform = get_instance_recursively(
-            self.transform_cfg, registry=self.transform_registry
-        )
+        # DataLoaders
+        if self.transform_cfg is not None:
+            self.transform = get_instance_recursively(
+                self.transform_cfg, registry=self.transform_registry
+            )
+        else:
+            self.transform = {"train": None, "val": None}
+
         self.val_dataset = get_instance_recursively(
             self.opt["data"]["dataset"]["val"],
             registry=self.dataset_registry,
@@ -132,14 +145,14 @@ class BasePipeline(object):
 
     def init_criterion(self):
         CLASSNAMES = getattr(self.val_dataset, "classnames", None)
-        criterion = get_instance_recursively(
+        self.criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
             num_classes=len(CLASSNAMES),
             classnames=CLASSNAMES,
         )
-        criterion = move_to(criterion, self.device)
-        return criterion
+        self.criterion = move_to(self.criterion, self.device)
+        return self.criterion
 
     def init_model_with_loss(self):
         model = self.init_model()
@@ -209,7 +222,6 @@ class BasePipeline(object):
     def init_callbacks(self):
         callbacks = get_instance_recursively(
             self.opt["callbacks"],
-            print_interval=self.opt["trainer"]["args"]["print_interval"],
             save_interval=self.opt["trainer"]["args"]["save_interval"],
             save_dir=getattr(self, "savedir", "runs"),
             resume=getattr(self, "resume", None),
@@ -270,7 +282,18 @@ class BasePipeline(object):
             self.init_model_with_loss()
             self.init_metrics()
             self.init_loading()
-            callbacks = [self.callbacks_registry.get("LoggerCallbacks")()]
+            callbacks = []
+
+        if getattr(self, "metrics", None):
+            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+        if getattr(self, "criterion", None):
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("LossLoggerCallbacks")(
+                    print_interval=self.opt["trainer"]["args"]["print_interval"],
+                ),
+            )
+        callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
         self.init_trainer(callbacks)
 
     def fit(self):

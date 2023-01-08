@@ -7,7 +7,14 @@ from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 
-class MLLoggerCallbacks(Callbacks):
+def seconds_to_hours(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    s = round(s, 4)
+    return h, m, s
+
+
+class TimerCallbacks(Callbacks):
     """
     Callbacks for logging running loss/metric/time while training
     Features:
@@ -17,16 +24,16 @@ class MLLoggerCallbacks(Callbacks):
         iteration cycle to log out
     """
 
-    def __init__(self, print_interval: int = 10, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__()
-
         self.running_time = 0
-        self.print_interval = print_interval
+        self.start_time = 0
 
     def on_start(self, logs: Dict = None):
         """
         Before going to the main loop
         """
+        self.start_time = time.time()
         LOGGER.text(
             f"===========================START TRAINING=================================",
             level=LoggerObserver.INFO,
@@ -37,20 +44,28 @@ class MLLoggerCallbacks(Callbacks):
         After the main loop
         """
         LOGGER.text("Training Completed!", level=LoggerObserver.INFO)
+        running_time = time.time() - self.start_time
+
+        h, m, s = seconds_to_hours(running_time)
+        LOGGER.text(
+            f"Total running time: {h} hours, {m} minutes and {s} seconds",
+            level=LoggerObserver.INFO,
+        )
 
     def on_train_epoch_start(self, logs: Dict = None):
         """
         Before going to the training loop
         """
-        self.running_time = time.time()
+        self.train_epoch_start_time = time.time()
 
     def on_train_epoch_end(self, logs: Dict = None):
         """
-        Before going to the training loop
+        After going to the training loop
         """
-        epoch_time = time.time() - self.running_time
+        running_time = time.time() - self.train_epoch_start_time
+        h, m, s = seconds_to_hours(running_time)
         LOGGER.text(
-            "Total training time: {:10.4f} seconds".format(epoch_time),
+            f"Training epoch running time: {h} hours, {m} minutes and {s} seconds",
             level=LoggerObserver.INFO,
         )
 
@@ -58,43 +73,20 @@ class MLLoggerCallbacks(Callbacks):
         """
         Before main validation loops
         """
+        self.val_epoch_start_time = time.time()
         LOGGER.text(
             "=============================EVALUATION===================================",
             LoggerObserver.INFO,
         )
-        self.running_time = time.time()
 
     def on_val_epoch_end(self, logs: Dict = None):
         """
         After finish validation
         """
 
-        iters = logs["iters"]
-        metric_dict = logs["metric_dict"]
-        epoch_time = time.time() - self.running_time
-
+        running_time = time.time() - self.val_epoch_start_time
+        h, m, s = seconds_to_hours(running_time)
         LOGGER.text(
-            "Total evaluation time: {:10.4f} seconds".format(epoch_time),
+            f"Evaluation epoch running time: {h} hours, {m} minutes and {s} seconds",
             level=LoggerObserver.INFO,
         )
-
-        # Log metric
-        metric_string = ""
-        for metric, score in metric_dict.items():
-            if isinstance(score, (int, float)):
-                metric_string += metric + ": " + f"{score:.5f}" + " | "
-        metric_string += "\n"
-
-        LOGGER.text(metric_string, level=LoggerObserver.INFO)
-        LOGGER.text(
-            "==========================================================================",
-            level=LoggerObserver.INFO,
-        )
-
-        # Call other loggers
-        log_dict = [
-            {"tag": f"Validation/{k}", "value": v, "kwargs": {"step": iters}}
-            for k, v in metric_dict.items()
-        ]
-
-        LOGGER.log(log_dict)

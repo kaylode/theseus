@@ -10,11 +10,11 @@ from theseus.cv.semantic.trainer import TRAINER_REGISTRY
 from theseus.opt import Config
 
 
-class Pipeline(BasePipeline):
+class SemanticPipeline(BasePipeline):
     """docstring for Pipeline."""
 
     def __init__(self, opt: Config):
-        super(Pipeline, self).__init__(opt)
+        super(SemanticPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_registry(self):

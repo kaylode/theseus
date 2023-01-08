@@ -57,7 +57,7 @@ class BaseSegModel(nn.Module):
         """
         return self.model
 
-    def forward(self, batch: Dict, device: torch.device):
+    def forward_batch(self, batch: Dict, device: torch.device):
         x = move_to(batch["inputs"], device)
         outputs = self.model(x)
         return {
@@ -72,7 +72,7 @@ class BaseSegModel(nn.Module):
         device: `torch.device`
             current device
         """
-        outputs = self.forward(adict, device)["outputs"]
+        outputs = self.forward_batch(adict, device)["outputs"]
 
         if self.num_classes == 1:
             thresh = adict["thresh"]

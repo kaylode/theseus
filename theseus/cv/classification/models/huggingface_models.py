@@ -90,7 +90,7 @@ class HuggingFaceModel(nn.Module):
 
         return features
 
-    def forward(self, batch: Dict, device: torch.device):
+    def forward_batch(self, batch: Dict, device: torch.device):
         batch = move_to(batch, device)
         features = self.forward_features(batch, device)
         outputs = self.head(features)
@@ -106,7 +106,7 @@ class HuggingFaceModel(nn.Module):
         device: `torch.device`
             current device
         """
-        outputs = self.model(adict, device)["outputs"]
+        outputs = self.forward_batch(adict, device)["outputs"]
 
         probs, outputs = torch.max(torch.softmax(outputs, dim=1), dim=1)
 

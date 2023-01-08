@@ -8,7 +8,6 @@ from torchvision.transforms import functional as TFF
 
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.utilities.loggers.observer import LoggerObserver
-from theseus.cv.base.utilities.analysis.analyzer import SemanticAnalyzer
 from theseus.cv.base.utilities.visualization.colors import color_list
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 
@@ -44,10 +43,11 @@ class SemanticVisualizerCallbacks(Callbacks):
         valset = valloader.dataset
         classnames = valset.classnames
 
-        self.visualize_model(model, train_batch)
-        self.params["trainer"].evaluate_epoch()
+        try:
+            self.visualize_model(model, train_batch)
+        except:
+            LOGGER.text("Cannot log model architecture", level=LoggerObserver.ERROR)
         self.visualize_gt(train_batch, val_batch, iters, classnames)
-        self.analyze_gt(trainset, valset, iters)
 
     @torch.no_grad()
     def visualize_model(self, model, batch):
@@ -144,44 +144,6 @@ class SemanticVisualizerCallbacks(Callbacks):
             [
                 {
                     "tag": "Sanitycheck/batch/val",
-                    "value": fig,
-                    "type": LoggerObserver.FIGURE,
-                    "kwargs": {"step": iters},
-                }
-            ]
-        )
-
-        plt.cla()  # Clear axis
-        plt.clf()  # Clear figure
-        plt.close()
-
-    def analyze_gt(self, trainset, valset, iters):
-        """
-        Perform simple data analysis
-        """
-
-        LOGGER.text("Analyzing datasets...", level=LoggerObserver.DEBUG)
-        analyzer = SemanticAnalyzer()
-        analyzer.add_dataset(trainset)
-        fig = analyzer.analyze(figsize=(10, 5))
-        LOGGER.log(
-            [
-                {
-                    "tag": "Sanitycheck/analysis/train",
-                    "value": fig,
-                    "type": LoggerObserver.FIGURE,
-                    "kwargs": {"step": iters},
-                }
-            ]
-        )
-
-        analyzer = SemanticAnalyzer()
-        analyzer.add_dataset(valset)
-        fig = analyzer.analyze(figsize=(10, 5))
-        LOGGER.log(
-            [
-                {
-                    "tag": "Sanitycheck/analysis/val",
                     "value": fig,
                     "type": LoggerObserver.FIGURE,
                     "kwargs": {"step": iters},

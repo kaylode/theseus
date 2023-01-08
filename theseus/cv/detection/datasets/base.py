@@ -1,8 +1,6 @@
-import os
 from typing import Dict, List
 
 import torch
-from PIL import Image
 
 
 class DetectionDataset(torch.utils.data.Dataset):

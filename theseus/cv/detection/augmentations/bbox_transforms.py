@@ -1,5 +1,3 @@
-import numpy as np
-import torch
 from albumentations.core.transforms_interface import DualTransform
 
 

@@ -4,8 +4,6 @@ from typing import List, Optional
 import cv2
 import numpy as np
 import torch
-import torch.nn as nn
-from PIL import Image
 from pycocotools.coco import COCO
 
 from .base import DetectionDataset
