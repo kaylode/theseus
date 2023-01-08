@@ -175,12 +175,10 @@ class DetectionVisualizerCallbacks(Callbacks):
 
         batch = []
         for idx, (inputs, target, pred) in enumerate(zip(images, targets, preds)):
-            img_show = self.visualizer.denormalize(inputs)
-
             # Ground truth
             boxes = target["boxes"]
             labels = target["labels"].numpy()
-            img_show = self.visualizer.denormalize(inputs)
+            img_show = self.visualizer.denormalize(target)
             self.visualizer.set_image(img_show.copy())
             self.visualizer.draw_bbox(boxes, labels=labels)
             img_show = self.visualizer.get_image()
