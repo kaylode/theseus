@@ -25,7 +25,7 @@ callbacks:
 model:
   name: BaseTimmModel
   args:
-    model_name: efficientnet_b0
+    model_name: convnext_base
     from_pretrained: true
 loss:
   name: ClassificationCELoss

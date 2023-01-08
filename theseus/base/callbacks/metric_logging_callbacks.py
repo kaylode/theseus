@@ -11,9 +11,6 @@ class MetricLoggerCallbacks(Callbacks):
     Callbacks for logging running metric while training every epoch end
     Features:
         - Only do logging
-
-    print_interval: `int`
-        iteration cycle to log out
     """
 
     def __init__(self, **kwargs) -> None:
