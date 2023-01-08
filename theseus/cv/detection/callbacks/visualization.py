@@ -178,7 +178,7 @@ class DetectionVisualizerCallbacks(Callbacks):
             # Ground truth
             boxes = target["boxes"]
             labels = target["labels"].numpy()
-            img_show = self.visualizer.denormalize(target)
+            img_show = self.visualizer.denormalize(inputs)
             self.visualizer.set_image(img_show.copy())
             self.visualizer.draw_bbox(boxes, labels=labels)
             img_show = self.visualizer.get_image()
