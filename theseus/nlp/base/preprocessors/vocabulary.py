@@ -180,4 +180,4 @@ class Vocabulary(object):
         return self.word2idx[word]
 
     def __len__(self):
-        return len(self.word2idx)
+        return max(list(self.word2idx.values()))
