@@ -48,11 +48,17 @@ class ClassificationSmoothCELoss(nn.Module):
         device: torch.device,
     ):
         pred = outputs["outputs"]
-        target = move_to(batch["targets"], device)
+        target = batch["targets"]
 
         if pred.shape == target.shape:
-            loss = self.soft_criterion(pred, target)
+            loss, loss_dict = self.soft_criterion(
+                {"outputs": pred}, {"targets": target}, device
+            )
         else:
-            loss = self.smooth_criterion(pred, target.view(-1).contiguous())
-        loss_dict = {"CE": loss.item()}
+            # batch["targets"] = batch["targets"].view(-1).contiguous()
+            loss, loss_dict = self.smooth_criterion(
+                {"outputs": pred},
+                {"targets": batch["targets"].view(-1).contiguous()},
+                device,
+            )
         return loss, loss_dict
