@@ -1,0 +1,52 @@
+global:
+  exp_name: null
+  exist_ok: false
+  debug: False
+  save_dir: runs
+  pretrained: null
+  resume: null
+  cfg_transform: configs/tabular/transform.yaml
+  device: cpu
+trainer:
+  name: MLTrainer
+  args:
+callbacks:
+  - name: SKLearnCheckpointCallbacks
+  - name: ShapValueExplainer
+    args:
+      plot_type: bar
+  - name: PermutationImportance
+  - name: TensorboardCallbacks
+metrics:
+  - name: SKLAccuracy
+  - name: SKLBalancedAccuracyMetric
+  - name: SKLF1ScoreMetric
+  - name: SKLPrecisionRecall
+  - name: SKLEmbeddingProjection
+model:
+  name: GBClassifiers
+  args:
+      model_name: catboost
+      model_config:
+        iterations: 500
+        learning_rate: 0.1 #0.01
+        depth: 10
+        loss_function: MultiClass
+        bagging_temperature: 0.2
+        od_type: "Iter"
+        metric_period: 50
+        od_wait: 20
+data:
+  dataset:
+    train:
+      name: TabularCSVDataset
+      args:
+        data_path: samples/titanic/train.csv
+        target_column: Survived
+        txt_classnames: samples/titanic/classnames.txt
+    val:
+      name: TabularCSVDataset
+      args:
+        data_path: samples/titanic/val.csv
+        target_column: Survived
+        txt_classnames: samples/titanic/classnames.txt

@@ -1,14 +1,17 @@
 # code from AllenNLP
 
-import torch
-from typing import Dict, Any
-import numpy as np
 import logging
+from typing import Any, Dict
 
-from theseus.utilities.loggers.observer import LoggerObserver
-LOGGER = LoggerObserver.getLogger('main')
+import numpy as np
+import torch
 
-class CosineWithRestarts():
+from theseus.base.utilities.loggers.observer import LoggerObserver
+
+LOGGER = LoggerObserver.getLogger("main")
+
+
+class CosineWithRestarts:
     """
     Cosine annealing with restarts.
     This is described in the paper https://arxiv.org/abs/1608.03983. Note that
@@ -73,7 +76,7 @@ class CosineWithRestarts():
             LOGGER.text(
                 "Cosine annealing scheduler will have no effect on the learning "
                 "rate since t_initial = t_mul = eta_mul = 1.",
-                level = LoggerObserver.WARN
+                level=LoggerObserver.WARN,
             )
         self.t_initial = t_initial
         self.t_mul = t_mul
@@ -84,13 +87,18 @@ class CosineWithRestarts():
         self._cycle_len: int = t_initial
         self._n_restarts: int = 0
         self.optimizer = optimizer
-        self.param_group_field = 'lr'
+        self.param_group_field = "lr"
         self._initial_param_group_field = f"initial_{self.param_group_field}"
         if last_epoch == -1:
             for i, group in enumerate(self.optimizer.param_groups):
                 if self.param_group_field not in group:
-                    raise KeyError(f"{self.param_group_field} missing from param_groups[{i}]")
-                group.setdefault(self._initial_param_group_field, group[self.param_group_field])
+                    raise KeyError(
+                        f"{self.param_group_field} missing from param_groups[{i}]"
+                    )
+                group.setdefault(
+                    self._initial_param_group_field,
+                    group[self.param_group_field],
+                )
         else:
             for i, group in enumerate(self.optimizer.param_groups):
                 if self._initial_param_group_field not in group:
@@ -98,7 +106,8 @@ class CosineWithRestarts():
                         f"{self._initial_param_group_field} missing from param_groups[{i}]"
                     )
         self.base_values = [
-            group[self._initial_param_group_field] for group in self.optimizer.param_groups
+            group[self._initial_param_group_field]
+            for group in self.optimizer.param_groups
         ]
         self.last_epoch = last_epoch
 
@@ -106,7 +115,9 @@ class CosineWithRestarts():
         """
         Returns the state of the scheduler as a `dict`.
         """
-        return {key: value for key, value in self.__dict__.items() if key != "optimizer"}
+        return {
+            key: value for key, value in self.__dict__.items() if key != "optimizer"
+        }
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         """
@@ -130,13 +141,18 @@ class CosineWithRestarts():
             self._cycle_counter = 0
             self._last_restart = step
 
-        base_lrs = [lr * self.eta_mul ** self._n_restarts for lr in self.base_values]
-        self._cycle_len = max(int(self.t_initial * self.t_mul ** self._n_restarts), 1)
+        base_lrs = [lr * self.eta_mul**self._n_restarts for lr in self.base_values]
+        self._cycle_len = max(int(self.t_initial * self.t_mul**self._n_restarts), 1)
 
         lrs = [
             self.eta_min
             + ((lr - self.eta_min) / 2)
-            * (np.cos(np.pi * (self._cycle_counter % self._cycle_len) / self._cycle_len) + 1)
+            * (
+                np.cos(
+                    np.pi * (self._cycle_counter % self._cycle_len) / self._cycle_len
+                )
+                + 1
+            )
             for lr in base_lrs
         ]
 

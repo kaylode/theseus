@@ -2,12 +2,14 @@
 Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.4/tools/program.py
 """
 
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
-import yaml
 import json
-from theseus.utilities.loading import load_yaml
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
-from theseus.utilities.loggers.observer import LoggerObserver
+import yaml
+
+from theseus.base.utilities.loading import load_yaml
+from theseus.base.utilities.loggers.observer import LoggerObserver
+
 LOGGER = LoggerObserver.getLogger("main")
 
 
@@ -27,9 +29,8 @@ class Config(dict):
 
     def save_yaml(self, path):
         LOGGER.text(f"Saving config to {path}...", level=LoggerObserver.DEBUG)
-        with open(path, 'w') as f:
-            yaml.dump(
-                dict(self), f, default_flow_style=False, sort_keys=False)
+        with open(path, "w") as f:
+            yaml.dump(dict(self), f, default_flow_style=False, sort_keys=False)
 
     @classmethod
     def load_yaml(cls, path):
@@ -42,16 +43,15 @@ class Config(dict):
 
 class Opts(ArgumentParser):
     def __init__(self):
-        super(Opts, self).__init__(
-            formatter_class=RawDescriptionHelpFormatter)
+        super(Opts, self).__init__(formatter_class=RawDescriptionHelpFormatter)
         self.add_argument("-c", "--config", help="configuration file to use")
         self.add_argument(
-            "-o", "--opt", nargs='+', help="override configuration options")
+            "-o", "--opt", nargs="+", help="override configuration options"
+        )
 
     def parse_args(self, argv=None):
         args = super(Opts, self).parse_args(argv)
-        assert args.config is not None, \
-            "Please specify --config=configure_file_path."
+        assert args.config is not None, "Please specify --config=configure_file_path."
         args.opt = self._parse_opt(args.opt)
 
         config = Config(args.config)
@@ -64,7 +64,7 @@ class Opts(ArgumentParser):
             return config
         for s in opts:
             s = s.strip()
-            k, v = s.split('=')
+            k, v = s.split("=")
             config[k] = yaml.load(v, Loader=yaml.Loader)
         return config
 
@@ -84,20 +84,27 @@ class Opts(ArgumentParser):
                     if key in global_config.keys():
                         global_config[key] = value
                     else:
-                        LOGGER.text(f"'{key}' not found in config", level=LoggerObserver.WARN)
+                        LOGGER.text(
+                            f"'{key}' not found in config",
+                            level=LoggerObserver.WARN,
+                        )
             else:
-                sub_keys = key.split('.')
+                sub_keys = key.split(".")
                 assert (
                     sub_keys[0] in global_config
                 ), "the sub_keys can only be one of global_config: {}, but get: {}, please check your running command".format(
-                    global_config.keys(), sub_keys[0])
+                    global_config.keys(), sub_keys[0]
+                )
                 cur = global_config[sub_keys[0]]
                 for idx, sub_key in enumerate(sub_keys[1:]):
                     if idx == len(sub_keys) - 2:
                         if sub_key in cur.keys():
                             cur[sub_key] = value
                         else:
-                            LOGGER.text(f"'{key}' not found in config", level=LoggerObserver.WARN)
+                            LOGGER.text(
+                                f"'{key}' not found in config",
+                                level=LoggerObserver.WARN,
+                            )
                     else:
                         cur = cur[sub_key]
         return global_config

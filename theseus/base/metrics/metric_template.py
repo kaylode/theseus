@@ -1,6 +1,6 @@
 class Metric:
-    """Abstract metric class
-    """
+    """Abstract metric class"""
+
     def __init__(self, **kwargs):
         pass
 

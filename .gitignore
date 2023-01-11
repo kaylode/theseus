@@ -1,2 +1,7 @@
 __pycache__/
-*.txt
+*.egg-info
+.pytest_cache
+runs/
+*.zip
+catboost_info/
+.cache

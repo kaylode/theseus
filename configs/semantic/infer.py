@@ -1,26 +1,24 @@
 import matplotlib as mpl
-mpl.use("Agg")
-from theseus.opt import Opts
 
+mpl.use("Agg")
 import os
+
 import cv2
 import torch
-from theseus.opt import Config
-from theseus.semantic.models import MODEL_REGISTRY
-from theseus.semantic.augmentations import TRANSFORM_REGISTRY
-from theseus.semantic.datasets import DATASET_REGISTRY, DATALOADER_REGISTRY
 
-from theseus.utilities.loggers import LoggerObserver
 from theseus.base.pipeline import BaseTestPipeline
-from theseus.utilities.visualization.visualizer import Visualizer
+from theseus.base.utilities.loggers import LoggerObserver
+from theseus.cv.base.utilities.visualization.visualizer import Visualizer
+from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
+from theseus.cv.semantic.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY
+from theseus.cv.semantic.models import MODEL_REGISTRY
+from theseus.opt import Config, Opts
+
 
 class TestPipeline(BaseTestPipeline):
-    def __init__(
-            self,
-            opt: Config
-        ):
+    def __init__(self, opt: Config):
 
-        super(TestPipeline, self).__init__()
+        super(TestPipeline, self).__init__(opt)
         self.opt = opt
 
     def init_globals(self):
@@ -31,9 +29,7 @@ class TestPipeline(BaseTestPipeline):
         self.dataset_registry = DATASET_REGISTRY
         self.dataloader_registry = DATALOADER_REGISTRY
         self.transform_registry = TRANSFORM_REGISTRY
-        self.logger.text(
-            "Overidding registry in pipeline...", LoggerObserver.INFO
-        )
+        self.logger.text("Overidding registry in pipeline...", LoggerObserver.INFO)
 
     @torch.no_grad()
     def inference(self):
@@ -42,22 +38,24 @@ class TestPipeline(BaseTestPipeline):
 
         visualizer = Visualizer()
 
-        saved_mask_dir = os.path.join(self.savedir, 'masks')
-        saved_overlay_dir = os.path.join(self.savedir, 'overlays')
+        saved_mask_dir = os.path.join(self.savedir, "masks")
+        saved_overlay_dir = os.path.join(self.savedir, "overlays")
 
         os.makedirs(saved_mask_dir, exist_ok=True)
         os.makedirs(saved_overlay_dir, exist_ok=True)
 
         for idx, batch in enumerate(self.dataloader):
-            inputs = batch['inputs']
-            img_names = batch['img_names']
-            ori_sizes = batch['ori_sizes']
+            inputs = batch["inputs"]
+            img_names = batch["img_names"]
+            ori_sizes = batch["ori_sizes"]
 
             outputs = self.model.get_prediction(batch, self.device)
-            preds = outputs['masks']
+            preds = outputs["masks"]
 
-            for (inpt, pred, filename, ori_size) in zip(inputs, preds, img_names, ori_sizes):
-                decode_pred = visualizer.decode_segmap(pred)[:,:,::-1]
+            for (inpt, pred, filename, ori_size) in zip(
+                inputs, preds, img_names, ori_sizes
+            ):
+                decode_pred = visualizer.decode_segmap(pred)[:, :, ::-1]
                 resized_decode_mask = cv2.resize(decode_pred, tuple(ori_size))
 
                 # Save mask
@@ -72,9 +70,9 @@ class TestPipeline(BaseTestPipeline):
                 cv2.imwrite(savepath, overlay)
 
                 self.logger.text(f"Save image at {savepath}", level=LoggerObserver.INFO)
-        
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     opts = Opts().parse_args()
     val_pipeline = TestPipeline(opts)
     val_pipeline.inference()

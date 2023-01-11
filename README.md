@@ -9,7 +9,11 @@
 # :pencil: Instructions
 
 ### Installation
-- Inside your project, install this package by `pip install git+https://github.com/kaylode/theseus.git@master`
+- Install Pytorch:
+    - For conda: `conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia`
+    - For PIP: `pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116`
+- Inside your project, install this package by `git+https://github.com/kaylode/theseus.git@master#egg=theseus[cv,cv.classification,cv.detection,cv.semantic]`
+***extra packages can be identified from the project's folder structure***.
 
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.

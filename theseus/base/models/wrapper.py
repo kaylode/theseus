@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class ModelWithLoss(nn.Module):
     """Add utilitarian functions for module to work with pipeline
 
@@ -16,29 +17,25 @@ class ModelWithLoss(nn.Module):
         self.criterion = criterion
         self.device = device
 
-    def forward(self, batch, metrics=None):
+    def forward_batch(self, batch, metrics=None):
         """
         Forward the batch through models, losses and metrics
         If some parameters are needed, it's best to include in the batch
         """
-        outputs = self.model(batch, self.device)
+        outputs = self.model.forward_batch(batch, self.device)
         loss, loss_dict = self.criterion(outputs, batch, self.device)
 
         if metrics is not None:
             for metric in metrics:
                 metric.update(outputs, batch)
 
-        return {
-            'loss': loss,
-            'loss_dict': loss_dict,
-            'model_outputs': outputs
-        }
+        return {"loss": loss, "loss_dict": loss_dict, "model_outputs": outputs}
 
     def training_step(self, batch):
-        return self.forward(batch)
+        return self.forward_batch(batch)
 
     def evaluate_step(self, batch, metrics=None):
-        return self.forward(batch, metrics)
+        return self.forward_batch(batch, metrics)
 
     def state_dict(self):
         return self.model.state_dict()
