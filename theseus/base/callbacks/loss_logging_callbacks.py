@@ -42,24 +42,23 @@ class LossLoggerCallbacks(Callbacks):
         iters = logs["iters"]
         loss_dict = logs["loss_dict"]
         num_iterations = logs["num_iterations"]
+        trainloader_length = len(self.params["trainer"].trainloader)
 
         # Update running loss of batch
         for (key, value) in loss_dict.items():
-            if key in self.running_loss.keys():
-                self.running_loss[key] += value
-            else:
-                self.running_loss[key] = value
+            if key not in self.running_loss.keys():
+                self.running_loss[key] = []
+            self.running_loss[key].append(value)
 
         # Logging
-        if iters % self.print_interval == 0:
+        if iters % self.print_interval == 0 or iters % trainloader_length == 0:
 
             # Running time since last interval
             batch_time = time.time() - self.running_time
 
             # Running loss since last interval
             for key in self.running_loss.keys():
-                self.running_loss[key] /= self.print_interval
-                self.running_loss[key] = np.round(self.running_loss[key], 5)
+                self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
             loss_string = (
                 "{}".format(self.running_loss)[1:-1]
                 .replace("'", "")
@@ -79,7 +78,7 @@ class LossLoggerCallbacks(Callbacks):
             log_dict = [
                 {
                     "tag": f"Training/{k} Loss",
-                    "value": v / self.print_interval,
+                    "value": v,
                     "type": LoggerObserver.SCALAR,
                     "kwargs": {"step": iters},
                 }
@@ -128,10 +127,9 @@ class LossLoggerCallbacks(Callbacks):
 
         # Update batch loss
         for (key, value) in loss_dict.items():
-            if key in self.running_loss.keys():
-                self.running_loss[key] += value
-            else:
-                self.running_loss[key] = value
+            if key not in self.running_loss.keys():
+                self.running_loss[key] = []
+            self.running_loss[key].append(value)
 
     def on_val_epoch_end(self, logs: Dict = None):
         """
@@ -145,8 +143,7 @@ class LossLoggerCallbacks(Callbacks):
 
         # Log loss
         for key in self.running_loss.keys():
-            self.running_loss[key] /= len(valloader)
-            self.running_loss[key] = np.round(self.running_loss[key], 5)
+            self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
         loss_string = (
             "{}".format(self.running_loss)[1:-1].replace("'", "").replace(",", " ||")
         )
@@ -161,7 +158,7 @@ class LossLoggerCallbacks(Callbacks):
         log_dict = [
             {
                 "tag": f"Validation/{k} Loss",
-                "value": v / len(valloader),
+                "value": v,
                 "type": LoggerObserver.SCALAR,
                 "kwargs": {"step": iters},
             }
