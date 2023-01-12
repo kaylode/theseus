@@ -90,3 +90,7 @@ class TimerCallbacks(Callbacks):
             f"Evaluation epoch running time: {h} hours, {m} minutes and {s} seconds",
             level=LoggerObserver.INFO,
         )
+        LOGGER.text(
+            "================================================================",
+            LoggerObserver.INFO,
+        )
