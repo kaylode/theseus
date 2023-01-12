@@ -125,6 +125,15 @@ class TabularPipeline(BasePipeline):
 
         if getattr(self, "metrics", None):
             callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+        if getattr(self, "criterion", None):
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("LossLoggerCallbacks")(
+                    print_interval=self.opt["trainer"]["args"].get("print_interval", 1),
+                ),
+            )
+        if self.debug:
+            callbacks.insert(0, self.callbacks_registry.get("DebugCallbacks")())
         callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
 
         self.init_trainer(callbacks=callbacks)
