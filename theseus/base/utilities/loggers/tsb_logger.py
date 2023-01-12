@@ -3,6 +3,7 @@ import io
 import os
 import traceback
 
+import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
@@ -72,10 +73,14 @@ class TensorboardLogger(LoggerSubscriber):
     ):
         """
         Write a embedding projection to tensorboard
-        :param value: (torch.Tensor) embedding (N, D)
+        :param value: (numpy.ndarray) embedding (N, D)
         :param label_img: (torch.Tensor) normalized image tensors (N, 3, H, W)
         :param metadata: (List) list of coresponding labels
         """
+
+        if isinstance(value, np.ndarray):
+            value = torch.from_numpy(value)
+
         self.writer.add_embedding(
             tag=tag,
             mat=value,

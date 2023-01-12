@@ -33,7 +33,7 @@ class TorchCheckpointCallbacks(Callbacks):
     def __init__(
         self,
         save_dir: str = "runs",
-        save_interval: int = 10,
+        save_interval: int = None,
         best_key: str = None,
         resume: str = None,
         **kwargs,
@@ -46,6 +46,15 @@ class TorchCheckpointCallbacks(Callbacks):
         os.makedirs(self.save_dir, exist_ok=True)
         self.save_interval = save_interval
         self.resume = resume
+
+    def auto_get_save_interval(self, train_fraction=0.5):
+        """
+        Automatically decide the number of save interval
+        """
+        trainloader = self.params["trainer"].trainloader
+        num_iterations_per_epoch = len(trainloader)
+        save_interval = int(train_fraction * num_iterations_per_epoch)
+        return save_interval
 
     def load_checkpoint(self, path, trainer):
         """
@@ -98,6 +107,13 @@ class TorchCheckpointCallbacks(Callbacks):
         """
         if self.resume is not None:
             self.load_checkpoint(self.resume, self.params["trainer"])
+
+        if self.save_interval is None:
+            self.save_interval = self.auto_get_save_interval()
+            LOGGER.text(
+                "Save interval not specified. Auto calculating...",
+                level=LoggerObserver.DEBUG,
+            )
 
     def on_finish(self, logs: Dict = None):
         """

@@ -95,9 +95,6 @@ class SupervisedTrainer(BaseTrainer):
             if self.use_cuda:
                 torch.cuda.synchronize()
 
-            # Calculate current iteration
-            self.iters = self.iters + 1
-
             # Get learning rate
             lrl = [x["lr"] for x in self.optimizer.param_groups]
             lr = sum(lrl) / len(lrl)
@@ -111,6 +108,9 @@ class SupervisedTrainer(BaseTrainer):
                     "lr": lr,
                 },
             )
+
+            # Calculate current iteration
+            self.iters = self.iters + 1
 
         if self.scheduler and self.step_per_epoch:
             self.scheduler.step()

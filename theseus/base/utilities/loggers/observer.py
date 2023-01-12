@@ -2,6 +2,7 @@ import logging
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.graph_objs as go
 import torch
 
@@ -20,7 +21,7 @@ def get_type(value):
         return LoggerObserver.TORCH_MODULE
     if isinstance(value, mpl.figure.Figure) or isinstance(value, go.Figure):
         return LoggerObserver.FIGURE
-    if isinstance(value, torch.Tensor):
+    if isinstance(value, torch.Tensor) or isinstance(value, np.ndarray):
         if len(value.shape) == 2:
             return LoggerObserver.EMBED
     if isinstance(value, (int, float)):
