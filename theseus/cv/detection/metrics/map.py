@@ -188,12 +188,23 @@ class MeanAveragePrecision(Metric):
 
         if osp.isfile(self.pred_json):
             os.remove(self.pred_json)
+
         with open(self.pred_json, "w") as outfile:
             json.dump(results, outfile)
 
+        return results
+
     def value(self):
         self.make_gt_json_file(self.gt_json)
-        self.make_pred_json_file(self.pred_json)
+        results = self.make_pred_json_file(self.pred_json)
+
+        if len(results) == 0:  # empty prediction
+            return {
+                f"precision": 0,
+                f"recall": 0,
+                "f1_score": 0,
+            }
+
         coco_gt = COCO(self.gt_json)
         coco_pred = coco_gt.loadRes(self.pred_json)
 
