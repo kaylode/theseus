@@ -4,10 +4,12 @@ on:
     branches:
       - master
       - 'V**'
+      - dev
   pull_request:
     branches:
       - master
       - 'V**'
+      - dev
 jobs:
   build:
     runs-on: ubuntu-latest
