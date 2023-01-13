@@ -10,8 +10,6 @@ def override_config():
     config["global"]["exist_ok"] = True
     config["global"]["save_dir"] = "runs"
     config["global"]["device"] = "cpu"
-    config["trainer"]["args"]["print_interval"] = 1
-    config["trainer"]["args"]["save_interval"] = 2
     config["trainer"]["args"]["use_fp16"] = False
     config["trainer"]["args"]["num_iterations"] = 10
     config["data"]["dataloader"]["train"]["args"]["batch_size"] = 1
