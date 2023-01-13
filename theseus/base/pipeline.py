@@ -26,6 +26,7 @@ class BasePipeline(object):
     def __init__(self, opt: Config):
         super(BasePipeline, self).__init__()
         self.opt = opt
+        self.initialized = False
 
     def init_globals(self):
         # Main Loggers
@@ -270,6 +271,8 @@ class BasePipeline(object):
         )
 
     def init_pipeline(self, train=False):
+        if self.initialized:
+            return
         self.init_globals()
         self.init_registry()
         if train:
@@ -302,6 +305,7 @@ class BasePipeline(object):
             callbacks.insert(0, self.callbacks_registry.get("DebugCallbacks")())
         callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
         self.init_trainer(callbacks)
+        self.initialized = True
 
     def fit(self):
         self.init_pipeline(train=True)
@@ -310,7 +314,7 @@ class BasePipeline(object):
     def evaluate(self):
         self.init_pipeline(train=False)
         self.logger.text("Evaluating...", level=LoggerObserver.INFO)
-        self.trainer.evaluate_epoch()
+        return self.trainer.evaluate_epoch()
 
 
 class BaseTestPipeline(object):

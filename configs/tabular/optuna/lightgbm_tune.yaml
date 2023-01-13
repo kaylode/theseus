@@ -1,0 +1,29 @@
+includes:
+  - configs/tabular/base/globals.yaml
+  - configs/tabular/base/data.yaml
+  - configs/tabular/base/transform.yaml
+model:
+  name: GBClassifiers
+  args:
+      model_name: lightgbm
+      model_config:
+        objective: multiclass
+        lambda_l1: [0.000001, 10.0]
+        lambda_l2: [0.000001, 10.0]
+        num_leaves: [2, 512]
+        feature_fraction: [0.1, 1.0]
+        bagging_fraction: [0.1, 1.0]
+        bagging_freq: [0, 15]
+        min_child_samples: [1, 100]
+        learning_rate: [0.00001, 0.1]
+optuna:
+  int:
+    - model.args.model_config.num_leaves
+    - model.args.model_config.bagging_freq
+    - model.args.model_config.min_child_samples
+  float:
+    - model.args.model_config.learning_rate
+    - model.args.model_config.lambda_l2
+    - model.args.model_config.lambda_l2
+    - model.args.model_config.feature_fraction
+    - model.args.model_config.bagging_fraction

@@ -4,6 +4,7 @@ Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.4/tools/p
 
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from copy import deepcopy
 
 import yaml
 
@@ -19,15 +20,15 @@ class Config(dict):
     _depth = 0
     _yaml_paths = []
 
-    def __new__(class_, yaml_path, *args, **kwargs):
-        if yaml_path in class_._yaml_paths:
-            LOGGER.text(
-                "Circular includes detected in YAML initialization!",
-                level=LoggerObserver.CRITICAL,
-            )
-            raise ValueError()
-        class_._yaml_paths.append(yaml_path)
-        return dict.__new__(class_, yaml_path, *args, **kwargs)
+    # def __new__(class_, yaml_path, *args, **kwargs):
+    #     if yaml_path in class_._yaml_paths:
+    #         LOGGER.text(
+    #             "Circular includes detected in YAML initialization!",
+    #             level=LoggerObserver.CRITICAL,
+    #         )
+    #         raise ValueError()
+    #     class_._yaml_paths.append(yaml_path)
+    #     return dict.__new__(class_, yaml_path, *args, **kwargs)
 
     def __init__(self, yaml_path):
         super(Config, self).__init__()
@@ -46,7 +47,7 @@ class Config(dict):
         else:
             super(Config, self).update(config)
 
-        self._yaml_paths.pop(-1)  # the last successful yaml will be popped out
+        # self._yaml_paths.pop(-1)  # the last successful yaml will be popped out
 
     def __getattr__(self, key):
         if key in self:

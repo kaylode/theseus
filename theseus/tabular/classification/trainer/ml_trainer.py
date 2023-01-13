@@ -35,7 +35,7 @@ class MLTrainer:
         )
 
         self.callbacks.run("on_val_epoch_start")
-        metric_dict = self.evaluate()
+        metric_dict = self.evaluate_epoch()
         self.callbacks.run(
             "on_val_epoch_end",
             {
@@ -47,7 +47,7 @@ class MLTrainer:
         )
         self.callbacks.run("on_finish")
 
-    def evaluate(self):
+    def evaluate_epoch(self):
         """
         Perform validation one epoch
         """

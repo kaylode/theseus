@@ -86,13 +86,20 @@ class TabularPipeline(BasePipeline):
             registry=self.trainer_registry,
         )
 
+    def init_loading(self):
+        if getattr(self, "pretrained", None):
+            self.model.load_model(self.pretrained)
+
     def init_pipeline(self, train=False):
+        if self.initialized:
+            return
         self.init_globals()
         self.init_registry()
         if train:
             self.init_train_dataloader()
             self.init_validation_dataloader()
             self.init_model()
+            self.init_loading()
             self.init_metrics()
             callbacks = self.init_callbacks()
             self.save_configs()
@@ -117,3 +124,4 @@ class TabularPipeline(BasePipeline):
         callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
 
         self.init_trainer(callbacks=callbacks)
+        self.initialized = True
