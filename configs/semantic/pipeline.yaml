@@ -1,21 +1,7 @@
-global:
-  exp_name: null
-  exist_ok: false
-  debug: true
-  cfg_transform: configs/semantic/transform.yaml
-  save_dir: runs
-  device: cuda:0
-  pretrained: null
-  resume: null
-trainer:
-  name: SupervisedTrainer
-  args:
-    num_iterations: 10000
-    clip_grad: 10.0
-    evaluate_interval: 1
-    print_interval: 20
-    save_interval: 1000
-    use_fp16: true
+includes:
+  - configs/base/globals.yaml
+  - configs/base/optimizer.yaml
+  - configs/semantic/transform.yaml
 callbacks:
   - name: TorchCheckpointCallbacks
     args:
@@ -45,22 +31,6 @@ metrics:
     args:
       ignore_index: 0
       thresh: 0.5
-optimizer:
-  name: AdamW
-  args:
-    lr: 0.001
-    weight_decay: 0.0005
-    betas:
-      - 0.937
-      - 0.999
-scheduler:
-  name: SchedulerWrapper
-  args:
-    scheduler_name: cosine2
-    t_initial: 7
-    t_mul: 0.9
-    eta_mul: 0.9
-    eta_min: 1.0e-06
 data:
   dataset:
     train:

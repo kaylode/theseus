@@ -1,21 +1,8 @@
-global:
-  exp_name: null
-  exist_ok: false
-  debug: true
-  cfg_transform: ./configs/detection/transform.yaml
-  save_dir: /runs
-  device: cuda:0
-  pretrained: null
-  resume: null
-trainer:
-  name: SupervisedTrainer
-  args:
-    num_iterations: 100000
-    clip_grad: 0.1
-    evaluate_interval: 1
-    print_interval: 20
-    save_interval: 1000
-    use_fp16: false
+includes:
+  - configs/base/globals.yaml
+  - configs/base/optimizer.yaml
+  - configs/detection/transform.yaml
+
 callbacks:
   - name: TorchCheckpointCallbacks
   - name: DetectionVisualizerCallbacks
@@ -56,17 +43,6 @@ metrics:
        min_conf: 0.2
        min_iou: 0.5
        eps: 1e-6
-optimizer:
-  name: AdamW
-  args:
-    lr: 0.00001
-    weight_decay: 0.0001
-scheduler:
-  name: SchedulerWrapper
-  args:
-    scheduler_name: multistep
-    milestones: [20000, 50000]
-    gamma: 0.1
 data:
   dataset:
     train:

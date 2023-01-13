@@ -1,0 +1,38 @@
+augmentations:
+  train:
+    name: PreprocessCompose
+    args:
+      preproc_list:
+      - name: FillNaN
+        args:
+          column_names: ['Embarked', 'Cabin']
+          fill_with: None
+      - name: FillNaN
+        args:
+          column_names: ['Age']
+          fill_with: 0
+      - name: LabelEncode
+      - name: Standardize
+        args:
+          method: minmax
+          column_names: ["*"]
+          exclude_columns: ["Survived"]
+
+  val:
+    name: PreprocessCompose
+    args:
+      preproc_list:
+      - name: FillNaN
+        args:
+          column_names: ['Embarked', 'Cabin']
+          fill_with: None
+      - name: FillNaN
+        args:
+          column_names: ['Age']
+          fill_with: 0
+      - name: LabelEncode
+      - name: Standardize
+        args:
+          method: minmax
+          column_names: ["*"]
+          exclude_columns: ["Survived"]

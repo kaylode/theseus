@@ -1,0 +1,14 @@
+data:
+  dataset:
+    train:
+      name: TabularCSVDataset
+      args:
+        data_path: samples/titanic/train.csv
+        target_column: Survived
+        txt_classnames: samples/titanic/classnames.txt
+    val:
+      name: TabularCSVDataset
+      args:
+        data_path: samples/titanic/val.csv
+        target_column: Survived
+        txt_classnames: samples/titanic/classnames.txt
