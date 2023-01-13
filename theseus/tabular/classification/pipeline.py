@@ -75,26 +75,6 @@ class TabularPipeline(BasePipeline):
             level=LoggerObserver.INFO,
         )
 
-    def init_metrics(self):
-        classnames = self.val_dataset["classnames"]
-        num_classes = len(classnames)
-        self.metrics = get_instance_recursively(
-            self.opt["metrics"],
-            num_classes=num_classes,
-            classnames=classnames,
-            registry=self.metric_registry,
-        )
-
-    def init_callbacks(self):
-        callbacks = get_instance_recursively(
-            self.opt["callbacks"],
-            save_dir=getattr(self, "save_dir", "runs"),
-            resume=getattr(self, "resume", None),
-            config_dict=self.opt,
-            registry=self.callbacks_registry,
-        )
-        return callbacks
-
     def init_trainer(self, callbacks=None):
         self.trainer = get_instance(
             self.opt["trainer"],
@@ -129,7 +109,7 @@ class TabularPipeline(BasePipeline):
             callbacks.insert(
                 0,
                 self.callbacks_registry.get("LossLoggerCallbacks")(
-                    print_interval=self.opt["trainer"]["args"].get("print_interval", 1),
+                    print_interval=self.opt["global"].get("print_interval", None),
                 ),
             )
         if self.debug:

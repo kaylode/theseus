@@ -15,14 +15,12 @@ class SKLearnCheckpointCallbacks(Callbacks):
     def __init__(
         self,
         save_dir: str = "runs",
-        save_interval: int = 10,
         **kwargs,
     ) -> None:
         super().__init__()
 
         self.best_value = 0
         self.save_dir = save_dir
-        self.save_interval = save_interval
 
     def save_checkpoint(self, trainer, outname="last"):
         """

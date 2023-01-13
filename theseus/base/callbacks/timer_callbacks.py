@@ -19,9 +19,6 @@ class TimerCallbacks(Callbacks):
     Callbacks for logging running loss/metric/time while training
     Features:
         - Only do logging
-
-    print_interval: `int`
-        iteration cycle to log out
     """
 
     def __init__(self, **kwargs) -> None:

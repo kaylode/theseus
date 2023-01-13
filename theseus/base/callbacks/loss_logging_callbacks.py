@@ -32,7 +32,7 @@ class LossLoggerCallbacks(Callbacks):
         """
         trainloader = self.params["trainer"].trainloader
         num_iterations_per_epoch = len(trainloader)
-        print_interval = int(train_fraction * num_iterations_per_epoch)
+        print_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
         return print_interval
 
     def on_start(self, logs: Dict = None):

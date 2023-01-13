@@ -53,7 +53,7 @@ class TorchCheckpointCallbacks(Callbacks):
         """
         trainloader = self.params["trainer"].trainloader
         num_iterations_per_epoch = len(trainloader)
-        save_interval = int(train_fraction * num_iterations_per_epoch)
+        save_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
         return save_interval
 
     def load_checkpoint(self, path, trainer):
