@@ -2,6 +2,7 @@ includes:
   - configs/tabular/base/globals.yaml
   - configs/tabular/base/data.yaml
   - configs/tabular/base/transform.yaml
+  - configs/tabular/optuna/optuna.yaml
 model:
   name: GBClassifiers
   args:

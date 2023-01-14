@@ -46,7 +46,30 @@ class OptunaWrapper:
             storage=self.storage,
             load_if_exists=True,
         )
+
         self.study.optimize(wrapped_objective, n_trials=n_trials)
+
+        # LOGGER.log(
+        #     [
+        #         {
+        #             "tag": "Optuna Optimization History",
+        #             "value": optuna.visualization.plot_optimization_history(self.study),
+        #             "type": LoggerObserver.FIGURE,
+        #             "kwargs": {"step": 0},
+        #         }
+        #     ]
+        # )
+
+        # LOGGER.log(
+        #     [
+        #         {
+        #             "tag": "Optuna Parameter Importances",
+        #             "value": optuna.visualization.plot_param_importances(self.study),
+        #             "type": LoggerObserver.FIGURE,
+        #             "kwargs": {"step": 0},
+        #         }
+        #     ]
+        # )
 
         best_trial = self.study.best_trial
         self.save_best_config(save_dir, config, best_trial.params)
