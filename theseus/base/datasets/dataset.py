@@ -61,7 +61,11 @@ class ImageDataset(data.Dataset):
     """
 
     def __init__(
-        self, image_dir: str, txt_classnames: str, transform: List = None, **kwargs
+        self,
+        image_dir: str,
+        txt_classnames: str = None,
+        transform: List = None,
+        **kwargs
     ):
         super().__init__()
         self.image_dir = image_dir
@@ -73,8 +77,9 @@ class ImageDataset(data.Dataset):
         """
         Load filepaths into memory
         """
-        with open(self.txt_classnames, "r") as f:
-            self.classnames = f.read().splitlines()
+        if self.txt_classnames:
+            with open(self.txt_classnames, "r") as f:
+                self.classnames = f.read().splitlines()
         self.fns = []
         image_names = os.listdir(self.image_dir)
         for image_name in image_names:
@@ -93,7 +98,7 @@ class ImageDataset(data.Dataset):
             try:
                 im = self.transform(im)
             except:
-                im = self.transform(image=np.array(im))["image"]
+                im = self.transform(image=np.array(im) / 255.0)["image"]
 
         return {
             "input": im,
