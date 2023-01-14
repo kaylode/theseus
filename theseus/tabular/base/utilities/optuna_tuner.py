@@ -12,10 +12,14 @@ LOGGER = LoggerObserver.getLogger("main")
 
 
 class OptunaWrapper:
+    def __init__(self, storage=None) -> None:
+        self.storage = storage
+
     def tune(
         self,
         config: Config,
         pipeline_class: BasePipeline,
+        study_name: str = None,
         best_key: str = None,
         n_trials: int = 100,
         direction: str = "maximize",
@@ -36,7 +40,12 @@ class OptunaWrapper:
             trial, config, pipeline_class, best_key
         )
 
-        self.study = optuna.create_study(direction=direction)
+        self.study = optuna.create_study(
+            study_name=study_name,
+            direction=direction,
+            storage=self.storage,
+            load_if_exists=True,
+        )
         self.study.optimize(wrapped_objective, n_trials=n_trials)
 
         best_trial = self.study.best_trial
