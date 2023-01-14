@@ -167,9 +167,7 @@ class DetectionVisualizerCallbacks(Callbacks):
         images = last_batch["inputs"]
         targets = last_batch["targets"]
 
-        preds = model.model.get_prediction(
-            {"inputs": images, "img_sizes": images.shape[-2:]}, model.device
-        )
+        preds = model.model.get_prediction({"inputs": images}, model.device)
 
         preds = [i for i in zip(preds["boxes"], preds["confidences"], preds["labels"])]
 

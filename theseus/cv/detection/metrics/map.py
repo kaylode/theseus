@@ -56,8 +56,7 @@ class MeanAveragePrecision(Metric):
         self.idx = 0
 
     def update(self, output, batch):
-        img_sizes = batch["img_sizes"]
-        width, height = img_sizes[0, -2:]
+        width, height = batch["inputs"].shape[-2:]
         target = batch["targets"]
         img_ids = batch["img_ids"]
         image_names = batch["img_names"]
