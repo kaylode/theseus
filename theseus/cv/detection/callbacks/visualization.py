@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -22,10 +22,18 @@ class DetectionVisualizerCallbacks(Callbacks):
         - Visualize prediction at every end of validation
     """
 
-    def __init__(self, order, **kwargs) -> None:
+    def __init__(
+        self,
+        order,
+        mean: List[float] = [0.485, 0.456, 0.406],
+        std: List[float] = [0.229, 0.224, 0.225],
+        **kwargs
+    ) -> None:
         super().__init__()
         self.visualizer = Visualizer()
         self.order = order
+        self.mean = mean
+        self.std = std
 
     def sanitycheck(self, logs: Dict = None):
         """
@@ -58,7 +66,7 @@ class DetectionVisualizerCallbacks(Callbacks):
         for idx, (inputs, ann) in enumerate(zip(images, anns)):
             boxes = ann["boxes"]
             labels = ann["labels"].numpy()
-            img_show = self.visualizer.denormalize(inputs)
+            img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             decode_boxes = self.visualizer.denormalize_bboxes(
                 boxes, order=self.order, image_shape=img_show.shape[:2]
             )
@@ -108,7 +116,7 @@ class DetectionVisualizerCallbacks(Callbacks):
         for idx, (inputs, ann) in enumerate(zip(images, anns)):
             boxes = ann["boxes"]
             labels = ann["labels"].numpy()
-            img_show = self.visualizer.denormalize(inputs)
+            img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             decode_boxes = self.visualizer.denormalize_bboxes(
                 boxes, order=self.order, image_shape=img_show.shape[:2]
             )
@@ -176,7 +184,7 @@ class DetectionVisualizerCallbacks(Callbacks):
             # Ground truth
             boxes = target["boxes"]
             labels = target["labels"].numpy()
-            img_show = self.visualizer.denormalize(inputs)
+            img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             self.visualizer.set_image(img_show.copy())
             self.visualizer.draw_bbox(boxes, labels=labels)
             img_show = self.visualizer.get_image()
@@ -184,7 +192,9 @@ class DetectionVisualizerCallbacks(Callbacks):
 
             # Prediction
             boxes, scores, labels = pred
-            decode_pred = self.visualizer.denormalize(inputs)
+            decode_pred = self.visualizer.denormalize(
+                inputs, mean=self.mean, std=self.std
+            )
             self.visualizer.set_image(decode_pred.copy())
             self.visualizer.draw_bbox(boxes, labels=labels, scores=scores)
             decode_pred = self.visualizer.get_image()

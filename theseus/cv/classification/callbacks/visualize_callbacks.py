@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import torch
@@ -22,10 +22,17 @@ class ClassificationVisualizerCallbacks(Callbacks):
 
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        mean: List[float] = [0.485, 0.456, 0.406],
+        std: List[float] = [0.229, 0.224, 0.225],
+        **kwargs,
+    ) -> None:
         super().__init__()
 
         self.visualizer = Visualizer()
+        self.mean = mean
+        self.std = std
 
     def sanitycheck(self, logs: Dict = None):
         """
@@ -101,7 +108,7 @@ class ClassificationVisualizerCallbacks(Callbacks):
 
         batch = []
         for idx, inputs in enumerate(images):
-            img_show = self.visualizer.denormalize(inputs)
+            img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
         grid_img = self.visualizer.make_grid(batch)
@@ -156,7 +163,7 @@ class ClassificationVisualizerCallbacks(Callbacks):
             label = label_indices[idx]
             score = scores[idx]
 
-            img_show = self.visualizer.denormalize(image)
+            img_show = self.visualizer.denormalize(image, mean=self.mean, std=self.std)
             self.visualizer.set_image(img_show)
             if valloader.dataset.classnames is not None:
                 label = valloader.dataset.classnames[label]
