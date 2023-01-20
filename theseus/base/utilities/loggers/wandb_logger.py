@@ -179,7 +179,7 @@ class WandbLogger(LoggerSubscriber):
 
         import pandas as pd
 
-        df_dict = {"embeddings": [e for e in value]}
+        df_dict = {"embeddings": [e for e in value.tolist()]}
         if metadata is not None and metadata_header is not None:
             for meta in metadata:
                 for idx, item in enumerate(meta):
