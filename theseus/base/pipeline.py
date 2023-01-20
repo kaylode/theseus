@@ -203,7 +203,7 @@ class BasePipeline(object):
             self.last_epoch = iters // len(self.train_dataloader) - 1
 
     def init_scheduler(self):
-        if "scheduler" in self.opt.keys():
+        if "scheduler" in self.opt.keys() and self.opt["scheduler"] is not None:
             self.scheduler = get_instance(
                 self.opt["scheduler"],
                 registry=self.scheduler_registry,

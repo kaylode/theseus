@@ -171,3 +171,5 @@ class SupervisedTrainer(BaseTrainer):
                 "last_outputs": outputs["model_outputs"],
             },
         )
+
+        return metric_dict
