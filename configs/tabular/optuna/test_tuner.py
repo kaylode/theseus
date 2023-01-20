@@ -1,6 +1,6 @@
 import pytest
 
-from theseus.base.utilities.optuna_tuner import OptunaWrapper
+from theseus.base.utilities.optuna_tuner import DETRCustomBackbone
 
 # from configs.tabular.infer import TestPipeline
 from theseus.tabular.classification.pipeline import TabularPipeline
@@ -8,7 +8,7 @@ from theseus.tabular.classification.pipeline import TabularPipeline
 
 @pytest.mark.order(1)
 def test_train_clf_tune(override_tuner_config):
-    tuner = OptunaWrapper()
+    tuner = DETRCustomBackbone()
     tuner.tune(
         config=override_tuner_config,
         pipeline_class=TabularPipeline,
