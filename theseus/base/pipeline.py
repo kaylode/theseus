@@ -17,6 +17,7 @@ from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loading import load_state_dict
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
+from theseus.base.utilities.seed import seed_everything
 from theseus.opt import Config
 
 
@@ -26,6 +27,9 @@ class BasePipeline(object):
     def __init__(self, opt: Config):
         super(BasePipeline, self).__init__()
         self.opt = opt
+        self.seed = self.opt["global"].get("seed", 1702)
+        seed_everything(self.seed)
+
         self.initialized = False
 
     def init_globals(self):
@@ -322,6 +326,8 @@ class BaseTestPipeline(object):
 
         super(BaseTestPipeline, self).__init__()
         self.opt = opt
+        self.seed = self.opt["global"].get("seed", 1702)
+        seed_everything(self.seed)
 
     def init_globals(self):
         # Main Loggers
