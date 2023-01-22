@@ -108,6 +108,7 @@ class WandbCallbacks(Callbacks):
             run_name=self.run_name,
             config_dict=self.config_dict,
             group_name=group_name,
+            **kwargs,
         )
         LOGGER.subscribe(self.wandb_logger)
 

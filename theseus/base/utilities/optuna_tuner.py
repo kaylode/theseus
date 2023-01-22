@@ -4,16 +4,16 @@ from copy import deepcopy
 
 import optuna
 
+from theseus.base.callbacks.optuna_callbacks import OptunaCallbacks
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
 from theseus.opt import Config
-
-LOGGER = LoggerObserver.getLogger("main")
 
 
 class OptunaWrapper:
     def __init__(self, storage=None) -> None:
         self.storage = storage
+        self.logger = LoggerObserver.getLogger("main")
 
     def tune(
         self,
@@ -24,15 +24,18 @@ class OptunaWrapper:
         n_trials: int = 100,
         direction: str = "maximize",
         save_dir: str = None,
+        pruner=None,
+        sampler=None,
     ):
 
         if "optuna" not in config.keys():
-            LOGGER.text(
+            self.logger.text(
                 "Optuna key not found in config. Exit optuna",
                 level=LoggerObserver.CRITICAL,
             )
             raise ValueError()
 
+        self.save_dir = save_dir
         if save_dir is not None:
             os.makedirs(save_dir, exist_ok=True)
 
@@ -45,6 +48,8 @@ class OptunaWrapper:
             direction=direction,
             storage=self.storage,
             load_if_exists=True,
+            pruner=pruner,
+            sampler=sampler,
         )
 
         self.study.optimize(wrapped_objective, n_trials=n_trials)
@@ -82,8 +87,10 @@ class OptunaWrapper:
             for key in keys[:-1]:
                 here = here.setdefault(key, {})
             here[keys[-1]] = param_val
+        save_dir = osp.join(save_dir, "best_configs")
+        os.makedirs(save_dir, exist_ok=True)
         config.save_yaml(osp.join(save_dir, "best_pipeline.yaml"))
-        LOGGER.text(
+        self.logger.text(
             f"Best configuration saved at {save_dir}", level=LoggerObserver.INFO
         )
 
@@ -123,17 +130,22 @@ class OptunaWrapper:
             here[keys[-1]] = trial.suggest_categorical(param_str, old_value)
 
         else:
-            LOGGER.text(
+            self.logger.text(
                 f"{variable_type} is not supported by Optuna",
                 level=LoggerObserver.ERROR,
             )
             raise ValueError()
 
     def objective(
-        self, trial, config: Config, pipeline_class: BasePipeline, best_key: str = None
+        self,
+        trial: optuna.Trial,
+        config: Config,
+        pipeline_class: BasePipeline,
+        best_key: str = None,
     ):
         """Define the objective function"""
 
+        # Override config with optuna trials values
         tmp_config = deepcopy(config)
         optuna_params = tmp_config["optuna"]
         for variable_type in optuna_params.keys():
@@ -141,10 +153,36 @@ class OptunaWrapper:
                 self._override_dict_with_optuna(
                     trial, tmp_config, param_str, variable_type
                 )
+
+        # Set fixed run's config
+        trial.set_user_attr("best_key", best_key)
+        if tmp_config["global"]["exp_name"] is not None:
+            tmp_config["global"]["exp_name"] += f"_{trial.number}"
+        tmp_config["global"]["save_dir"] = self.save_dir
+
+        # Hook a callback inside pipeline
         pipeline = pipeline_class(tmp_config)
-        pipeline.fit()
+        pipeline.init_trainer = self.callback_hook(
+            trial=trial, init_trainer_function=pipeline.init_trainer
+        )
+
+        # Start training and evaluation
+        try:
+            pipeline.fit()
+        except optuna.TrialPruned():
+            self.logger.text(f"Trial {trial.number} has been pruned")
         score_dict = pipeline.evaluate()
         del tmp_config
+
         if best_key is not None:
             return score_dict[best_key]
         return score_dict
+
+    def callback_hook(self, trial, init_trainer_function):
+        callback = OptunaCallbacks(trial=trial)
+
+        def hook_optuna_callback(callbacks):
+            callbacks.append(callback)
+            init_trainer_function(callbacks)
+
+        return hook_optuna_callback

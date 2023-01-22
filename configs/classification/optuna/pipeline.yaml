@@ -1,0 +1,24 @@
+includes:
+  - configs/base/globals.yaml
+  - configs/base/optimizer.yaml
+  - configs/classification/transform.yaml
+  - configs/classification/pipeline.yaml
+
+trainer:
+  name: SupervisedTrainer
+  args:
+    num_iterations: 10
+    clip_grad: null
+    evaluate_interval: 0
+    use_fp16: false
+
+callbacks: []
+
+optimizer:
+  name: AdamW
+  args:
+    lr: [0.0001, 0.001]
+
+optuna:
+  float:
+    - optimizer.args.lr

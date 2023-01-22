@@ -26,3 +26,13 @@ def override_test_config():
     config["global"]["device"] = "cpu"
     config["data"]["dataloader"]["args"]["batch_size"] = 1
     return config
+
+
+@pytest.fixture(scope="session")
+def override_tuner_config(request):
+    config = Config(f"./configs/classification/optuna/pipeline.yaml")
+    config["global"]["exp_name"] = "pytest_cls_optuna"
+    config["global"]["exist_ok"] = True
+    config["global"]["save_dir"] = "runs"
+    config["global"]["device"] = "cpu"
+    return config

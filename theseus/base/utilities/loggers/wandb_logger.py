@@ -29,6 +29,7 @@ class WandbLogger(LoggerSubscriber):
         group_name: str = None,
         save_dir: str = None,
         config_dict: Dict = None,
+        **kwargs,
     ):
         self.project_name = project_name
         self.username = username
@@ -47,6 +48,7 @@ class WandbLogger(LoggerSubscriber):
             project=project_name,
             name=run_name,
             resume="allow",
+            reinit=kwargs.get("reinit", False),
         )
 
         wandb_logger.watch_called = False
