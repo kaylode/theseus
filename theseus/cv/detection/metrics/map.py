@@ -1,6 +1,8 @@
+import hashlib
 import json
 import os
 import os.path as osp
+from datetime import datetime
 
 import numpy as np
 from pycocotools.coco import COCO
@@ -43,8 +45,11 @@ class MeanAveragePrecision(Metric):
         self.tmp_save_dir = tmp_save_dir
         os.makedirs(self.tmp_save_dir, exist_ok=True)
 
-        self.gt_json = osp.join(self.tmp_save_dir, "gt_coco.json")
-        self.pred_json = osp.join(self.tmp_save_dir, "pred_coco.json")
+        date_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.filename = hashlib.sha256(date_string.encode("utf-8")).hexdigest()
+
+        self.gt_json = osp.join(self.tmp_save_dir, f"{self.filename}_gt.json")
+        self.pred_json = osp.join(self.tmp_save_dir, f"{self.filename}_pred.json")
         self.reset()
 
     def reset(self):
