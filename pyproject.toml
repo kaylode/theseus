@@ -42,9 +42,7 @@ dependencies = [
     "tabulate==0.8.10",
     "loguru==0.6.0",
     "kaleido==0.2.1",
-    "optuna==3.0.5",
-    "optuna-dashboard==0.8.1",
-    "optuna-fast-fanova==0.0.4"
+    "optuna==3.0.5"
 ]
 
 [project.optional-dependencies]
