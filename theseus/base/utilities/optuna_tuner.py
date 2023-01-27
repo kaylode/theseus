@@ -167,10 +167,7 @@ class OptunaWrapper:
         )
 
         # Start training and evaluation
-        try:
-            pipeline.fit()
-        except optuna.TrialPruned():
-            self.logger.text(f"Trial {trial.number} has been pruned")
+        pipeline.fit()
         score_dict = pipeline.evaluate()
         del tmp_config
 
