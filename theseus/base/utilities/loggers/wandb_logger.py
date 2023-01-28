@@ -49,6 +49,7 @@ class WandbLogger(LoggerSubscriber):
             name=run_name,
             resume="allow",
             reinit=kwargs.get("reinit", False),
+            tags=kwargs.get("tags", None),
         )
 
         wandb_logger.watch_called = False
@@ -77,6 +78,11 @@ class WandbLogger(LoggerSubscriber):
         :param values: (number) value for corresponding tag
         :param step: (int) logging step
         """
+
+        # define our custom x axis metric
+        wandb_logger.define_metric("iterations")
+        # define which metrics will be plotted against it
+        wandb_logger.define_metric(tag, step_metric="iterations")
 
         wandb_logger.log({tag: value, "iterations": step})
 
