@@ -4,6 +4,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Dict
 
+from deepdiff import DeepDiff
+
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
@@ -15,6 +17,26 @@ except ModuleNotFoundError:
     pass
 
 LOGGER = LoggerObserver.getLogger("main")
+
+
+def pretty_print_diff(diff):
+    texts = []
+    for type_key in diff.keys():
+        for config_key in diff[type_key].keys():
+            if type_key == "values_changed":
+                texts.append(
+                    config_key
+                    + ": "
+                    + str(diff[type_key][config_key]["old_value"])
+                    + "-->"
+                    + str(diff[type_key][config_key]["new_value"])
+                )
+            elif "item_removed" in type_key:
+                texts.append(config_key + ": " + str(diff[type_key][config_key]))
+            elif "item_added" in type_key:
+                texts.append(config_key + ": " + str(diff[type_key][config_key]))
+
+    return "\n".join(texts)
 
 
 class WandbCallbacks(Callbacks):
@@ -66,6 +88,8 @@ class WandbCallbacks(Callbacks):
                     old_config_path = wandblogger.restore(
                         "pipeline.yaml",
                         run_path=f"{self.username}/{self.project_name}/{run_id}",
+                        root=f".cache/{run_id}/",
+                        replace=True,
                     ).name
                 except Exception:
                     raise ValueError(
@@ -85,11 +109,33 @@ class WandbCallbacks(Callbacks):
                         LoggerObserver.SUCCESS,
                     )
                 else:
-                    self.id = wandblogger.util.generate_id()
+                    diff = DeepDiff(old_config_dict, tmp_config_dict)
+                    diff_text = pretty_print_diff(diff)
+
                     LOGGER.text(
-                        "Run configuration changes since the last run. Creating new wandb run...",
+                        f"Config values mismatched: {diff_text}",
+                        level=LoggerObserver.WARN,
+                    )
+                    LOGGER.text(
+                        """Run configuration changes since the last run. Decide:
+                        (1) Terminate run
+                        (2) Create new run
+                        """,
                         LoggerObserver.WARN,
                     )
+
+                    answer = int(input())
+                    assert answer in [1, 2], "Wrong input"
+                    if answer == 2:
+                        LOGGER.text(
+                            "Creating new wandb run...",
+                            LoggerObserver.WARN,
+                        )
+                        self.id = wandblogger.util.generate_id()
+                    else:
+                        LOGGER.text("Terminating run...", level=LoggerObserver.ERROR)
+                        raise InterruptedError()
+
             except ValueError as e:
                 LOGGER.text(
                     f"Can not resume wandb due to '{e}'. Creating new wandb run...",
