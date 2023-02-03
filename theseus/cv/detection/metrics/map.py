@@ -233,8 +233,6 @@ class MeanAveragePrecision(Metric):
         coco_eval.accumulate()
         coco_eval.summarize()
         stats = coco_eval.stats
-        print(stats)
-        print(stats[0])
 
         recall_stat = coco_eval.eval["recall"]
         precision_stat = coco_eval.eval["precision"]
