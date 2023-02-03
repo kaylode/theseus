@@ -34,7 +34,7 @@ class MeanAveragePrecision(Metric):
         self,
         num_classes,
         classnames,
-        min_iou=0.5,
+        min_iou=None,
         tmp_save_dir="./.cache",
         **kwargs,
     ):
@@ -215,7 +215,9 @@ class MeanAveragePrecision(Metric):
         # run COCO evaluation
         coco_eval = COCOeval(coco_gt, coco_pred, "bbox")
         coco_eval.params.imgIds = list(self.image_id_dict.keys())
-        coco_eval.params.iouThrs = np.array([self.min_iou])
+
+        if self.min_iou is not None:
+            coco_eval.params.iouThrs = np.array([self.min_iou])
 
         # Some other params for COCO eval
         # imgIds = []
@@ -229,6 +231,10 @@ class MeanAveragePrecision(Metric):
 
         coco_eval.evaluate()
         coco_eval.accumulate()
+        coco_eval.summarize()
+        stats = coco_eval.stats
+        print(stats)
+        print(stats[0])
 
         recall_stat = coco_eval.eval["recall"]
         precision_stat = coco_eval.eval["precision"]
@@ -262,8 +268,19 @@ class MeanAveragePrecision(Metric):
         )
 
         f1_score = 2 * precision_all * recall_all / (precision_all + recall_all)
-        return {
-            f"precision": precision_all,
-            f"recall": recall_all,
-            "f1_score": f1_score,
-        }
+
+        if self.min_iou is None:
+            return {
+                "mAP_0.5:0.95": stats[0],
+                "mAP_0.5": stats[1],
+                f"precision": precision_all,
+                f"recall": recall_all,
+                "f1_score": f1_score,
+            }
+        else:
+            return {
+                f"mAP_{self.min_iou}": stats[0],
+                f"precision": precision_all,
+                f"recall": recall_all,
+                "f1_score": f1_score,
+            }
