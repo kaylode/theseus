@@ -3,6 +3,8 @@ import os.path as osp
 import urllib.request as urlreq
 
 import gdown
+import os
+from pathlib import Path
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
@@ -60,18 +62,27 @@ def download_from_url(url, root=None, filename=None):
     return fpath
 
 
-def download_from_wandb(filename, run_path, save_dir, generate_id_text_file=False):
-    import wandb
+def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_text_file=False):
 
+    import wandb
+    
     try:
         path = wandb.restore(filename, run_path=run_path, root=save_dir)
-
+        
         # Save run id to wandb_id.txt
         if generate_id_text_file:
             wandb_id = osp.basename(run_path)
             with open(osp.join(save_dir, "wandb_id.txt"), "w") as f:
                 f.write(wandb_id)
-
+        
+        if rename:
+            new_name = str(Path(path.name).parent / rename)
+            os.rename(path.name, new_name)
+            return new_name
+        
+        # These 2 lines do not show on the terminal
+        LOGGER.text("Successfully download {} from wandb path {}".format(filename, run_path), level=LoggerObserver.INFO)
+        LOGGER.text("Saved to {}".format(save_dir), level=LoggerObserver.INFO)
         return path.name
     except:
         LOGGER.text("Failed to download from wandb.", level=LoggerObserver.ERROR)
