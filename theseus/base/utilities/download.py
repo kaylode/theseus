@@ -86,5 +86,5 @@ def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_t
         LOGGER.text("Saved to {}".format((Path(save_dir) / path.name).resolve()), level=LoggerObserver.INFO)
         return path.name
     except:
-        LOGGER.text("Failed to download from wandb.\nException {}".format(e), level=LoggerObserver.ERROR)
+        LOGGER.text("Failed to download from wandb.", level=LoggerObserver.ERROR)
         return None
