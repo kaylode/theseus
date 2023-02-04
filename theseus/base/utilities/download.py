@@ -68,6 +68,7 @@ def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_t
     
     try:
         path = wandb.restore(filename, run_path=run_path, root=save_dir)
+        LOGGER.text("Successfully download {} from wandb run path {}".format(filename, run_path), level=LoggerObserver.INFO)
         
         # Save run id to wandb_id.txt
         if generate_id_text_file:
@@ -76,14 +77,14 @@ def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_t
                 f.write(wandb_id)
         
         if rename:
-            new_name = str(Path(path.name).parent / rename)
-            os.rename(path.name, new_name)
+            new_name = str(Path(path.name).resolve().parent / rename)
+            os.rename(Path(path.name).resolve(), new_name)
+            LOGGER.text("Saved to {}".format(new_name), level=LoggerObserver.INFO)
             return new_name
         
-        # These 2 lines do not show on the terminal
-        LOGGER.text("Successfully download {} from wandb path {}".format(filename, run_path), level=LoggerObserver.INFO)
-        LOGGER.text("Saved to {}".format(save_dir), level=LoggerObserver.INFO)
+        
+        LOGGER.text("Saved to {}".format((Path(save_dir) / path.name).resolve()), level=LoggerObserver.INFO)
         return path.name
     except:
-        LOGGER.text("Failed to download from wandb.", level=LoggerObserver.ERROR)
+        LOGGER.text("Failed to download from wandb.\nException {}".format(e), level=LoggerObserver.ERROR)
         return None
