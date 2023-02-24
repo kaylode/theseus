@@ -228,57 +228,36 @@ class MeanAveragePrecision(Metric):
         # areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         # areaRngLbl = ['all', 'small', 'medium', 'large']
         # useCats = 1
-
         coco_eval.evaluate()
         coco_eval.accumulate()
         coco_eval.summarize()
         stats = coco_eval.stats
 
-        recall_stat = coco_eval.eval["recall"]
-        precision_stat = coco_eval.eval["precision"]
-
-        num_classes = recall_stat.shape[1]
-
-        recalls = []
-        precisions = []
-
-        for i in range(num_classes):
-            recall_class = recall_stat[:, i, 0, -1]
-            precision_class = precision_stat[:, :, i, 0, -1]
-
-            recall_class = recall_class[recall_class > -1]
-            ar = np.mean(recall_class) if recall_class.size else -1
-
-            precision_class = precision_class[precision_class > -1]
-            ap = np.mean(precision_class) if precision_class.size else -1
-
-            recalls.append(ar)
-            precisions.append(ap)
-
-        np_precisions = np.array(precisions)
-        np_recalls = np.array(recalls)
-
-        precision_all = sum(np_precisions[np_precisions != -1]) / (
-            num_classes - sum(np_precisions == -1)
-        )
-        recall_all = sum(np_recalls[np_recalls != -1]) / (
-            num_classes - sum(np_recalls == -1)
-        )
-
-        f1_score = 2 * precision_all * recall_all / (precision_all + recall_all)
-
         if self.min_iou is None:
             return {
                 "mAP_0.5:0.95": stats[0],
                 "mAP_0.5": stats[1],
-                f"precision": precision_all,
-                f"recall": recall_all,
-                "f1_score": f1_score,
+                "mAP_0.75": stats[2],
+                "mAP_small": stats[3],
+                "mAP_medium": stats[4],
+                "mAP_large": stats[5],
+                "mAR_1": stats[6],
+                "mAR_10": stats[7],
+                "mAR_100": stats[8],
+                "mAR_small": stats[9],
+                "mAR_medium": stats[10],
+                "mAR_large": stats[11],
             }
         else:
             return {
                 f"mAP_{self.min_iou}": stats[0],
-                f"precision": precision_all,
-                f"recall": recall_all,
-                "f1_score": f1_score,
+                f"mAP_{self.min_iou}_small": stats[3],
+                f"mAP_{self.min_iou}_medium": stats[3],
+                f"mAP_{self.min_iou}_large": stats[3],
+                f"mAR_{self.min_iou}_1": stats[6],
+                f"mAR_{self.min_iou}_10": stats[7],
+                f"mAR_{self.min_iou}_100": stats[8],
+                f"mAR_{self.min_iou}_small": stats[9],
+                f"mAR_{self.min_iou}_medium": stats[10],
+                f"mAR_{self.min_iou}_large": stats[11],
             }
