@@ -40,11 +40,19 @@ class BaseTimmModel(nn.Module):
         self.freeze = freeze
 
         if self.num_classes != 1000:
-            self.model = timm.create_model(
-                model_name,
-                pretrained=from_pretrained,
-                num_classes=self.num_classes,
-            )
+            if self.num_classes == 0:
+                self.model = timm.create_model(
+                    model_name,
+                    pretrained=from_pretrained,
+                    num_classes=self.num_classes,
+                    global_pool="",  # unpooled outputs
+                )
+            else:
+                self.model = timm.create_model(
+                    model_name,
+                    pretrained=from_pretrained,
+                    num_classes=self.num_classes,
+                )
         else:
             self.model = timm.create_model(model_name, pretrained=from_pretrained)
 
