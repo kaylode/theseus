@@ -24,6 +24,10 @@ class Visualizer:
     def __init__(self):
         self.image: Optional[np.ndarray] = None
         self.class_names = None
+        self.set_color(color_list)
+
+    def set_color(self, color_list):
+        self.color_list = color_list
 
     def set_image(self, image: np.ndarray) -> None:
         """
@@ -164,10 +168,10 @@ class Visualizer:
                 else:
                     box, label = item
                     score = None
-                color = color_list[int(label)]
+                color = self.color_list[int(label)]
             else:
                 box, label, score = item, None, None
-                color = color_list[1]
+                color = self.color_list[1]
 
             coord = [box[0], box[1], box[2], box[3]]
             c1, c2 = (int(coord[0]), int(coord[1])), (
@@ -256,7 +260,7 @@ class Visualizer:
         img_show = np.clip(img_show, 0, 1)
         return img_show
 
-    def denormalize_bboxes(self, boxes, order, image_shape=None) -> np.ndarray:
+    def denormalize_bboxes(self, boxes, order=None, image_shape=None) -> np.ndarray:
         """
         Denormalize bboxes and return
         image: `torch.Tensor` or `np.ndarray`
@@ -266,12 +270,14 @@ class Visualizer:
             boxes[:, [0, 2]] *= image_shape[1]
             boxes[:, [1, 3]] *= image_shape[0]
 
-        from theseus.cv.detection.augmentations.bbox_transforms import BoxOrder
+        if order is not None:
+            from theseus.cv.detection.augmentations.bbox_transforms import BoxOrder
 
-        denom = BoxOrder(order)
-        new_boxes = denom.apply_to_bboxes(boxes)
-        new_boxes = np.stack([torch.stack(i, dim=0).numpy() for i in new_boxes])
-        return new_boxes.astype(int)
+            denom = BoxOrder(order)
+            boxes = denom.apply_to_bboxes(boxes)
+            boxes = np.stack([torch.stack(i, dim=0).numpy() for i in boxes]).astype(int)
+
+        return boxes
 
     def decode_segmap(
         self, segmap: np.ndarray, num_classes: Optional[int] = None
@@ -294,7 +300,7 @@ class Visualizer:
         if num_classes is None:
             num_classes = int(np.max(segmap)) + 1
 
-        palette = np.array(color_list[:num_classes]) * 255
+        palette = np.array(self.color_list[:num_classes]) * 255
         palette = palette[:, ::-1].astype(np.uint8)
 
         segmap = segmap.astype(np.uint8)
