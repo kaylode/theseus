@@ -73,6 +73,6 @@ def download_from_wandb(filename, run_path, save_dir, generate_id_text_file=Fals
                 f.write(wandb_id)
 
         return path.name
-    except:
-        LOGGER.text("Failed to download from wandb.", level=LoggerObserver.ERROR)
+    except Exception as e:
+        LOGGER.text(f"Failed to download from wandb. {e}", level=LoggerObserver.ERROR)
         return None
