@@ -101,7 +101,7 @@ class ImageDataset(data.Dataset):
                 im = self.transform(image=np.array(im) / 255.0)["image"]
 
         return {
-            "input": im,
+            "input": im.float(),
             "img_name": image_name,
             "ori_size": [width, height],
         }
