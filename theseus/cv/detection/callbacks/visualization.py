@@ -67,12 +67,12 @@ class DetectionVisualizerCallbacks(Callbacks):
             boxes = ann["boxes"]
             labels = ann["labels"].numpy()
             img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
-            # decode_boxes = self.visualizer.denormalize_bboxes(
-            #     boxes, order=self.order, image_shape=img_show.shape[:2]
-            # )
+            decode_boxes = self.visualizer.denormalize_bboxes(
+                boxes, order=self.order, image_shape=img_show.shape[:2], auto_scale=True
+            )
 
             self.visualizer.set_image(img_show.copy())
-            self.visualizer.draw_bbox(boxes, labels=labels)
+            self.visualizer.draw_bbox(decode_boxes, labels=labels)
             img_show = self.visualizer.get_image()
             img_show = TFF.to_tensor(img_show)
             batch.append(img_show)
@@ -118,7 +118,7 @@ class DetectionVisualizerCallbacks(Callbacks):
             labels = ann["labels"].numpy()
             img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             decode_boxes = self.visualizer.denormalize_bboxes(
-                boxes, order=self.order, image_shape=img_show.shape[:2]
+                boxes, order=self.order, image_shape=img_show.shape[:2], auto_scale=True
             )
 
             self.visualizer.set_image(img_show.copy())

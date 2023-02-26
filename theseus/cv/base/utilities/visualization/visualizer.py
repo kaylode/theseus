@@ -260,15 +260,24 @@ class Visualizer:
         img_show = np.clip(img_show, 0, 1)
         return img_show
 
-    def denormalize_bboxes(self, boxes, order=None, image_shape=None) -> np.ndarray:
+    def denormalize_bboxes(
+        self, boxes, order=None, image_shape=None, auto_scale: bool = True
+    ) -> np.ndarray:
         """
         Denormalize bboxes and return
         image: `torch.Tensor` or `np.ndarray`
             image to be denormalized
         """
-        if image_shape is not None:
-            boxes[:, [0, 2]] *= image_shape[1]
-            boxes[:, [1, 3]] *= image_shape[0]
+
+        if auto_scale:
+            bbox_normalized = False
+            if isinstance(boxes, np.ndarray) and np.amax(boxes) <= 1.0:
+                bbox_normalized = True
+            if isinstance(boxes, torch.Tensor) and torch.max(boxes) <= 1.0:
+                bbox_normalized = True
+            if bbox_normalized and image_shape is not None:
+                boxes[:, [0, 2]] *= image_shape[1]
+                boxes[:, [1, 3]] *= image_shape[0]
 
         if order is not None:
             from theseus.cv.detection.augmentations.bbox_transforms import BoxOrder
