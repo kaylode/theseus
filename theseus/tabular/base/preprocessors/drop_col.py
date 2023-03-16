@@ -26,7 +26,7 @@ class LambdaDropRows(Preprocessor):
 
         ori_size = df.shape[0]
         df = df.drop(df[df.apply(self.lambda_func, axis=1)].index)
-        dropped_size = df.shape[0] - ori_size
+        dropped_size = ori_size - df.shape[0]
         self.log(f"Dropped {dropped_size} rows based on lambda function")
         return df
 

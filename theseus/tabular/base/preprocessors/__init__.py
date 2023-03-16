@@ -15,6 +15,7 @@ from .drop_col import (
 )
 from .encoder import LabelEncode
 from .fill_nan import FillNaN
+from .mapping import MapScreenToBinary
 from .new_col import LambdaCreateColumn
 from .sort import SortBy
 from .splitter import Splitter
@@ -38,3 +39,4 @@ TRANSFORM_REGISTRY.register(EnforceType)
 TRANSFORM_REGISTRY.register(LambdaDropRows)
 TRANSFORM_REGISTRY.register(LambdaCreateColumn)
 TRANSFORM_REGISTRY.register(SortBy)
+TRANSFORM_REGISTRY.register(MapScreenToBinary)

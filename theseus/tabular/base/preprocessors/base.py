@@ -2,13 +2,13 @@ from theseus.base.utilities.loggers import LoggerObserver
 
 from .name_filter import FilterColumnNames
 
-try:
-    from pandarallel import pandarallel
+# try:
+#     from pandarallel import pandarallel
 
-    pandarallel.initialize()
-    use_parallel = True
-except:
-    use_parallel = False
+#     pandarallel.initialize()
+#     use_parallel = True
+# except:
+use_parallel = False
 
 LOGGER = LoggerObserver.getLogger("main")
 
