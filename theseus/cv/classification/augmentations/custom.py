@@ -9,7 +9,7 @@ from typing import Tuple
 
 import numpy as np
 import torch
-from albumentations.augmentations.bbox_utils import denormalize_bbox, normalize_bbox
+from albumentations.core.bbox_utils import denormalize_bbox, normalize_bbox
 from albumentations.core.transforms_interface import DualTransform
 from torch import Tensor
 from torchvision.transforms import functional as F
