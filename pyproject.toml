@@ -88,8 +88,6 @@ tabular = [
   "scipy>=1.7.0",
   "optuna>=3.0.5",
   "psycopg2-binary>=2.9.5",
-  "optuna-dashboard>=0.8.1",
-  "optuna-fast-fanova>=0.0.4",
   "gunicorn>=20.1.0"
 ]
 tabular_classification = [
