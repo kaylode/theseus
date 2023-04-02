@@ -23,6 +23,6 @@ def test_train_clf_tune(override_tuner_config, override_tuner_tuner):
         "runs/optuna/clf/overview/leaderboard.json", orient="records"
     )
 
-    figs = override_tuner_tuner.visualize("all")
-    for fig_type, fig in figs:
-        fig.write_image(f"runs/optuna/clf/overview/{fig_type}.png")
+    # figs = override_tuner_tuner.visualize("all")
+    # for fig_type, fig in figs:
+    #     fig.write_image(f"runs/optuna/clf/overview/{fig_type}.png")

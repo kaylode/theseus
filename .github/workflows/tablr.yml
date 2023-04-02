@@ -2,8 +2,6 @@ name: autobuild_tablr
 on:
   push:
     branches:
-      - master
-      - 'V**'
       - dev
   pull_request:
     branches:
@@ -60,6 +58,7 @@ jobs:
           echo "#### Hyperparameters Tuning" >> report.md
           echo "Leaderboard" >> report.md
           cat runs/optuna/tablr/overview/leaderboard.json | md-table >> report.md
+          echo >> report.md
           echo "Figures" >> report.md
           echo "![History](runs/optuna/tablr/overview/history.png)" >> report.md
           echo "![Contour plot](runs/optuna/tablr/overview/contour.png)" >> report.md
