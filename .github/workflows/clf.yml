@@ -12,7 +12,6 @@ on:
       - dev
 env:
   GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
-  
 jobs:
   build:
     runs-on: ubuntu-latest
