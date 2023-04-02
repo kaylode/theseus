@@ -1,0 +1,5 @@
+outs:
+- md5: 241466946cb5f3265989bfad43fd1f99.dir
+  size: 1375275
+  nfiles: 16
+  path: carvana-masking

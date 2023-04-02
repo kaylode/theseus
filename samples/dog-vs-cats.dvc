@@ -1,0 +1,5 @@
+outs:
+- md5: 6df4a8f8d7de676ba18ece17214443b7.dir
+  size: 504034
+  nfiles: 20
+  path: dog-vs-cats

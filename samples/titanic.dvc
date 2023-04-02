@@ -1,0 +1,5 @@
+outs:
+- md5: 96131eb91f38351636782a9b2fad0b78.dir
+  size: 89732
+  nfiles: 4
+  path: titanic
