@@ -186,6 +186,8 @@ class OptunaWrapper:
         trials = self.study.get_trials(deepcopy=False)
         for trial in trials:
             trial_param_names = list(trial.params.keys())
+            if len(trial_param_names) == 1:
+                break
             common_prefix = osp.commonprefix(trial_param_names)
             if common_prefix != "":
                 for trial_param_name in trial_param_names:

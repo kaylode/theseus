@@ -2,9 +2,6 @@ name: autobuild_segm
 on:
   push:
     branches:
-      - dev
-  pull_request:
-    branches:
       - master
       - 'V**'
       - dev

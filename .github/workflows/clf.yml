@@ -2,9 +2,6 @@ name: autobuild_clf
 on:
   push:
     branches:
-      - dev
-  pull_request:
-    branches:
       - master
       - 'V**'
       - dev
@@ -58,11 +55,4 @@ jobs:
           echo "Leaderboard" >> report.md
           cat runs/optuna/clf/overview/leaderboard.json | md-table >> report.md
           echo >> report.md
-          echo "Figures" >> report.md
-          echo "![History](runs/optuna/clf/overview/history.png)" >> report.md
-          echo "![Contour plot](runs/optuna/clf/overview/contour.png)" >> report.md
-          echo "![Parallel](runs/optuna/clf/overview/parallel_coordinate.png)" >> report.md
-          echo "![Importance](runs/optuna/clf/overview/param_importances.png)" >> report.md
-          echo "![Slice](runs/optuna/clf/overview/slice.png)" >> report.md
-
           cml comment create report.md

@@ -1,8 +1,5 @@
 name: autobuild_docker
 on:
-  push:
-    branches:
-      - dev
   pull_request:
     branches:
       - master
