@@ -27,6 +27,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
           pip install -e '.[dev,tabular, tabular_classification]'
+          pip install dvc dvc-gdrive
+      - name: Download data
+        run: |
+          echo "${{ secrets.GDRIVE_CREDENTIALS_DATA }}" > credentials.json
+          dvc remote modify gdrive --local gdrive_user_credentials_file ./credentials.json
+          dvc pull
+          ls -la samples
       - name: Test with pytest
         run: |
           pytest tests/tabular --capture=no
