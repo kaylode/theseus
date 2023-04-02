@@ -29,6 +29,7 @@ class WandbLogger(LoggerSubscriber):
         group_name: str = None,
         save_dir: str = None,
         config_dict: Dict = None,
+        **kwargs,
     ):
         self.project_name = project_name
         self.username = username
@@ -47,6 +48,8 @@ class WandbLogger(LoggerSubscriber):
             project=project_name,
             name=run_name,
             resume="allow",
+            reinit=kwargs.get("reinit", False),
+            tags=kwargs.get("tags", None),
         )
 
         wandb_logger.watch_called = False
@@ -75,6 +78,11 @@ class WandbLogger(LoggerSubscriber):
         :param values: (number) value for corresponding tag
         :param step: (int) logging step
         """
+
+        # define our custom x axis metric
+        wandb_logger.define_metric("iterations")
+        # define which metrics will be plotted against it
+        wandb_logger.define_metric(tag, step_metric="iterations")
 
         wandb_logger.log({tag: value, "iterations": step})
 
@@ -179,7 +187,7 @@ class WandbLogger(LoggerSubscriber):
 
         import pandas as pd
 
-        df_dict = {"embeddings": [e for e in value]}
+        df_dict = {"embeddings": [e for e in value.tolist()]}
         if metadata is not None and metadata_header is not None:
             for meta in metadata:
                 for idx, item in enumerate(meta):

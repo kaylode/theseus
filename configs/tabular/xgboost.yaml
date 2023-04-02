@@ -1,29 +1,7 @@
-global:
-  exp_name: null
-  exist_ok: false
-  debug: False
-  save_dir: runs
-  pretrained: null
-  resume: null
-  cfg_transform: configs/tabular/transform.yaml
-  device: cpu
-trainer:
-  name: MLTrainer
-  args:
-callbacks:
-  - name: SKLearnCheckpointCallbacks
-  - name: ShapValueExplainer
-    args:
-      plot_type: bar
-      check_additivity: False
-  - name: LIMEExplainer
-  - name: TensorboardCallbacks
-metrics:
-  - name: SKLAccuracy
-  - name: SKLBalancedAccuracyMetric
-  - name: SKLF1ScoreMetric
-  - name: SKLPrecisionRecall
-  - name: SKLEmbeddingProjection
+includes:
+  - configs/tabular/base/globals.yaml
+  - configs/tabular/base/data.yaml
+  - configs/tabular/base/transform.yaml
 model:
   name: GBClassifiers
   args:
@@ -38,17 +16,3 @@ model:
         early_stopping_rounds: 30
         eval_metric: ['auc']
         objective: "multi:softprob"
-data:
-  dataset:
-    train:
-      name: TabularCSVDataset
-      args:
-        data_path: samples/titanic/train.csv
-        target_column: Survived
-        txt_classnames: samples/titanic/classnames.txt
-    val:
-      name: TabularCSVDataset
-      args:
-        data_path: samples/titanic/val.csv
-        target_column: Survived
-        txt_classnames: samples/titanic/classnames.txt

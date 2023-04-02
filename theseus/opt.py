@@ -4,6 +4,7 @@ Modified from https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.4/tools/p
 
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from copy import deepcopy
 
 import yaml
 
@@ -14,13 +15,39 @@ LOGGER = LoggerObserver.getLogger("main")
 
 
 class Config(dict):
-    """Single level attribute dict, NOT recursive"""
+    """Single level attribute dict, recursive"""
+
+    _depth = 0
+    _yaml_paths = []
+
+    # def __new__(class_, yaml_path, *args, **kwargs):
+    #     if yaml_path in class_._yaml_paths:
+    #         LOGGER.text(
+    #             "Circular includes detected in YAML initialization!",
+    #             level=LoggerObserver.CRITICAL,
+    #         )
+    #         raise ValueError()
+    #     class_._yaml_paths.append(yaml_path)
+    #     return dict.__new__(class_, yaml_path, *args, **kwargs)
 
     def __init__(self, yaml_path):
         super(Config, self).__init__()
 
         config = load_yaml(yaml_path)
-        super(Config, self).update(config)
+
+        if "includes" in config.keys():
+            final_config = {}
+            for include_yaml_path in config["includes"]:
+                tmp_config = Config(include_yaml_path)
+                final_config.update(tmp_config)
+
+            final_config.update(config)
+            final_config.pop("includes")
+            super(Config, self).update(final_config)
+        else:
+            super(Config, self).update(config)
+
+        # self._yaml_paths.pop(-1)  # the last successful yaml will be popped out
 
     def __getattr__(self, key):
         if key in self:
@@ -64,7 +91,17 @@ class Opts(ArgumentParser):
             return config
         for s in opts:
             s = s.strip()
-            k, v = s.split("=")
+            try:
+                k, v = s.split("=")
+            except ValueError:
+                LOGGER.text(
+                    "Invalid option: {}, options should be in the format of key=value".format(
+                        s
+                    ),
+                    level=LoggerObserver.ERROR,
+                )
+                raise ValueError()
+
             config[k] = yaml.load(v, Loader=yaml.Loader)
         return config
 

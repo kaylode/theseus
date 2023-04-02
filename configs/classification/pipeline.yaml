@@ -1,21 +1,8 @@
-global:
-  exp_name: null
-  exist_ok: false
-  debug: false
-  cfg_transform: configs/classification/transform.yaml
-  save_dir: runs
-  device: cuda:0
-  pretrained: null
-  resume: null
-trainer:
-  name: SupervisedTrainer
-  args:
-    num_iterations: 10000
-    clip_grad: 1.0
-    evaluate_interval: 1
-    print_interval: 100
-    save_interval: 2000
-    use_fp16: true
+includes:
+  - configs/base/globals.yaml
+  - configs/base/optimizer.yaml
+  - configs/classification/transform.yaml
+
 callbacks:
   - name: TorchCheckpointCallbacks
     args:
@@ -25,7 +12,7 @@ callbacks:
 model:
   name: BaseTimmModel
   args:
-    model_name: convnext_base
+    model_name: efficientnet_b0
     from_pretrained: true
 loss:
   name: ClassificationCELoss
@@ -37,22 +24,6 @@ metrics:
       average: weighted
   - name: ConfusionMatrix
   - name: ErrorCases
-optimizer:
-  name: AdamW
-  args:
-    lr: 0.001
-    weight_decay: 0.0005
-    betas:
-      - 0.937
-      - 0.999
-scheduler:
-  name: SchedulerWrapper
-  args:
-    scheduler_name: cosine2
-    t_initial: 7
-    t_mul: 0.9
-    eta_mul: 0.9
-    eta_min: 1.0e-06
 data:
   dataset:
     train:

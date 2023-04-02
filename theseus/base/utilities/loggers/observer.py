@@ -81,6 +81,11 @@ class LoggerObserver(object):
 
         LoggerObserver.instances[name] = self
 
+    def __del__(self):
+        for subcriber in self.subscriber:
+            del subcriber
+        LoggerObserver.instances.pop(self.name)
+
     @classmethod
     def getLogger(cls, name):
         if name in LoggerObserver.instances.keys():

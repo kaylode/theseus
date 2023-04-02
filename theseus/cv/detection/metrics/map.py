@@ -1,6 +1,8 @@
+import hashlib
 import json
 import os
 import os.path as osp
+from datetime import datetime
 
 import numpy as np
 from pycocotools.coco import COCO
@@ -32,7 +34,7 @@ class MeanAveragePrecision(Metric):
         self,
         num_classes,
         classnames,
-        min_iou=0.5,
+        min_iou=None,
         tmp_save_dir="./.cache",
         **kwargs,
     ):
@@ -43,8 +45,11 @@ class MeanAveragePrecision(Metric):
         self.tmp_save_dir = tmp_save_dir
         os.makedirs(self.tmp_save_dir, exist_ok=True)
 
-        self.gt_json = osp.join(self.tmp_save_dir, "gt_coco.json")
-        self.pred_json = osp.join(self.tmp_save_dir, "pred_coco.json")
+        date_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.filename = hashlib.sha256(date_string.encode("utf-8")).hexdigest()
+
+        self.gt_json = osp.join(self.tmp_save_dir, f"{self.filename}_gt.json")
+        self.pred_json = osp.join(self.tmp_save_dir, f"{self.filename}_pred.json")
         self.reset()
 
     def reset(self):
@@ -56,8 +61,7 @@ class MeanAveragePrecision(Metric):
         self.idx = 0
 
     def update(self, output, batch):
-        img_sizes = batch["img_sizes"]
-        width, height = img_sizes[0, -2:]
+        width, height = batch["inputs"].shape[-2:]
         target = batch["targets"]
         img_ids = batch["img_ids"]
         image_names = batch["img_names"]
@@ -188,19 +192,32 @@ class MeanAveragePrecision(Metric):
 
         if osp.isfile(self.pred_json):
             os.remove(self.pred_json)
+
         with open(self.pred_json, "w") as outfile:
             json.dump(results, outfile)
 
+        return results
+
     def value(self):
         self.make_gt_json_file(self.gt_json)
-        self.make_pred_json_file(self.pred_json)
+        results = self.make_pred_json_file(self.pred_json)
+
+        if len(results) == 0:  # empty prediction
+            return {
+                f"precision": 0,
+                f"recall": 0,
+                "f1_score": 0,
+            }
+
         coco_gt = COCO(self.gt_json)
         coco_pred = coco_gt.loadRes(self.pred_json)
 
         # run COCO evaluation
         coco_eval = COCOeval(coco_gt, coco_pred, "bbox")
         coco_eval.params.imgIds = list(self.image_id_dict.keys())
-        coco_eval.params.iouThrs = np.array([self.min_iou])
+
+        if self.min_iou is not None:
+            coco_eval.params.iouThrs = np.array([self.min_iou])
 
         # Some other params for COCO eval
         # imgIds = []
@@ -211,44 +228,36 @@ class MeanAveragePrecision(Metric):
         # areaRng = [[0 ** 2, 1e5 ** 2], [0 ** 2, 32 ** 2], [32 ** 2, 96 ** 2], [96 ** 2, 1e5 ** 2]]
         # areaRngLbl = ['all', 'small', 'medium', 'large']
         # useCats = 1
-
         coco_eval.evaluate()
         coco_eval.accumulate()
+        coco_eval.summarize()
+        stats = coco_eval.stats
 
-        recall_stat = coco_eval.eval["recall"]
-        precision_stat = coco_eval.eval["precision"]
-
-        num_classes = recall_stat.shape[1]
-
-        recalls = []
-        precisions = []
-
-        for i in range(num_classes):
-            recall_class = recall_stat[:, i, 0, -1]
-            precision_class = precision_stat[:, :, i, 0, -1]
-
-            recall_class = recall_class[recall_class > -1]
-            ar = np.mean(recall_class) if recall_class.size else -1
-
-            precision_class = precision_class[precision_class > -1]
-            ap = np.mean(precision_class) if precision_class.size else -1
-
-            recalls.append(ar)
-            precisions.append(ap)
-
-        np_precisions = np.array(precisions)
-        np_recalls = np.array(recalls)
-
-        precision_all = sum(np_precisions[np_precisions != -1]) / (
-            num_classes - sum(np_precisions == -1)
-        )
-        recall_all = sum(np_recalls[np_recalls != -1]) / (
-            num_classes - sum(np_recalls == -1)
-        )
-
-        f1_score = 2 * precision_all * recall_all / (precision_all + recall_all)
-        return {
-            f"precision": precision_all,
-            f"recall": recall_all,
-            "f1_score": f1_score,
-        }
+        if self.min_iou is None:
+            return {
+                "mAP_0.5:0.95": stats[0],
+                "mAP_0.5": stats[1],
+                "mAP_0.75": stats[2],
+                "mAP_small": stats[3],
+                "mAP_medium": stats[4],
+                "mAP_large": stats[5],
+                "mAR_1": stats[6],
+                "mAR_10": stats[7],
+                "mAR_100": stats[8],
+                "mAR_small": stats[9],
+                "mAR_medium": stats[10],
+                "mAR_large": stats[11],
+            }
+        else:
+            return {
+                f"mAP_{self.min_iou}": stats[0],
+                f"mAP_{self.min_iou}_small": stats[3],
+                f"mAP_{self.min_iou}_medium": stats[3],
+                f"mAP_{self.min_iou}_large": stats[3],
+                f"mAR_{self.min_iou}_1": stats[6],
+                f"mAR_{self.min_iou}_10": stats[7],
+                f"mAR_{self.min_iou}_100": stats[8],
+                f"mAR_{self.min_iou}_small": stats[9],
+                f"mAR_{self.min_iou}_medium": stats[10],
+                f"mAR_{self.min_iou}_large": stats[11],
+            }

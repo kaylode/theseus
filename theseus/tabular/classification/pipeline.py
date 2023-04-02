@@ -18,7 +18,6 @@ class TabularPipeline(BasePipeline):
 
     def __init__(self, opt: Config):
         super(TabularPipeline, self).__init__(opt)
-        self.opt = opt
 
     def init_registry(self):
         super().init_registry()
@@ -75,26 +74,6 @@ class TabularPipeline(BasePipeline):
             level=LoggerObserver.INFO,
         )
 
-    def init_metrics(self):
-        classnames = self.val_dataset["classnames"]
-        num_classes = len(classnames)
-        self.metrics = get_instance_recursively(
-            self.opt["metrics"],
-            num_classes=num_classes,
-            classnames=classnames,
-            registry=self.metric_registry,
-        )
-
-    def init_callbacks(self):
-        callbacks = get_instance_recursively(
-            self.opt["callbacks"],
-            save_dir=getattr(self, "save_dir", "runs"),
-            resume=getattr(self, "resume", None),
-            config_dict=self.opt,
-            registry=self.callbacks_registry,
-        )
-        return callbacks
-
     def init_trainer(self, callbacks=None):
         self.trainer = get_instance(
             self.opt["trainer"],
@@ -106,13 +85,20 @@ class TabularPipeline(BasePipeline):
             registry=self.trainer_registry,
         )
 
+    def init_loading(self):
+        if getattr(self, "pretrained", None):
+            self.model.load_model(self.pretrained)
+
     def init_pipeline(self, train=False):
+        if self.initialized:
+            return
         self.init_globals()
         self.init_registry()
         if train:
             self.init_train_dataloader()
             self.init_validation_dataloader()
             self.init_model()
+            self.init_loading()
             self.init_metrics()
             callbacks = self.init_callbacks()
             self.save_configs()
@@ -124,7 +110,22 @@ class TabularPipeline(BasePipeline):
             callbacks = []
 
         if getattr(self, "metrics", None):
-            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                    save_dir=self.savedir
+                ),
+            )
+        if getattr(self, "criterion", None):
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("LossLoggerCallbacks")(
+                    print_interval=self.opt["global"].get("print_interval", None),
+                ),
+            )
+        if self.debug:
+            callbacks.insert(0, self.callbacks_registry.get("DebugCallbacks")())
         callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
 
         self.init_trainer(callbacks=callbacks)
+        self.initialized = True

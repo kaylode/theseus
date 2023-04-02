@@ -53,14 +53,16 @@ def box_fusion(
             iou_thr=iou_threshold,
         )
 
+    result_boxes = []
     if image_size is not None:
-        result_boxes = []
         for ens_boxes in picked_boxes:
             ens_boxes[0] = ens_boxes[0] * image_size[0]
             ens_boxes[1] = ens_boxes[1] * image_size[1]
             ens_boxes[2] = ens_boxes[2] * image_size[0]
             ens_boxes[3] = ens_boxes[3] * image_size[1]
             result_boxes.append(ens_boxes)
+    else:
+        result_boxes = picked_boxes
 
     return (
         np.array(result_boxes),

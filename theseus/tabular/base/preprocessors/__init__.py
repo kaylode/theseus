@@ -1,6 +1,7 @@
 from theseus.base.augmentations import TRANSFORM_REGISTRY
 
 from .aggregation import Aggregate
+from .base import Preprocessor
 from .categorize import Categorize, EnforceType
 from .compose import PreprocessCompose
 from .csv_saver import CSVSaver
@@ -10,9 +11,13 @@ from .drop_col import (
     DropDuplicatedRows,
     DropEmptyColumns,
     DropSingleValuedColumns,
+    LambdaDropRows,
 )
 from .encoder import LabelEncode
 from .fill_nan import FillNaN
+from .mapping import MapScreenToBinary
+from .new_col import LambdaCreateColumn
+from .sort import SortBy
 from .splitter import Splitter
 from .standardize import Standardize
 
@@ -31,3 +36,7 @@ TRANSFORM_REGISTRY.register(Splitter)
 TRANSFORM_REGISTRY.register(Standardize)
 TRANSFORM_REGISTRY.register(Aggregate)
 TRANSFORM_REGISTRY.register(EnforceType)
+TRANSFORM_REGISTRY.register(LambdaDropRows)
+TRANSFORM_REGISTRY.register(LambdaCreateColumn)
+TRANSFORM_REGISTRY.register(SortBy)
+TRANSFORM_REGISTRY.register(MapScreenToBinary)

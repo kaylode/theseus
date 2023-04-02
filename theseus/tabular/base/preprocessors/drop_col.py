@@ -16,6 +16,21 @@ class DropColumns(Preprocessor):
         return df
 
 
+class LambdaDropRows(Preprocessor):
+    def __init__(self, lambda_func, **kwargs):
+        super().__init__(**kwargs)
+        self.lambda_func = lambda_func
+
+    def run(self, df):
+        self.prerun(df)
+
+        ori_size = df.shape[0]
+        df = df.drop(df[df.apply(self.lambda_func, axis=1)].index)
+        dropped_size = ori_size - df.shape[0]
+        self.log(f"Dropped {dropped_size} rows based on lambda function")
+        return df
+
+
 class DropDuplicatedRows(Preprocessor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

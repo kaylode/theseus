@@ -60,7 +60,7 @@ class Vocabulary(object):
                 self.frequency[tok] = 0
             self.frequency[tok] += 1
 
-        for tok in list_tokens:
+        for tok in list(self.frequency.keys()):
             if self.max_freq is not None:
                 if self.frequency[tok] > self.max_freq:
                     self.frequency.pop(tok)

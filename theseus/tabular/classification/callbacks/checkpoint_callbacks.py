@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 from typing import Dict
 
@@ -15,14 +16,13 @@ class SKLearnCheckpointCallbacks(Callbacks):
     def __init__(
         self,
         save_dir: str = "runs",
-        save_interval: int = 10,
         **kwargs,
     ) -> None:
         super().__init__()
 
         self.best_value = 0
-        self.save_dir = save_dir
-        self.save_interval = save_interval
+        self.save_dir = osp.join(save_dir, "checkpoints")
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def save_checkpoint(self, trainer, outname="last"):
         """

@@ -131,8 +131,6 @@ class COCODataset(DetectionDataset):
         targets = [s["target"] for s in batch]
         img_ids = [s["img_id"] for s in batch]
         img_names = [s["img_name"] for s in batch]
-        img_scales = torch.tensor([1.0] * len(batch), dtype=torch.float)
-        img_sizes = torch.tensor([imgs[0].shape[-2:]] * len(batch), dtype=torch.float)
         ori_sizes = [s["ori_size"] for s in batch]
 
         return {
@@ -140,8 +138,6 @@ class COCODataset(DetectionDataset):
             "targets": targets,
             "img_ids": img_ids,
             "img_names": img_names,
-            "img_sizes": img_sizes,
-            "img_scales": img_scales,
             "ori_sizes": ori_sizes,
         }
 

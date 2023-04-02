@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import torch
@@ -21,9 +21,16 @@ class GradCAMVisualizationCallbacks(Callbacks):
 
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(
+        self,
+        mean: List[float] = [0.485, 0.456, 0.406],
+        std: List[float] = [0.229, 0.224, 0.225],
+        **kwargs
+    ) -> None:
         super().__init__()
         self.visualizer = Visualizer()
+        self.mean = mean
+        self.std = std
 
     @torch.enable_grad()  # enable grad for CAM
     def on_val_epoch_end(self, logs: Dict = None):
@@ -72,7 +79,7 @@ class GradCAMVisualizationCallbacks(Callbacks):
             label = label_indices[idx]
             grayscale_cam = grayscale_cams[idx, :]
 
-            img_show = self.visualizer.denormalize(image)
+            img_show = self.visualizer.denormalize(image, mean=self.mean, std=self.std)
             if valloader.dataset.classnames is not None:
                 label = valloader.dataset.classnames[label]
                 target = valloader.dataset.classnames[target]

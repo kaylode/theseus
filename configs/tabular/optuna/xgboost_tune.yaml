@@ -1,0 +1,28 @@
+includes:
+  - configs/tabular/base/globals.yaml
+  - configs/tabular/base/data.yaml
+  - configs/tabular/base/transform.yaml
+  - configs/tabular/optuna/optuna.yaml
+model:
+  name: GBClassifiers
+  args:
+      model_name: xgboost
+      model_config:
+        n_estimators: [100, 500] #The number of sequential trees to be modeled
+        max_depth: [1, 9] # The maximum depth of a tree.higher depth will allow model to learn relations very specific to a particular sample. Should be tuned
+        learning_rate: [0.01, 1.0] # impact of each tree on the final outcome
+        gamma: [0.001, 1.0] #This will anyways be tuned later.
+        reg_alpha: [0.001, 1.0] #This will anyways be tuned later.
+        reg_lambda: [0.001, 1.0] #This will anyways be tuned later.
+        early_stopping_rounds: 30
+        eval_metric: ['auc']
+        objective: "multi:softprob"
+optuna:
+  int:
+    - model.args.model_config.n_estimators
+    - model.args.model_config.max_depth
+  float:
+    - model.args.model_config.learning_rate
+    - model.args.model_config.gamma
+    - model.args.model_config.reg_alpha
+    - model.args.model_config.reg_lambda

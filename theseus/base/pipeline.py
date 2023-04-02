@@ -17,6 +17,7 @@ from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loading import load_state_dict
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
+from theseus.base.utilities.seed import seed_everything
 from theseus.opt import Config
 
 
@@ -26,6 +27,10 @@ class BasePipeline(object):
     def __init__(self, opt: Config):
         super(BasePipeline, self).__init__()
         self.opt = opt
+        self.seed = self.opt["global"].get("seed", 1702)
+        seed_everything(self.seed)
+
+        self.initialized = False
 
     def init_globals(self):
         # Main Loggers
@@ -63,7 +68,14 @@ class BasePipeline(object):
         self.logger.subscribe(image_logger)
 
         if self.transform_cfg is not None:
+            self.logger.text(
+                "cfg_transform is deprecated, please use 'includes' instead",
+                level=LoggerObserver.WARN,
+            )
             self.transform_cfg = Config.load_yaml(self.transform_cfg)
+            self.opt["augmentations"] = self.transform_cfg
+        else:
+            self.transform_cfg = self.opt.get("augmentations", None)
 
         self.device = get_device(self.device_name)
 
@@ -137,7 +149,7 @@ class BasePipeline(object):
         model = get_instance(
             self.opt["model"],
             registry=self.model_registry,
-            num_classes=len(CLASSNAMES),
+            num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
         model = move_to(model, self.device)
@@ -148,7 +160,7 @@ class BasePipeline(object):
         self.criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
-            num_classes=len(CLASSNAMES),
+            num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
         self.criterion = move_to(self.criterion, self.device)
@@ -170,7 +182,7 @@ class BasePipeline(object):
         self.metrics = get_instance_recursively(
             self.opt["metrics"],
             registry=self.metric_registry,
-            num_classes=len(CLASSNAMES),
+            num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
 
@@ -195,7 +207,7 @@ class BasePipeline(object):
             self.last_epoch = iters // len(self.train_dataloader) - 1
 
     def init_scheduler(self):
-        if "scheduler" in self.opt.keys():
+        if "scheduler" in self.opt.keys() and self.opt["scheduler"] is not None:
             self.scheduler = get_instance(
                 self.opt["scheduler"],
                 registry=self.scheduler_registry,
@@ -222,7 +234,6 @@ class BasePipeline(object):
     def init_callbacks(self):
         callbacks = get_instance_recursively(
             self.opt["callbacks"],
-            save_interval=self.opt["trainer"]["args"]["save_interval"],
             save_dir=getattr(self, "savedir", "runs"),
             resume=getattr(self, "resume", None),
             config_dict=self.opt,
@@ -246,7 +257,6 @@ class BasePipeline(object):
 
     def save_configs(self):
         self.opt.save_yaml(os.path.join(self.savedir, "pipeline.yaml"))
-        self.transform_cfg.save_yaml(os.path.join(self.savedir, "transform.yaml"))
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY
@@ -265,6 +275,8 @@ class BasePipeline(object):
         )
 
     def init_pipeline(self, train=False):
+        if self.initialized:
+            return
         self.init_globals()
         self.init_registry()
         if train:
@@ -285,18 +297,24 @@ class BasePipeline(object):
             callbacks = []
 
         if getattr(self, "metrics", None):
-            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                    save_dir=self.savedir
+                ),
+            )
         if getattr(self, "criterion", None):
             callbacks.insert(
                 0,
                 self.callbacks_registry.get("LossLoggerCallbacks")(
-                    print_interval=self.opt["trainer"]["args"].get("print_interval", 1),
+                    print_interval=self.opt["global"].get("print_interval", None),
                 ),
             )
         if self.debug:
             callbacks.insert(0, self.callbacks_registry.get("DebugCallbacks")())
         callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
         self.init_trainer(callbacks)
+        self.initialized = True
 
     def fit(self):
         self.init_pipeline(train=True)
@@ -305,7 +323,7 @@ class BasePipeline(object):
     def evaluate(self):
         self.init_pipeline(train=False)
         self.logger.text("Evaluating...", level=LoggerObserver.INFO)
-        self.trainer.evaluate_epoch()
+        return self.trainer.evaluate_epoch()
 
 
 class BaseTestPipeline(object):
@@ -313,33 +331,44 @@ class BaseTestPipeline(object):
 
         super(BaseTestPipeline, self).__init__()
         self.opt = opt
+        self.seed = self.opt["global"].get("seed", 1702)
+        seed_everything(self.seed)
 
     def init_globals(self):
         # Main Loggers
         self.logger = LoggerObserver.getLogger("main")
 
         # Global variables
-        self.exp_name = self.opt["global"]["exp_name"]
-        self.exist_ok = self.opt["global"]["exist_ok"]
-        self.debug = self.opt["global"]["debug"]
-        self.device_name = self.opt["global"]["device"]
-        self.transform_cfg = Config.load_yaml(self.opt["global"]["cfg_transform"])
+        self.exp_name = self.opt["global"].get("exp_name", None)
+        self.exist_ok = self.opt["global"].get("exist_ok", False)
+        self.debug = self.opt["global"].get("debug", False)
+        self.device_name = self.opt["global"].get("device", "cpu")
+        self.transform_cfg = self.opt["global"].get("cfg_transform", None)
         self.device = get_device(self.device_name)
 
         # Experiment name
         if self.exp_name:
             self.savedir = os.path.join(
-                self.opt["global"]["save_dir"], self.exp_name, "test"
+                self.opt["global"].get("save_dir", "tests"), self.exp_name
             )
             if not self.exist_ok:
                 self.savedir = get_new_folder_name(self.savedir)
         else:
             self.savedir = os.path.join(
-                self.opt["global"]["save_dir"],
+                self.opt["global"].get("save_dir", "tests"),
                 datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-                "test",
             )
         os.makedirs(self.savedir, exist_ok=True)
+
+        if self.transform_cfg is not None:
+            self.logger.text(
+                "cfg_transform is deprecated, please use 'includes' instead",
+                level=LoggerObserver.WARN,
+            )
+            self.transform_cfg = Config.load_yaml(self.transform_cfg)
+            self.opt["augmentations"] = self.transform_cfg
+        else:
+            self.transform_cfg = self.opt.get("augmentations", None)
 
         # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
@@ -394,17 +423,17 @@ class BaseTestPipeline(object):
         )
 
     def init_loading(self):
-        self.weights = self.opt["global"]["weights"]
+        self.weights = self.opt["global"].get("weights", None)
         if self.weights:
             state_dict = torch.load(self.weights, map_location="cpu")
             self.model = load_state_dict(self.model, state_dict, "model")
 
     def init_model(self):
-        CLASSNAMES = self.dataset.classnames
+        CLASSNAMES = getattr(self.dataset, "classnames", None)
         self.model = get_instance(
             self.opt["model"],
             registry=MODEL_REGISTRY,
-            num_classes=len(CLASSNAMES),
+            num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
         self.model = move_to(self.model, self.device)

@@ -4,10 +4,11 @@ on:
     branches:
       - master
       - 'V**'
-  pull_request:
-    branches:
-      - master
-      - 'V**'
+      - dev
+env:
+  GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+  REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,13 +19,48 @@ jobs:
         with:
           python-version: '3.8'
           architecture: 'x64'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - uses: iterative/setup-cml@v1
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          pip install -e '.[tabular, tabular_classification]'
+          pip install -e '.[dev,tabular,tabular_classification]'
+          pip install dvc dvc-gdrive
+          npm install -g markdown-table-cli
+      - name: Download data
+        run: |
+          echo "$GDRIVE_CREDENTIALS_DATA" > credentials.json
+          dvc remote modify gdrive --local gdrive_user_credentials_file ./credentials.json
+          dvc pull
+          ls -la samples
       - name: Test with pytest
         run: |
           pytest tests/tabular --capture=no
+      - name: Display report
+        run: |
+          echo "# Tabular Classification Report" > report.md
+          echo "#### Metrics" >> report.md
+          cat runs/pytest_tablr/Validation/metrics.json | md-table >> report.md
+          echo "#### SHAP train" >> report.md
+          echo "![SHAP](runs/pytest_tablr/Importance/SHAP/train.png)" >> report.md
+          echo "#### SHAP val" >> report.md
+          echo "![SHAP](runs/pytest_tablr/Importance/SHAP/val.png)" >> report.md
+          echo "------------------" >> report.md
+
+          echo "#### Hyperparameters Tuning" >> report.md
+          echo "Leaderboard" >> report.md
+          cat runs/optuna/tablr/overview/leaderboard.json | md-table >> report.md
+          echo >> report.md
+          echo "Figures" >> report.md
+          echo "![History](runs/optuna/tablr/overview/history.png)" >> report.md
+          echo "![Contour plot](runs/optuna/tablr/overview/contour.png)" >> report.md
+          echo "![Parallel](runs/optuna/tablr/overview/parallel_coordinate.png)" >> report.md
+          echo "![Importance](runs/optuna/tablr/overview/param_importances.png)" >> report.md
+          echo "![Slice](runs/optuna/tablr/overview/slice.png)" >> report.md
+
+          cml comment create report.md
