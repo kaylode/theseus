@@ -1,5 +1,15 @@
 name: autobuild_docker
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - 'V**'
+      - dev
+  pull_request:
+    branches:
+      - master
+      - 'V**'
+      - dev
 
 env:
   REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
