@@ -10,6 +10,9 @@ on:
       - master
       - 'V**'
       - dev
+env:
+  GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,7 +33,7 @@ jobs:
           pip install dvc dvc-gdrive
       - name: Download data
         run: |
-          echo "${{ secrets.GDRIVE_CREDENTIALS_DATA }}" > credentials.json
+          echo "$GDRIVE_CREDENTIALS_DATA" > credentials.json
           dvc remote modify gdrive --local gdrive_user_credentials_file ./credentials.json
           dvc pull
           ls -la samples
