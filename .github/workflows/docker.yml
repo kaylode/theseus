@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: autobuild_docker
 on: [push]
 
 env:
@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p outputs
 
-      - name: EDA using Docker
+      - name: Test Docker
         uses: addnab/docker-run-action@v3
         with:
           image: ${{ env.DOCKERHUB_TAG }}
