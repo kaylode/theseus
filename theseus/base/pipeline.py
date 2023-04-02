@@ -297,7 +297,12 @@ class BasePipeline(object):
             callbacks = []
 
         if getattr(self, "metrics", None):
-            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                    save_dir=self.savedir
+                ),
+            )
         if getattr(self, "criterion", None):
             callbacks.insert(
                 0,

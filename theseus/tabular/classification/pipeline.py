@@ -18,7 +18,6 @@ class TabularPipeline(BasePipeline):
 
     def __init__(self, opt: Config):
         super(TabularPipeline, self).__init__(opt)
-        self.opt = opt
 
     def init_registry(self):
         super().init_registry()
@@ -111,7 +110,12 @@ class TabularPipeline(BasePipeline):
             callbacks = []
 
         if getattr(self, "metrics", None):
-            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                    save_dir=self.savedir
+                ),
+            )
         if getattr(self, "criterion", None):
             callbacks.insert(
                 0,
