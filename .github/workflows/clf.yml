@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "# Classification Report" > report.md
           echo "#### Metrics" >> report.md
-          runs/pytest_clf/Validation/metrics.json | md-table >> report.md
+          cat runs/pytest_clf/Validation/metrics.json | md-table >> report.md
           echo "#### Confusion Matrix" >> report.md
           echo "![Confusion Matrix](runs/pytest_clf/Validation/cfm.png)" >> report.md
           echo "#### Errorcases" >> report.md
