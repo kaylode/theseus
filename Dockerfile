@@ -10,9 +10,8 @@
 ARG BASE_IMAGE=ubuntu:18.04
 
 # Instal basic utilities
-ENV DEBIAN_FRONTEND noninteractiveee
-RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
-    apt-get update && apt-get install -y --no-install-recommends \
+FROM ${BASE_IMAGE} as dev-base
+RUN  apt-get clean && apt-get update && apt-get upgrade && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     ccache \
@@ -20,30 +19,53 @@ RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
     curl \
     git \
     gcc \
+    wget \
     libjpeg-dev \
+    zip \
+    swig python3-dev \
     unzip bzip2 ffmpeg libsm6 libxext6 \
     libpng-dev && \
     rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
-    chmod +x ~/miniconda.sh && \
-    ~/miniconda.sh -b -p /opt/conda && \
-    rm ~/miniconda.sh && \
-    /opt/conda/bin/conda install -c pytorch -c nvidia -y \
-    python=${PYTHON_VERSION} \
-    pytorch=${PYTORCH_VERSION} torchvision "pytorch-cuda=${CUDA_VERSION}" && \
-    /opt/conda/bin/conda clean -ya
-
 RUN /usr/sbin/update-ccache-symlinks
 RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
-
 ENV PATH /opt/conda/bin:$PATH
+
+# Instal environment
+FROM dev-base as conda-installs
+ARG PYTHON_VERSION=3.9
+ARG CUDA_VERSION=11.3
+ARG PYTORCH_VERSION=1.12.1
+ARG CUDA_CHANNEL=nvidia
+ARG INSTALL_CHANNEL=pytorch
+ENV CONDA_OVERRIDE_CUDA=${CUDA_VERSION}
+RUN curl -fsSL -v -o ~/mambaforge.sh -O https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh && \
+    chmod +x ~/mambaforge.sh && \
+    ~/mambaforge.sh -b -p /opt/mamba && \
+    rm ~/mambaforge.sh && \
+    /opt/mamba/bin/mamba install -c "${INSTALL_CHANNEL}" -c "${CUDA_CHANNEL}" -y \
+    python=${PYTHON_VERSION} \
+    pytorch=${PYTORCH_VERSION} torchvision "cudatoolkit=${CUDA_VERSION}" && \
+    /opt/mamba/bin/mamba clean -ya
+
+ENV PATH /opt/mamba/bin:$PATH
 ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ENV PYTORCH_VERSION ${PYTORCH_VERSION}
 
-# Install
+# Install dependencies
 COPY ./ /workspace/
 WORKDIR /workspace/
-RUN /opt/conda/bin/python -m pip install -e .
+RUN /opt/mamba/bin/python -m pip install --upgrade pip && \
+    /opt/mamba/bin/python -m pip install -e .[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,tabular,tabular_classification,dev] && \
+    /opt/mamba/bin/python -m pip install dvc dvc-gdrive && \
+    /opt/mamba/bin/python -m pip install -U timm
+
+# Pull data from GDrive
+RUN --mount=type=secret,id=credentials \
+  CREDENTIALS=$(cat /run/secrets/credentials) \
+  && echo "$CREDENTIALS" > /workspace/credentials.json
+RUN dvc remote modify gdrive --local gdrive_user_credentials_file /workspace/credentials.json
+RUN dvc pull
+
+ENTRYPOINT ["/bin/bash"]
