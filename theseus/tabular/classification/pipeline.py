@@ -111,7 +111,12 @@ class TabularPipeline(BasePipeline):
             callbacks = []
 
         if getattr(self, "metrics", None):
-            callbacks.insert(0, self.callbacks_registry.get("MetricLoggerCallbacks")())
+            callbacks.insert(
+                0,
+                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                    save_dir=self.save_dir
+                ),
+            )
         if getattr(self, "criterion", None):
             callbacks.insert(
                 0,
