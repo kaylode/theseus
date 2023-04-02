@@ -1,5 +1,10 @@
-import pytest
+import os
 
+import optuna
+import pytest
+from optuna.storages import JournalFileStorage, JournalStorage
+
+from theseus.base.utilities.optuna_tuner import OptunaWrapper
 from theseus.opt import Config
 
 
@@ -29,10 +34,31 @@ def override_test_config():
 
 
 @pytest.fixture(scope="session")
-def override_tuner_config(request):
+def override_tuner_config():
     config = Config(f"./configs/classification/optuna/pipeline.yaml")
-    config["global"]["exp_name"] = "pytest_cls_optuna"
+    config["global"]["exp_name"] = "pytest_clf_optuna"
     config["global"]["exist_ok"] = True
     config["global"]["save_dir"] = "runs"
     config["global"]["device"] = "cpu"
     return config
+
+
+@pytest.fixture(scope="session")
+def override_tuner_tuner():
+
+    os.makedirs("runs/optuna/clf", exist_ok=True)
+    database = JournalStorage(
+        JournalFileStorage("runs/optuna/clf/pytest_clf_optuna.log")
+    )
+
+    tuner = OptunaWrapper(
+        storage=database,
+        study_name="pytest_clf_optuna",
+        n_trials=2,
+        direction="maximize",
+        save_dir="runs/optuna/clf/",
+        sampler=optuna.samplers.RandomSampler(),
+        pruner=optuna.pruners.MedianPruner(),
+    )
+
+    return tuner

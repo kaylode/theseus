@@ -8,6 +8,15 @@ import pandas as pd
 import torch
 from PIL import Image
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
+try:
+    import tensorboard as tb
+    import tensorflow as tf
+
+    tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+except:
+    pass
+
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import ToTensor
 

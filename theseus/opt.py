@@ -91,7 +91,17 @@ class Opts(ArgumentParser):
             return config
         for s in opts:
             s = s.strip()
-            k, v = s.split("=")
+            try:
+                k, v = s.split("=")
+            except ValueError:
+                LOGGER.text(
+                    "Invalid option: {}, options should be in the format of key=value".format(
+                        s
+                    ),
+                    level=LoggerObserver.ERROR,
+                )
+                raise ValueError()
+
             config[k] = yaml.load(v, Loader=yaml.Loader)
         return config
 

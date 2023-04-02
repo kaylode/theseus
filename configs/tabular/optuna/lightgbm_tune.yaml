@@ -24,7 +24,7 @@ optuna:
     - model.args.model_config.min_child_samples
   float:
     - model.args.model_config.learning_rate
-    - model.args.model_config.lambda_l2
+    - model.args.model_config.lambda_l1
     - model.args.model_config.lambda_l2
     - model.args.model_config.feature_fraction
     - model.args.model_config.bagging_fraction
