@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import random
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
@@ -27,6 +28,7 @@ class Splitter(Preprocessor):
             "default",
             "stratified",
             "stratifiedkfold",
+            "unique",
         ], "splitter type not supported"
 
         self.splitter_type = splitter_type
@@ -49,6 +51,10 @@ class Splitter(Preprocessor):
         elif self.splitter_type == "default":
             assert ratio is not None, "should specify ratio"
             self.ratio = ratio
+        elif self.splitter_type == "unique":
+            assert ratio is not None, "should specify ratio"
+            self.splitter = random.sample
+            self.ratio = ratio
 
     def run(self, df):
         num_samples, num_features = df.shape
@@ -61,6 +67,16 @@ class Splitter(Preprocessor):
             train_df, val_df = self.splitter(
                 df, stratify=df[[self.label_column]], random_state=self.seed
             )
+            train_df.to_csv(osp.join(self.save_folder, "train.csv"), index=False)
+            val_df.to_csv(osp.join(self.save_folder, "val.csv"), index=False)
+        elif self.splitter_type == "unique":
+            unique_values = df[self.label_column].unique().tolist()
+            num_unique_samples = len(unique_values)
+            train_idx = self.splitter(
+                unique_values, int(num_unique_samples * self.ratio)
+            )
+            train_df = df[df[self.label_column].isin(train_idx)]
+            val_df = df[~df[self.label_column].isin(train_idx)]
             train_df.to_csv(osp.join(self.save_folder, "train.csv"), index=False)
             val_df.to_csv(osp.join(self.save_folder, "val.csv"), index=False)
         else:
