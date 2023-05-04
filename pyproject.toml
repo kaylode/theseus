@@ -58,6 +58,7 @@ cv = [
 ]
 cv_classification = [
     "timm",
+    "scikit-plot",
     "grad-cam>=1.4.5"
 ]
 cv_semantic = [
@@ -85,7 +86,6 @@ tabular = [
   "pandarallel>=1.6.3",
   "numpy>=1.23.4",
   "scikit-learn>=1.0.0",
-  "scikit-plot",
   "scipy>=1.7.0",
   "optuna>=3.0.5",
   "psycopg2-binary>=2.9.5",
@@ -96,7 +96,8 @@ tabular_classification = [
   "xgboost>=1.7.1",
   "catboost",
   "shap>=0.41.0",
-  "lime>=0.2.0.1"
+  "lime>=0.2.0.1",
+  "scikit-plot",
 ]
 all = [
   "theseus[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,tabular,tabular_classification]",

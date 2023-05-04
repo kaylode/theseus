@@ -1,7 +1,13 @@
 from typing import Any, Dict
 
 import torch
-from scikitplot.metrics import plot_precision_recall_curve, plot_roc_curve
+
+try:
+    from scikitplot.metrics import plot_precision_recall_curve, plot_roc_curve
+
+    has_scikitplot = True
+except:
+    has_scikitplot = False
 from sklearn.metrics import roc_auc_score
 
 from theseus.base.metrics.metric_template import Metric
@@ -41,14 +47,21 @@ class ROCAUCScore(Metric):
         roc_auc_scr = roc_auc_score(
             self.targets, self.preds, average=self.average, multi_class=self.label_type
         )
-        roc_curve_fig = plot_roc_curve(self.targets, self.preds).get_figure()
-        pr_fig = plot_precision_recall_curve(self.targets, self.preds).get_figure()
 
-        return {
+        results = {
             f"{self.average}-roc_auc_score": roc_auc_scr,
-            "roc_curve": roc_curve_fig,
-            "precision_recall_curve": pr_fig,
         }
+        if has_scikitplot:
+            roc_curve_fig = plot_roc_curve(self.targets, self.preds).get_figure()
+            pr_fig = plot_precision_recall_curve(self.targets, self.preds).get_figure()
+            results.update(
+                {
+                    "roc_curve": roc_curve_fig,
+                    "precision_recall_curve": pr_fig,
+                }
+            )
+
+        return results
 
     def reset(self):
         self.targets = []
