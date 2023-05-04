@@ -85,6 +85,7 @@ tabular = [
   "pandarallel>=1.6.3",
   "numpy>=1.23.4",
   "scikit-learn>=1.0.0",
+  "scikit-plot",
   "scipy>=1.7.0",
   "optuna>=3.0.5",
   "psycopg2-binary>=2.9.5",
