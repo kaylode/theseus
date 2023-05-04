@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from scikitplot.metrics import plot_precision_recall_curve
 from sklearn.metrics import precision_score, recall_score
 
 from theseus.base.metrics.metric_template import Metric
