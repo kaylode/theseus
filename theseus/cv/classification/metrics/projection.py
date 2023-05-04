@@ -44,7 +44,8 @@ class EmbeddingProjection(Metric):
             torch.argmax(outputs["outputs"].detach().cpu(), dim=1).numpy().tolist()
         )
         inputs = batch["inputs"]
-        targets = batch["targets"].numpy().tolist()
+        if self.has_labels:
+            targets = batch["targets"].numpy().tolist()
         img_names = batch["img_names"]
 
         for i, _ in enumerate(features):
