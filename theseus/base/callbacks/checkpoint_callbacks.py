@@ -76,7 +76,6 @@ class TorchCheckpointCallbacks(Callbacks):
         weights = {
             "model": trainer.model.model.state_dict(),
             "optimizer": trainer.optimizer.state_dict(),
-            "scheduler": trainer.scheduler.state_dict(),
             "iters": iters,
             "best_value": self.best_value,
         }
