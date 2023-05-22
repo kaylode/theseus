@@ -7,13 +7,13 @@ from theseus.cv.semantic.losses import LOSS_REGISTRY
 from theseus.cv.semantic.metrics import METRIC_REGISTRY
 from theseus.cv.semantic.models import MODEL_REGISTRY
 from theseus.cv.semantic.trainer import TRAINER_REGISTRY
-from theseus.opt import Config
+from omegaconf import DictConfig
 
 
 class SemanticPipeline(BasePipeline):
     """docstring for Pipeline."""
 
-    def __init__(self, opt: Config):
+    def __init__(self, opt: DictConfig):
         super(SemanticPipeline, self).__init__(opt)
         self.opt = opt
 

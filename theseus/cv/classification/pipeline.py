@@ -7,13 +7,13 @@ from theseus.cv.classification.losses import LOSS_REGISTRY
 from theseus.cv.classification.metrics import METRIC_REGISTRY
 from theseus.cv.classification.models import MODEL_REGISTRY
 from theseus.cv.classification.trainer import TRAINER_REGISTRY
-from theseus.opt import Config
+from omegaconf import DictConfig
 
 
 class ClassificationPipeline(BasePipeline):
     """docstring for Pipeline."""
 
-    def __init__(self, opt: Config):
+    def __init__(self, opt: DictConfig):
         super(ClassificationPipeline, self).__init__(opt)
         self.opt = opt
 

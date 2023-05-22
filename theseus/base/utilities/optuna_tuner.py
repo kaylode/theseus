@@ -16,7 +16,7 @@ from optuna.visualization import (
 from theseus.base.callbacks.optuna_callbacks import OptunaCallbacks
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
-from theseus.opt import Config
+from omegaconf import DictConfig
 
 
 class OptunaWrapper:
@@ -53,7 +53,7 @@ class OptunaWrapper:
 
     def tune(
         self,
-        config: Config,
+        config: DictConfig,
         pipeline_class: BasePipeline,
         trial_user_attrs: dict = {},
     ):
@@ -75,7 +75,7 @@ class OptunaWrapper:
         self._rename_params()
         return best_trial
 
-    def save_best_config(self, save_dir: str, config: Config, best_params: dict):
+    def save_best_config(self, save_dir: str, config: DictConfig, best_params: dict):
         for param_str, param_val in best_params.items():
             here = config
             keys = param_str.split(".")
@@ -90,7 +90,7 @@ class OptunaWrapper:
         )
 
     def _override_dict_with_optuna(
-        self, trial, config: Config, param_str: str, variable_type: str
+        self, trial, config: DictConfig, param_str: str, variable_type: str
     ):
         """
         Override config with optuna suggested params
@@ -134,7 +134,7 @@ class OptunaWrapper:
     def objective(
         self,
         trial: optuna.Trial,
-        config: Config,
+        config: DictConfig,
         pipeline_class: BasePipeline,
         trial_user_attrs: dict = {},
     ):

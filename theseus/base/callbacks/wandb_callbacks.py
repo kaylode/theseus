@@ -9,7 +9,7 @@ from deepdiff import DeepDiff
 from theseus.base.callbacks.base_callbacks import Callbacks
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
-from theseus.opt import Config
+from omegaconf import DictConfig
 
 try:
     import wandb as wandblogger
@@ -97,7 +97,7 @@ class WandbCallbacks(Callbacks):
                     )
 
                 # Check if the config remains the same, if not, create new run id
-                old_config_dict = Config(old_config_path)
+                old_config_dict = DictConfig.load(old_config_path)
                 tmp_config_dict = deepcopy(self.config_dict)
                 ## strip off global key because `resume` will always different
                 old_config_dict.pop("global", None)

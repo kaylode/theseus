@@ -18,13 +18,12 @@ from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loading import load_state_dict
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
 from theseus.base.utilities.seed import seed_everything
-from theseus.opt import Config
-
+from omegaconf import DictConfig
 
 class BasePipeline(object):
     """docstring for BasePipeline."""
 
-    def __init__(self, opt: Config):
+    def __init__(self, opt: DictConfig):
         super(BasePipeline, self).__init__()
         self.opt = opt
         self.seed = self.opt["global"].get("seed", 1702)
@@ -67,15 +66,7 @@ class BasePipeline(object):
         image_logger = ImageWriter(self.savedir)
         self.logger.subscribe(image_logger)
 
-        if self.transform_cfg is not None:
-            self.logger.text(
-                "cfg_transform is deprecated, please use 'includes' instead",
-                level=LoggerObserver.WARN,
-            )
-            self.transform_cfg = Config.load_yaml(self.transform_cfg)
-            self.opt["augmentations"] = self.transform_cfg
-        else:
-            self.transform_cfg = self.opt.get("augmentations", None)
+        self.transform_cfg = self.opt.get("augmentations", None)
 
         self.device = get_device(self.device_name)
 
@@ -327,7 +318,7 @@ class BasePipeline(object):
 
 
 class BaseTestPipeline(object):
-    def __init__(self, opt: Config):
+    def __init__(self, opt: DictConfig):
 
         super(BaseTestPipeline, self).__init__()
         self.opt = opt
@@ -360,15 +351,7 @@ class BaseTestPipeline(object):
             )
         os.makedirs(self.savedir, exist_ok=True)
 
-        if self.transform_cfg is not None:
-            self.logger.text(
-                "cfg_transform is deprecated, please use 'includes' instead",
-                level=LoggerObserver.WARN,
-            )
-            self.transform_cfg = Config.load_yaml(self.transform_cfg)
-            self.opt["augmentations"] = self.transform_cfg
-        else:
-            self.transform_cfg = self.opt.get("augmentations", None)
+        self.transform_cfg = self.opt.get("augmentations", None)
 
         # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
