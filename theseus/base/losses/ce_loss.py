@@ -19,10 +19,13 @@ class ClassificationCELoss(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
         pred = outputs["outputs"]
-        target = move_to(batch["targets"], device)
+        if device is not None:
+            target = move_to(batch["targets"], device)
+        else:
+            target = batch["targets"]
 
         if pred.shape == target.shape:
             loss = self.criterion(pred, target)
@@ -45,7 +48,7 @@ class ClassificationSmoothCELoss(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
         pred = outputs["outputs"]
         target = batch["targets"]
