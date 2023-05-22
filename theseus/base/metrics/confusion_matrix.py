@@ -78,8 +78,8 @@ class ConfusionMatrix(Metric):
         Perform calculation based on prediction and targets
         """
         # in torchvision models, pred is a dict[key=out, value=Tensor]
-        outputs = outputs["outputs"]
-        targets = batch["targets"]
+        targets = batch["targets"].cpu()
+        outputs = outputs["outputs"].detach().cpu()
 
         outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 

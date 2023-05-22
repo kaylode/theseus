@@ -1,19 +1,17 @@
 from typing import Any, Dict
 
+from sklearn.metrics import matthews_corrcoef
 import numpy as np
-from sklearn.metrics import f1_score
-
 from theseus.base.metrics.metric_template import Metric
 
 
-class SKLF1ScoreMetric(Metric):
+class SKLMCC(Metric):
     """
-    F1 Score Metric (including macro, micro)
+    Mathew Correlation Coefficient
     """
 
-    def __init__(self, average="weighted", **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.average = average
 
     def value(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
@@ -25,5 +23,5 @@ class SKLF1ScoreMetric(Metric):
         self.preds = np.argmax(outputs, axis=1).reshape(-1).tolist()
         self.targets = targets.reshape(-1).tolist()
 
-        score = f1_score(self.targets, self.preds, average=self.average)
-        return {f"{self.average}-f1": score}
+        score = matthews_corrcoef(self.targets, self.preds)
+        return {f"mcc": score}

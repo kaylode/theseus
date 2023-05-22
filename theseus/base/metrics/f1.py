@@ -22,8 +22,8 @@ class F1ScoreMetric(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        targets = batch["targets"]
-        outputs = outputs["outputs"]
+        targets = batch["targets"].cpu()
+        outputs = outputs["outputs"].detach().cpu()
 
         outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 

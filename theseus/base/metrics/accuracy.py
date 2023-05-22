@@ -19,8 +19,8 @@ class Accuracy(Metric):
         """
         Perform calculation based on prediction and targets
         """
-        outputs = outputs["outputs"]
-        target = batch["targets"]
+        outputs = outputs["outputs"].detach().cpu()
+        target = batch["targets"].cpu()
 
         prediction = logits2labels(
             outputs, label_type=self.type, threshold=self.threshold
