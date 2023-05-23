@@ -3,8 +3,7 @@ from typing import Any, Dict
 import torch
 
 try:
-    from scikitplot.metrics import plot_precision_recall_curve, plot_roc
-
+    from scikitplot.metrics import plot_precision_recall, plot_roc
     has_scikitplot = True
 except:
     has_scikitplot = False
@@ -54,7 +53,7 @@ class ROCAUCScore(Metric):
         }
         if has_scikitplot and self.plot_curve:
             roc_curve_fig = plot_roc(self.targets, self.preds).get_figure()
-            pr_fig = plot_precision_recall_curve(self.targets, self.preds).get_figure()
+            pr_fig = plot_precision_recall(self.targets, self.preds).get_figure()
             results.update(
                 {
                     "roc_curve": roc_curve_fig,

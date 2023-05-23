@@ -11,7 +11,6 @@ from theseus.lightning.callbacks.wrapper import convert_to_lightning_callbacks
 from theseus.lightning.datasets.wrapper import LightningDataModuleWrapper
 from theseus.base.losses import LOSS_REGISTRY
 from theseus.base.metrics import METRIC_REGISTRY
-from theseus.base.utilities.cuda import get_device, get_devices_info
 from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
@@ -39,7 +38,6 @@ class BaseLightningPipeline(object):
         self.exp_name = self.opt["global"].get("exp_name", None)
         self.exist_ok = self.opt["global"].get("exist_ok", False)
         self.debug = self.opt["global"].get("debug", False)
-        self.device_name = self.opt["global"].get("device", "cpu")
         self.resume = self.opt["global"].get("resume", None)
         self.pretrained = self.opt["global"].get("pretrained", None)
         self.transform_cfg = self.opt["global"].get("cfg_transform", None)
@@ -66,13 +64,7 @@ class BaseLightningPipeline(object):
         image_logger = ImageWriter(self.savedir)
         self.logger.subscribe(image_logger)
 
-        if self.transform_cfg is not None:
-            self.transform_cfg = Config.load_yaml(self.transform_cfg)
-            self.opt["augmentations"] = self.transform_cfg
-        else:
-            self.transform_cfg = self.opt.get("augmentations", None)
-
-        self.device = get_device(self.device_name)
+        self.transform_cfg = self.opt.get("augmentations", None)
 
         # Logging out configs
         self.logger.text('\n'+OmegaConf.to_yaml(self.opt), level=LoggerObserver.INFO)

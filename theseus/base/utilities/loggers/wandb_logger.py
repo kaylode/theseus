@@ -94,11 +94,14 @@ class WandbLogger(LoggerSubscriber):
         :param step: (int) logging step
         """
 
-        if isinstance(value, torch.Tensor):
-            image = wandb_logger.Image(value)
-            wandb_logger.log({tag: image, "iterations": step})
-        else:
-            wandb_logger.log({tag: value, "iterations": step})
+        try:
+            if isinstance(value, torch.Tensor):
+                image = wandb_logger.Image(value)
+                wandb_logger.log({tag: image, "iterations": step})
+            else:
+                wandb_logger.log({tag: value, "iterations": step})
+        except Exception as e:
+            pass
 
     def log_torch_module(self, tag, value, log_freq, **kwargs):
         """
