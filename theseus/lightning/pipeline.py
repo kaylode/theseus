@@ -11,7 +11,6 @@ from theseus.lightning.callbacks.wrapper import convert_to_lightning_callbacks
 from theseus.lightning.datasets.wrapper import LightningDataModuleWrapper
 from theseus.base.losses import LOSS_REGISTRY
 from theseus.base.metrics import METRIC_REGISTRY
-from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.base.utilities.cuda import get_device, get_devices_info
 from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
@@ -167,46 +166,26 @@ class BaseLightningPipeline(object):
         )
         return self.criterion
     
-    def init_optimizer(self):
-        self.optimizer = get_instance(
-            self.opt["optimizer"],
-            registry=self.optimizer_registry,
-            params=self.model.parameters(),
-        )
-
-    def init_scheduler(self):
-        if "scheduler" in self.opt.keys() and self.opt["scheduler"] is not None:
-            self.scheduler = get_instance(
-                self.opt["scheduler"],
-                registry=self.scheduler_registry,
-                optimizer=self.optimizer,
-                **{
-                    "num_epochs": self.opt["trainer"]["args"]["max_epochs"]
-                    // len(self.train_dataloader),
-                    "trainset": self.train_dataset,
-                    "batch_size": self.opt["data"]["dataloader"]["val"]["args"][
-                        "batch_size"
-                    ],
-                    "last_epoch": getattr(self, "last_epoch", -1),
-                },
-            )
-        else:
-            self.scheduler = None
-    
     def init_model_with_loss(self):
         self.model = self.init_model()
         criterion = self.init_criterion()
-        self.init_optimizer()
-        self.init_scheduler()
-
 
         self.model = LightningModelWrapper(
             self.model, 
             criterion,
-            metrics=getattr(self, "metrics", None),
-            optimizer=getattr(self, "optimizer", None),
-            scheduler=getattr(self, "scheduler", None),
             datamodule=getattr(self, "datamodule", None),
+            metrics=getattr(self, "metrics", None),
+            optimizer_config=self.opt['optimizer'],
+            scheduler_config=self.opt['scheduler'],
+            scheduler_kwargs={
+                "num_epochs": self.opt["trainer"]["args"]["max_epochs"]
+                // len(self.train_dataloader),
+                "trainset": self.train_dataset,
+                "batch_size": self.opt["data"]["dataloader"]["val"]["args"][
+                    "batch_size"
+                ],
+                "last_epoch": getattr(self, "last_epoch", -1),
+            },
         )
 
     def init_metrics(self):
@@ -239,7 +218,8 @@ class BaseLightningPipeline(object):
         )
 
     def save_configs(self):
-        self.opt.save_yaml(os.path.join(self.savedir, "pipeline.yaml"))
+        with open(os.path.join(self.savedir, "pipeline.yaml"), 'w') as f:
+            OmegaConf.save(config=self.opt, f=f)
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY
@@ -247,8 +227,8 @@ class BaseLightningPipeline(object):
         self.dataloader_registry = DATALOADER_REGISTRY
         self.metric_registry = METRIC_REGISTRY
         self.loss_registry = LOSS_REGISTRY
-        self.optimizer_registry = OPTIM_REGISTRY
-        self.scheduler_registry = SCHEDULER_REGISTRY
+        # self.optimizer_registry = OPTIM_REGISTRY
+        # self.scheduler_registry = SCHEDULER_REGISTRY
         self.callbacks_registry = CALLBACKS_REGISTRY
         self.trainer_registry = TRAINER_REGISTRY
         self.transform_registry = TRANSFORM_REGISTRY

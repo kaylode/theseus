@@ -8,7 +8,7 @@ def get_instance_with_kwargs(registry, name, args: list = None, kwargs: dict = {
     inspection = inspect.signature(registry.get(name))
     class_kwargs = inspection.parameters.keys()
 
-    if isinstance(args, dict):
+    if isinstance(args, (dict, DictConfig)):
         # override kwargs (from parent) with args (from config)
         kwargs.update(args)
         args = None

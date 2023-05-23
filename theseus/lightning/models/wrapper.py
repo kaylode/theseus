@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import lightning.pytorch as pl
 from theseus.lightning.datasets import LightningDataModuleWrapper
-from theseus.base.optimizers.schedulers import SchedulerWrapper
-from theseus.base.utilities.getter import get_instance, get_instance_recursively
+from theseus.base.utilities.getter import get_instance
+from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 
 class LightningModelWrapper(pl.LightningModule):
     """
@@ -14,16 +14,18 @@ class LightningModelWrapper(pl.LightningModule):
     """
     def __init__(self, 
         model: nn.Module, 
-        criterion: nn.Module, metrics: List[Any]=None, 
-        optimizer: torch.optim.Optimizer=None, scheduler: SchedulerWrapper=None,
+        criterion: nn.Module=None, metrics: List[Any]=None, 
+        optimizer_config: Dict = None, scheduler_config: Dict = None,
+        scheduler_kwargs: Dict = None,
         datamodule: LightningDataModuleWrapper=None
     ):
         super().__init__()
         self.model = model
         self.criterion = criterion
         self.metrics = metrics
-        self.optimizer = optimizer
-        self.scheduler = scheduler
+        self.optimizer_config = optimizer_config
+        self.scheduler_config = scheduler_config
+        self.scheduler_kwargs = scheduler_kwargs
         self.datamodule = datamodule
         self.iterations = 0
         self.lr = 0
@@ -85,9 +87,24 @@ class LightningModelWrapper(pl.LightningModule):
         return pred
 
     def configure_optimizers(self):
-        if self.scheduler is None:
+        if self.optimizer_config is not None:
+            self.optimizer = get_instance(
+                self.optimizer_config,
+                registry=OPTIM_REGISTRY,
+                params=self.parameters(),
+            )
+
+
+        if self.scheduler_config is not None:
+            self.scheduler = get_instance(
+                self.scheduler_config,
+                registry=SCHEDULER_REGISTRY,
+                optimizer=self.optimizer,
+                **self.scheduler_kwargs,
+            )
+        else:
             return self.optimizer
-        
+
         scheduler_interval = 'epoch' if self.scheduler.step_per_epoch else 'step'
         scheduler = {
             "scheduler": self.scheduler.scheduler,
