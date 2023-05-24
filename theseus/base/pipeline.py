@@ -247,7 +247,17 @@ class BasePipeline(object):
         )
 
     def save_configs(self):
-        self.opt.save_yaml(os.path.join(self.savedir, "pipeline.yaml"))
+        from omegaconf import OmegaConf
+
+        if isinstance(self.opt, DictConfig):
+            with open(os.path.join(self.savedir, "pipeline.yaml"), 'w') as f:
+                OmegaConf.save(config=self.opt, f=f)
+        else:
+            self.logger.text(
+                "opt.Config is deprecated. Consider using DictConfig from OmegaConf",
+                LoggerObserver.WARNING,
+            )
+            self.opt.save_yaml(os.path.join(self.savedir, "pipeline.yaml"))
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY

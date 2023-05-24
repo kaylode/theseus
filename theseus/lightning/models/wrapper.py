@@ -91,7 +91,7 @@ class LightningModelWrapper(pl.LightningModule):
             self.optimizer = get_instance(
                 self.optimizer_config,
                 registry=OPTIM_REGISTRY,
-                params=self.parameters(),
+                params=self.model.parameters(),
             )
 
 
