@@ -42,6 +42,7 @@ class Splitter(Preprocessor):
         if self.splitter_type == "stratified":
             assert label_column is not None, "Label column should be specified"
             self.splitter = train_test_split
+            self.ratio = ratio
         elif self.splitter_type == "stratifiedkfold":
             assert label_column is not None, "Label column should be specified"
             assert n_splits is not None, "number of splits should be specified"
@@ -65,7 +66,8 @@ class Splitter(Preprocessor):
             val_df.to_csv(osp.join(self.save_folder, "val.csv"), index=False)
         elif self.splitter_type == "stratified":
             train_df, val_df = self.splitter(
-                df, stratify=df[[self.label_column]], random_state=self.seed
+                df, stratify=df[[self.label_column]], random_state=self.seed,
+                train_size=self.ratio,
             )
             train_df.to_csv(osp.join(self.save_folder, "train.csv"), index=False)
             val_df.to_csv(osp.join(self.save_folder, "val.csv"), index=False)

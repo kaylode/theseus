@@ -1,7 +1,7 @@
 from theseus.base.callbacks import CALLBACKS_REGISTRY
 
-from .gradcam_callbacks import GradCAMVisualizationCallbacks
-from .visualize_callbacks import ClassificationVisualizerCallbacks
+from .gradcam_callback import GradCAMVisualizationCallback
+from .visualize_callback import ClassificationVisualizerCallback
 
-CALLBACKS_REGISTRY.register(ClassificationVisualizerCallbacks)
-CALLBACKS_REGISTRY.register(GradCAMVisualizationCallbacks)
+CALLBACKS_REGISTRY.register(ClassificationVisualizerCallback)
+CALLBACKS_REGISTRY.register(GradCAMVisualizationCallback)

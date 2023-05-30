@@ -1,0 +1,28 @@
+defaults:
+  - base/hydra@_here_
+  - base/globals@_here_
+  - transform@_here_
+  - _self_
+
+global:
+  exp_name: null
+  exist_ok: false
+  save_dir: runs
+  weights: null
+model:
+  name: BaseSegModel
+  args:
+    model_name: unetplusplus
+    encoder_name: efficientnet-b0
+data:
+  dataset:
+    name: ImageDataset
+    args:
+      image_dir: samples/carvana-masking/test_images
+      txt_classnames: samples/carvana-masking/classnames.txt
+  dataloader:
+    name: DataLoaderWithCollator
+    args:
+      batch_size: 64
+      drop_last: True
+      shuffle: True

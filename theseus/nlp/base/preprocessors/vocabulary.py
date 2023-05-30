@@ -31,6 +31,7 @@ class Vocabulary(object):
         self.pad_word = pad_word
         self.sos_word = sos_word
         self.eos_word = eos_word
+        self.truncation_side='right'
 
         self.init_vocab()
         if self.pkl_path is not None:
@@ -52,6 +53,7 @@ class Vocabulary(object):
             self.sos_word = vocab.sos_word
             self.eos_word = vocab.eos_word
             self.vocab_size = vocab.vocab_size
+            self.truncation_side = self.truncation_side
 
             LOGGER.text(
                 "Vocabulary successfully loaded from vocab.pkl file!",
@@ -219,7 +221,10 @@ class Vocabulary(object):
                 if len(batch) > max_length:
                     if truncation:
                         if add_special_tokens:
-                            batch = batch[: max_length - 2]
+                            if self.truncation_side == 'right':
+                                batch = batch[: max_length - 2]
+                            else:
+                                batch = batch[2 - max_length:]
                             batch.append(self.__call__(self.eos_word))
                         else:
                             batch = batch[:max_length]

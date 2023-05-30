@@ -89,15 +89,18 @@ class BaseTimmModel(nn.Module):
         """
         return self.model
 
-    def forward_batch(self, batch: Dict, device: torch.device):
-        x = move_to(batch["inputs"], device)
+    def forward_batch(self, batch: Dict, device: torch.device=None):
+        if device is not None:
+            x = move_to(batch["inputs"], device)
+        else:
+            x = batch["inputs"]
         self.features = None  # Clear current features
         outputs = self.model(x)
         if self.num_classes == 0:
             self.features = outputs
         return {"outputs": outputs, "features": self.features}
 
-    def get_prediction(self, adict: Dict[str, Any], device: torch.device):
+    def get_prediction(self, adict: Dict[str, Any], device: torch.device=None):
         """
         Inference using the model.
 

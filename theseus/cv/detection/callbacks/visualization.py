@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -6,7 +6,9 @@ import numpy as np
 import torch
 from torchvision.transforms import functional as TFF
 
-from theseus.base.callbacks.base_callbacks import Callbacks
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.colors import color_list
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
@@ -14,7 +16,7 @@ from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 LOGGER = LoggerObserver.getLogger("main")
 
 
-class DetectionVisualizerCallbacks(Callbacks):
+class DetectionVisualizerCallback(Callback):
     """
     Callbacks for visualizing stuff during training
     Features:
@@ -35,18 +37,17 @@ class DetectionVisualizerCallbacks(Callbacks):
         self.mean = mean
         self.std = std
 
-    def sanitycheck(self, logs: Dict = None):
+    def on_sanity_check_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         """
         Sanitycheck before starting. Run only when debug=True
         """
 
-        iters = logs["iters"]
-        model = self.params["trainer"].model
-        valloader = self.params["trainer"].valloader
-        trainloader = self.params["trainer"].trainloader
+        iters = trainer.iterations
+        model = pl_module.model
+        valloader = pl_module.datamodule.valloader
+        trainloader = pl_module.datamodule.trainloader
         train_batch = next(iter(trainloader))
         val_batch = next(iter(valloader))
-        trainset = trainloader.dataset
         valset = valloader.dataset
         classnames = valset.classnames
 
@@ -156,16 +157,20 @@ class DetectionVisualizerCallbacks(Callbacks):
         plt.clf()  # Clear figure
         plt.close()
 
+    def on_validation_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+        self.params = {}
+        self.params['last_batch'] = batch
+
     @torch.no_grad()
-    def on_val_epoch_end(self, logs: Dict = None):
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         """
         After finish validation
         """
 
-        iters = logs["iters"]
-        last_batch = logs["last_batch"]
-        model = self.params["trainer"].model
-        valloader = self.params["trainer"].valloader
+        iters = trainer.global_step
+        last_batch = self.params['last_batch']
+        model = pl_module.model
+        valloader = pl_module.datamodule.valloader
 
         # Vizualize model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)

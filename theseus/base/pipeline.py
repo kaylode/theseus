@@ -1,24 +1,21 @@
 import os
-from datetime import datetime
-
 import torch
+from datetime import datetime
 
 from theseus.base.augmentations import TRANSFORM_REGISTRY
 from theseus.base.callbacks import CALLBACKS_REGISTRY
-from theseus.base.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY
+from theseus.base.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY, LightningDataModuleWrapper
+from theseus.base.trainer import TRAINER_REGISTRY
+from theseus.base.models import MODEL_REGISTRY, LightningModelWrapper
 from theseus.base.losses import LOSS_REGISTRY
 from theseus.base.metrics import METRIC_REGISTRY
-from theseus.base.models import MODEL_REGISTRY
-from theseus.base.models.wrapper import ModelWithLoss
-from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
-from theseus.base.trainer import TRAINER_REGISTRY
-from theseus.base.utilities.cuda import get_device, get_devices_info, move_to
 from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
-from theseus.base.utilities.loading import load_state_dict
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
 from theseus.base.utilities.seed import seed_everything
-from omegaconf import DictConfig
+from omegaconf import OmegaConf, DictConfig
+
+
 
 class BasePipeline(object):
     """docstring for BasePipeline."""
@@ -39,7 +36,6 @@ class BasePipeline(object):
         self.exp_name = self.opt["global"].get("exp_name", None)
         self.exist_ok = self.opt["global"].get("exist_ok", False)
         self.debug = self.opt["global"].get("debug", False)
-        self.device_name = self.opt["global"].get("device", "cpu")
         self.resume = self.opt["global"].get("resume", None)
         self.pretrained = self.opt["global"].get("pretrained", None)
         self.transform_cfg = self.opt["global"].get("cfg_transform", None)
@@ -68,10 +64,8 @@ class BasePipeline(object):
 
         self.transform_cfg = self.opt.get("augmentations", None)
 
-        self.device = get_device(self.device_name)
-
         # Logging out configs
-        self.logger.text(self.opt, level=LoggerObserver.INFO)
+        self.logger.text('\n'+OmegaConf.to_yaml(self.opt), level=LoggerObserver.INFO)
         self.logger.text(
             f"Everything will be saved to {self.savedir}",
             level=LoggerObserver.INFO,
@@ -135,6 +129,13 @@ class BasePipeline(object):
             level=LoggerObserver.INFO,
         )
 
+    def init_datamodule(self):
+        self.datamodule = LightningDataModuleWrapper(
+            trainloader=getattr(self, 'train_dataloader', None),
+            valloader=getattr(self, 'val_dataloader', None),
+            testloader=getattr(self, 'test_dataloader', None),
+        )
+
     def init_model(self):
         CLASSNAMES = getattr(self.val_dataset, "classnames", None)
         model = get_instance(
@@ -143,7 +144,6 @@ class BasePipeline(object):
             num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
-        model = move_to(model, self.device)
         return model
 
     def init_criterion(self):
@@ -154,19 +154,28 @@ class BasePipeline(object):
             num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
-        self.criterion = move_to(self.criterion, self.device)
         return self.criterion
-
-    def init_model_with_loss(self):
-        model = self.init_model()
+    
+    def init_model_with_loss(self, is_train=True):
+        self.model = self.init_model()
         criterion = self.init_criterion()
-        self.model = ModelWithLoss(model, criterion, self.device)
-        self.logger.text(
-            f"Number of trainable parameters: {self.model.trainable_parameters():,}",
-            level=LoggerObserver.INFO,
+        num_epochs = self.opt["trainer"]["args"]["max_epochs"]
+        batch_size = self.opt["data"]["dataloader"]["val"]["args"]["batch_size"]
+
+        self.model = LightningModelWrapper(
+            self.model, 
+            criterion,
+            datamodule=getattr(self, "datamodule", None),
+            metrics=getattr(self, "metrics", None),
+            optimizer_config=self.opt['optimizer'] if is_train else None,
+            scheduler_config=self.opt['scheduler'] if is_train else None,
+            scheduler_kwargs={
+                    "num_epochs": num_epochs,
+                    "num_iterations": num_epochs * len(self.train_dataloader),
+                    "batch_size": batch_size,
+                    "last_epoch": getattr(self, "last_epoch", -1),
+            } if is_train else None,
         )
-        device_info = get_devices_info(self.device_name)
-        self.logger.text("Using " + device_info, level=LoggerObserver.INFO)
 
     def init_metrics(self):
         CLASSNAMES = getattr(self.val_dataset, "classnames", None)
@@ -176,51 +185,6 @@ class BasePipeline(object):
             num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
-
-    def init_optimizer(self):
-        self.optimizer = get_instance(
-            self.opt["optimizer"],
-            registry=self.optimizer_registry,
-            params=self.model.parameters(),
-        )
-
-    def init_loading(self):
-        self.last_epoch = -1
-        if getattr(self, "pretrained", None):
-            state_dict = torch.load(self.pretrained, map_location="cpu")
-            self.model.model = load_state_dict(self.model.model, state_dict, "model")
-
-        if getattr(self, "resume", None):
-            state_dict = torch.load(self.resume, map_location="cpu")
-            self.model.model = load_state_dict(self.model.model, state_dict, "model")
-            self.optimizer = load_state_dict(self.optimizer, state_dict, "optimizer")
-            iters = load_state_dict(None, state_dict, "iters")
-            self.last_epoch = iters // len(self.train_dataloader) - 1
-
-    def init_scheduler(self):
-        if "scheduler" in self.opt.keys() and self.opt["scheduler"] is not None:
-            self.scheduler = get_instance(
-                self.opt["scheduler"],
-                registry=self.scheduler_registry,
-                optimizer=self.optimizer,
-                **{
-                    "num_epochs": self.opt["trainer"]["args"]["num_iterations"]
-                    // len(self.train_dataloader),
-                    "trainset": self.train_dataset,
-                    "batch_size": self.opt["data"]["dataloader"]["val"]["args"][
-                        "batch_size"
-                    ],
-                    "last_epoch": getattr(self, "last_epoch", -1),
-                },
-            )
-
-            if getattr(self, "resume", None):
-                state_dict = torch.load(self.resume)
-                self.scheduler = load_state_dict(
-                    self.scheduler, state_dict, "scheduler"
-                )
-        else:
-            self.scheduler = None
 
     def init_callbacks(self):
         callbacks = get_instance_recursively(
@@ -235,29 +199,15 @@ class BasePipeline(object):
     def init_trainer(self, callbacks):
         self.trainer = get_instance(
             self.opt["trainer"],
-            model=self.model,
-            trainloader=getattr(self, "train_dataloader", None),
-            valloader=getattr(self, "val_dataloader", None),
-            metrics=getattr(self, "metrics", None),
-            optimizer=getattr(self, "optimizer", None),
-            scheduler=getattr(self, "scheduler", None),
-            debug=getattr(self, "debug", False),
-            registry=self.trainer_registry,
+            default_root_dir=getattr(self, "savedir", "runs"),
+            deterministic='warn',
             callbacks=callbacks,
+            registry=self.trainer_registry,
         )
 
     def save_configs(self):
-        from omegaconf import OmegaConf
-
-        if isinstance(self.opt, DictConfig):
-            with open(os.path.join(self.savedir, "pipeline.yaml"), 'w') as f:
-                OmegaConf.save(config=self.opt, f=f)
-        else:
-            self.logger.text(
-                "opt.Config is deprecated. Consider using DictConfig from OmegaConf",
-                LoggerObserver.WARNING,
-            )
-            self.opt.save_yaml(os.path.join(self.savedir, "pipeline.yaml"))
+        with open(os.path.join(self.savedir, "pipeline.yaml"), 'w') as f:
+            OmegaConf.save(config=self.opt, f=f)
 
     def init_registry(self):
         self.model_registry = MODEL_REGISTRY
@@ -265,8 +215,6 @@ class BasePipeline(object):
         self.dataloader_registry = DATALOADER_REGISTRY
         self.metric_registry = METRIC_REGISTRY
         self.loss_registry = LOSS_REGISTRY
-        self.optimizer_registry = OPTIM_REGISTRY
-        self.scheduler_registry = SCHEDULER_REGISTRY
         self.callbacks_registry = CALLBACKS_REGISTRY
         self.trainer_registry = TRAINER_REGISTRY
         self.transform_registry = TRANSFORM_REGISTRY
@@ -283,48 +231,54 @@ class BasePipeline(object):
         if train:
             self.init_train_dataloader()
             self.init_validation_dataloader()
-            self.init_model_with_loss()
+            self.init_datamodule()
             self.init_metrics()
-            self.init_optimizer()
-            self.init_loading()
-            self.init_scheduler()
+            self.init_model_with_loss()
             callbacks = self.init_callbacks()
             self.save_configs()
         else:
             self.init_validation_dataloader()
-            self.init_model_with_loss()
+            self.init_datamodule()
             self.init_metrics()
-            self.init_loading()
+            self.init_model_with_loss(is_train=train)
             callbacks = []
 
-        if getattr(self, "metrics", None):
+        if getattr(self.model, "metrics", None):
             callbacks.insert(
                 0,
-                self.callbacks_registry.get("MetricLoggerCallbacks")(
+                self.callbacks_registry.get("MetricLoggerCallback")(
                     save_dir=self.savedir
                 ),
             )
-        if getattr(self, "criterion", None):
+        if getattr(self.model, "criterion", None):
             callbacks.insert(
                 0,
-                self.callbacks_registry.get("LossLoggerCallbacks")(
-                    print_interval=self.opt["global"].get("print_interval", None),
+                self.callbacks_registry.get("LossLoggerCallback")(
+                    print_interval=self.opt["trainer"]['args'].get("log_every_n_steps", None),
                 ),
             )
-        if self.debug:
-            callbacks.insert(0, self.callbacks_registry.get("DebugCallbacks")())
-        callbacks.insert(0, self.callbacks_registry.get("TimerCallbacks")())
+        callbacks.insert(0, self.callbacks_registry.get("TimerCallback")())
+        
         self.init_trainer(callbacks)
         self.initialized = True
 
     def fit(self):
         self.init_pipeline(train=True)
-        self.trainer.fit()
+        self.trainer.fit(
+            model=self.model,
+            datamodule=self.datamodule,
+            ckpt_path=self.resume,
+        )
 
     def evaluate(self):
         self.init_pipeline(train=False)
-        self.logger.text("Evaluating...", level=LoggerObserver.INFO)
-        return self.trainer.evaluate_epoch()
+        self.trainer.validate(
+            model=self.model,
+            datamodule=self.datamodule,
+            ckpt_path=self.resume,
+        )
+
+        return self.trainer.callback_metrics
 
 
 class BaseTestPipeline(object):
@@ -343,26 +297,24 @@ class BaseTestPipeline(object):
         self.exp_name = self.opt["global"].get("exp_name", None)
         self.exist_ok = self.opt["global"].get("exist_ok", False)
         self.debug = self.opt["global"].get("debug", False)
-        self.device_name = self.opt["global"].get("device", "cpu")
         self.transform_cfg = self.opt["global"].get("cfg_transform", None)
-        self.device = get_device(self.device_name)
 
         # Experiment name
         if self.exp_name:
             self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "tests"), self.exp_name
+                self.opt["global"].get("save_dir", "runs"), self.exp_name
             )
             if not self.exist_ok:
                 self.savedir = get_new_folder_name(self.savedir)
         else:
             self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "tests"),
+                self.opt["global"].get("save_dir", "runs"),
                 datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
             )
         os.makedirs(self.savedir, exist_ok=True)
 
         self.transform_cfg = self.opt.get("augmentations", None)
-
+      
         # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(file_logger)
@@ -415,12 +367,6 @@ class BaseTestPipeline(object):
             level=LoggerObserver.INFO,
         )
 
-    def init_loading(self):
-        self.weights = self.opt["global"].get("weights", None)
-        if self.weights:
-            state_dict = torch.load(self.weights, map_location="cpu")
-            self.model = load_state_dict(self.model, state_dict, "model")
-
     def init_model(self):
         CLASSNAMES = getattr(self.dataset, "classnames", None)
         self.model = get_instance(
@@ -429,15 +375,19 @@ class BaseTestPipeline(object):
             num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
-        self.model = move_to(self.model, self.device)
         self.model.eval()
+
+    def init_loading(self):
+        self.weights = self.opt["global"].get("weights", None)
+        if self.weights:
+            state_dict = torch.load(self.weights, map_location="cpu")
+            self.model.load_state_dict(state_dict["model"])
 
     def init_pipeline(self):
         self.init_globals()
         self.init_registry()
         self.init_test_dataloader()
         self.init_model()
-        self.init_loading()
 
     def inference(self):
         raise NotImplementedError()

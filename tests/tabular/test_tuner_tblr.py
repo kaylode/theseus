@@ -3,6 +3,7 @@ import os
 import pytest
 
 from theseus.tabular.classification.pipeline import TabularPipeline
+from theseus.tabular.classification.callbacks.optuna_callbacks import OptunaCallbacks
 
 
 @pytest.mark.order(1)
@@ -10,6 +11,7 @@ def test_train_tblr_tune(override_tuner_config, override_tuner_tuner):
     override_tuner_tuner.tune(
         config=override_tuner_config,
         pipeline_class=TabularPipeline,
+        optuna_callback=OptunaCallbacks,
         trial_user_attrs={
             "best_key": "bl_acc",
             "model_name": override_tuner_config["model"]["args"]["model_name"],

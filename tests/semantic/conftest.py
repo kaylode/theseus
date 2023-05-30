@@ -1,28 +1,41 @@
 import pytest
 
-from theseus.opt import Config
-
+from hydra import compose, initialize
 
 @pytest.fixture(scope="session")
 def override_config():
-    config = Config("./configs/semantic/pipeline.yaml")
-    config["global"]["exp_name"] = "pytest_segm"
-    config["global"]["exist_ok"] = True
-    config["global"]["save_dir"] = "runs"
-    config["global"]["device"] = "cpu"
-    config["trainer"]["args"]["use_fp16"] = False
-    config["trainer"]["args"]["num_iterations"] = 10
-    config["data"]["dataloader"]["train"]["args"]["batch_size"] = 1
-    config["data"]["dataloader"]["val"]["args"]["batch_size"] = 1
+    with initialize(config_path="configs"):
+        config = compose(
+            config_name="pipeline",
+            overrides=[
+                "global.exp_name=pytest_segm",
+                "global.exist_ok=True",
+                "global.save_dir=runs",
+                "trainer.args.max_epochs=5",
+                "trainer.args.precision=32",
+                "trainer.args.accelerator=cpu",
+                "trainer.args.devices=1",
+                "data.dataloader.train.args.batch_size=1",
+                "data.dataloader.val.args.batch_size=1",
+            ],
+        )
+    
     return config
-
 
 @pytest.fixture(scope="session")
 def override_test_config():
-    config = Config("./configs/semantic/test.yaml")
-    config["global"]["exp_name"] = "pytest_segm"
-    config["global"]["exist_ok"] = True
-    config["global"]["save_dir"] = "runs"
-    config["global"]["device"] = "cpu"
-    config["data"]["dataloader"]["args"]["batch_size"] = 1
+    with initialize(config_path="configs"):
+        config = compose(
+            config_name="test",
+            overrides=[
+                "global.exp_name=pytest_segm",
+                "global.exist_ok=True",
+                "global.save_dir=runs",
+                "trainer.args.precision=32",
+                "trainer.args.accelerator=cpu",
+                "trainer.args.devices=1",
+                "data.dataloader.args.batch_size=1",
+            ],
+        )
+
     return config
