@@ -2,6 +2,7 @@ from theseus.base.callbacks import CALLBACKS_REGISTRY
 
 from .optuna_callbacks import OptunaCallbacks
 from .checkpoint_callbacks import SKLearnCheckpointCallbacks
+from .metric_callbacks import MetricLoggerCallbacks
 from .explainer import *
 
 CALLBACKS_REGISTRY.register(SKLearnCheckpointCallbacks)
@@ -10,3 +11,4 @@ CALLBACKS_REGISTRY.register(PermutationImportance)
 CALLBACKS_REGISTRY.register(PartialDependencePlots)
 CALLBACKS_REGISTRY.register(LIMEExplainer)
 CALLBACKS_REGISTRY.register(OptunaCallbacks)
+CALLBACKS_REGISTRY.register(MetricLoggerCallbacks)
