@@ -9,37 +9,40 @@
 # :pencil: Instructions
 
 ### Installation
-- Install Pytorch:
-    - For conda: `conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia`
-    - For PIP: `pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116`
+- Create virtual environment: `conda create -n myenv python=3.10`
+- Install [Pytorch](https://pytorch.org/). Currently support `torch==1.13.1`
 - Inside your project, install this package by `git+https://github.com/kaylode/theseus.git@master#egg=theseus[cv,cv.classification,cv.detection,cv.semantic]`
-***extra packages can be identified from the project's folder structure***.
+***extra packages can be identified from the pyproject.toml***.
 
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
 2. Customize inherited trainer and pipeline to your need, such as what to do before/after training/validating step,...
-3. Modify configuration file
+3. Write custom callbacks (recommended!), follow [Lightning](https://lightning.ai/docs/pytorch/latest/)
+4. Modify configuration file
 
-*See ```theseus/classification``` for example*
+*See ```theseus/cv/classification``` for example*
 
 ### To execute scripts with arguments
-- Run the script with `-c` flag with specified config file. Example:
+- Run the script with `--config-dir` flag with a specified config folder that contains the yaml file. And `--config-name` is that file's name.
 
+Example:
 ```
-python train.py -c pipeline.yaml
+python train.py \
+    --config-dir configs \
+    --config-name pipeline.yaml
 ```
 
-- To override arguments inside the .yaml file, use flag `-o` with key and value. For example, to train 50 epochs and resume training from checkpoints:
+- To override arguments inside the .yaml file, follow the instructions from [Hydra](https://hydra.cc/docs/intro/). For example, to train 50 epochs and resume training from checkpoints:
 
 ```
 python train.py \
-    -c pipeline.yaml \
-    -o trainer.args.num_iterations=5000 \
+    --config-dir configs \
+    --config-name pipeline.yaml \
+    trainer.args.max_epochs=5000 \
     global.resume=checkpoint.pth
 ```
 **Notice: There are no spaces between keys and values in -o flag**
 
-- Also, if you want to do inference, you need to write your own script. For example see ```configs/classification/infer.py```
 
 # :school_satchel: Resources
 - Example colab notebooks for classification tasks: [![Notebook](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1mZmT1B5zI1j_0w1MbP-kq8_Tbcx_tIFq?usp=sharing)

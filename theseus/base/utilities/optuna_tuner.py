@@ -3,6 +3,7 @@ import os.path as osp
 from copy import deepcopy
 
 import optuna
+from omegaconf import DictConfig, OmegaConf
 from optuna.visualization import (
     plot_contour,
     plot_edf,
@@ -13,10 +14,8 @@ from optuna.visualization import (
     plot_slice,
 )
 
-from theseus.base.callbacks.optuna_callbacks import OptunaCallbacks
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
-from theseus.opt import Config
 
 
 class OptunaWrapper:
@@ -53,8 +52,9 @@ class OptunaWrapper:
 
     def tune(
         self,
-        config: Config,
+        config: DictConfig,
         pipeline_class: BasePipeline,
+        optuna_callback: callable = None,
         trial_user_attrs: dict = {},
     ):
 
@@ -66,7 +66,7 @@ class OptunaWrapper:
             raise ValueError()
 
         wrapped_objective = lambda trial: self.objective(
-            trial, config, pipeline_class, trial_user_attrs
+            trial, config, pipeline_class, trial_user_attrs, optuna_callback
         )
 
         self.study.optimize(wrapped_objective, n_trials=self.n_trials)
@@ -75,7 +75,7 @@ class OptunaWrapper:
         self._rename_params()
         return best_trial
 
-    def save_best_config(self, save_dir: str, config: Config, best_params: dict):
+    def save_best_config(self, save_dir: str, config: DictConfig, best_params: dict):
         for param_str, param_val in best_params.items():
             here = config
             keys = param_str.split(".")
@@ -84,13 +84,16 @@ class OptunaWrapper:
             here[keys[-1]] = param_val
         save_dir = osp.join(save_dir, "best_configs")
         os.makedirs(save_dir, exist_ok=True)
-        config.save_yaml(osp.join(save_dir, "best_pipeline.yaml"))
+
+        with open(os.path.join(save_dir, "best_pipeline.yaml"), "w") as f:
+            OmegaConf.save(config=config, f=f)
+
         self.logger.text(
             f"Best configuration saved at {save_dir}", level=LoggerObserver.INFO
         )
 
     def _override_dict_with_optuna(
-        self, trial, config: Config, param_str: str, variable_type: str
+        self, trial, config: DictConfig, param_str: str, variable_type: str
     ):
         """
         Override config with optuna suggested params
@@ -134,9 +137,10 @@ class OptunaWrapper:
     def objective(
         self,
         trial: optuna.Trial,
-        config: Config,
+        config: DictConfig,
         pipeline_class: BasePipeline,
         trial_user_attrs: dict = {},
+        optuna_callback: callable = None,
     ):
         """Define the objective function"""
 
@@ -160,7 +164,9 @@ class OptunaWrapper:
         # Hook a callback inside pipeline
         pipeline = pipeline_class(tmp_config)
         pipeline.init_trainer = self.callback_hook(
-            trial=trial, init_trainer_function=pipeline.init_trainer
+            trial=trial,
+            init_trainer_function=pipeline.init_trainer,
+            callback_fn=optuna_callback,
         )
 
         # Start training and evaluation
@@ -170,11 +176,11 @@ class OptunaWrapper:
 
         best_key = trial_user_attrs.get("best_key", None)
         if best_key is not None:
-            return score_dict[best_key]
+            return float(score_dict[best_key])
         return score_dict
 
-    def callback_hook(self, trial, init_trainer_function):
-        callback = OptunaCallbacks(trial=trial)
+    def callback_hook(self, trial, init_trainer_function, callback_fn):
+        callback = callback_fn(trial=trial)
 
         def hook_optuna_callback(callbacks):
             callbacks.append(callback)

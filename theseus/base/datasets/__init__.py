@@ -18,3 +18,5 @@ DATALOADER_REGISTRY.register(DataLoader)
 DATALOADER_REGISTRY.register(BalanceSampler)
 DATALOADER_REGISTRY.register(ChainCollatorWrapper)
 DATALOADER_REGISTRY.register(DataLoaderWithCollator)
+
+from .wrapper import LightningDataModuleWrapper

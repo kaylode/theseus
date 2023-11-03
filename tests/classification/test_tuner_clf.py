@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from theseus.base.callbacks.optuna_callback import OptunaCallback
 from theseus.cv.classification.pipeline import ClassificationPipeline
 
 
@@ -10,6 +11,7 @@ def test_train_clf_tune(override_tuner_config, override_tuner_tuner):
     override_tuner_tuner.tune(
         config=override_tuner_config,
         pipeline_class=ClassificationPipeline,
+        optuna_callback=OptunaCallback,
         trial_user_attrs={
             "best_key": "bl_acc",
             "model_name": override_tuner_config["model"]["args"]["model_name"],

@@ -31,12 +31,8 @@ def get_type(value):
             return LoggerObserver.HTML
         else:
             return LoggerObserver.TEXT
-
-    LoggerObserver.text(
-        f"Fail to log undefined type: {type(value)}",
-        level=LoggerObserver.CRITICAL,
-    )
-    raise ValueError()
+    else:
+        raise ValueError(f"Fail to log undefined type: {type(value)}")
 
 
 class LoggerObserver(object):

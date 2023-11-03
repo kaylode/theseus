@@ -1,9 +1,10 @@
 from typing import Any, Dict
 
 import numpy as np
-import torch
+from sklearn.metrics import balanced_accuracy_score
 
 from theseus.base.metrics.metric_template import Metric
+from theseus.base.utilities.logits import logits2labels
 
 
 def compute_multiclass(outputs, targets, index):
@@ -22,8 +23,10 @@ class BalancedAccuracyMetric(Metric):
     Balanced Accuracy metric for classification
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, label_type: str = "multiclass", **kwargs):
         super().__init__(**kwargs)
+        self.type = label_type
+        self.threshold = kwargs.get("threshold", 0.5)
         self.reset()
 
     def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
@@ -32,7 +35,8 @@ class BalancedAccuracyMetric(Metric):
         """
         outputs = outputs["outputs"]
         targets = batch["targets"]
-        outputs = torch.argmax(outputs, dim=1)
+        outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
+
         outputs = outputs.detach().cpu()
         targets = targets.detach().cpu().view(-1)
 
@@ -51,19 +55,21 @@ class BalancedAccuracyMetric(Metric):
 
         self.corrects = {str(k): 0 for k in self.unique_ids}
         self.total = {str(k): 0 for k in self.unique_ids}
+        if self.type == "binary":
+            values = balanced_accuracy_score(self.targets, self.outputs)
+        else:
+            # Calculate accuracy for each class index
+            for i in self.unique_ids:
+                correct, sample_size = compute_multiclass(self.outputs, self.targets, i)
+                self.corrects[str(i)] += correct
+                self.total[str(i)] += sample_size
+            each_acc = [
+                self.corrects[str(i)] * 1.0 / (self.total[str(i)])
+                for i in self.unique_ids
+                if self.total[str(i)] > 0
+            ]
 
-        # Calculate accuracy for each class index
-        for i in self.unique_ids:
-            correct, sample_size = compute_multiclass(self.outputs, self.targets, i)
-            self.corrects[str(i)] += correct
-            self.total[str(i)] += sample_size
-        each_acc = [
-            self.corrects[str(i)] * 1.0 / (self.total[str(i)])
-            for i in self.unique_ids
-            if self.total[str(i)] > 0
-        ]
-
-        # Get mean accuracy across classes
-        values = sum(each_acc) / len(self.unique_ids)
+            # Get mean accuracy across classes
+            values = sum(each_acc) / len(self.unique_ids)
 
         return {"bl_acc": values}

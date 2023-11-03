@@ -1,5 +1,7 @@
 import inspect
 
+from omegaconf import DictConfig, ListConfig
+
 from theseus.registry import Registry
 
 
@@ -8,7 +10,7 @@ def get_instance_with_kwargs(registry, name, args: list = None, kwargs: dict = {
     inspection = inspect.signature(registry.get(name))
     class_kwargs = inspection.parameters.keys()
 
-    if isinstance(args, dict):
+    if isinstance(args, (dict, DictConfig)):
         # override kwargs (from parent) with args (from config)
         kwargs.update(args)
         args = None
@@ -35,13 +37,13 @@ def get_instance(config, registry: Registry, **kwargs):
 
 
 def get_instance_recursively(config, registry: Registry, **kwargs):
-    if isinstance(config, (list, tuple)):
+    if isinstance(config, (list, tuple, ListConfig)):
         out = [
             get_instance_recursively(item, registry=registry, **kwargs)
             for item in config
         ]
         return out
-    if isinstance(config, dict):
+    if isinstance(config, (dict, DictConfig)):
         if "name" in config.keys():
             if registry:
                 args = get_instance_recursively(

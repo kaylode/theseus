@@ -3,8 +3,6 @@ on:
   pull_request:
     branches:
       - master
-      - 'V**'
-      - dev
 
 env:
   REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}

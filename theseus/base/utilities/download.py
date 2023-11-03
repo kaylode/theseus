@@ -1,10 +1,9 @@
 import os
 import os.path as osp
 import urllib.request as urlreq
+from pathlib import Path
 
 import gdown
-import os
-from pathlib import Path
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
@@ -62,28 +61,37 @@ def download_from_url(url, root=None, filename=None):
     return fpath
 
 
-def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_text_file=False):
+def download_from_wandb(
+    filename, run_path, save_dir, rename=None, generate_id_text_file=False
+):
 
     import wandb
-    
+
     try:
         path = wandb.restore(filename, run_path=run_path, root=save_dir)
-        LOGGER.text("Successfully download {} from wandb run path {}".format(filename, run_path), level=LoggerObserver.INFO)
-        
+        LOGGER.text(
+            "Successfully download {} from wandb run path {}".format(
+                filename, run_path
+            ),
+            level=LoggerObserver.INFO,
+        )
+
         # Save run id to wandb_id.txt
         if generate_id_text_file:
             wandb_id = osp.basename(run_path)
             with open(osp.join(save_dir, "wandb_id.txt"), "w") as f:
                 f.write(wandb_id)
-        
+
         if rename:
             new_name = str(Path(path.name).resolve().parent / rename)
             os.rename(Path(path.name).resolve(), new_name)
             LOGGER.text("Saved to {}".format(new_name), level=LoggerObserver.INFO)
             return new_name
-        
-        
-        LOGGER.text("Saved to {}".format((Path(save_dir) / path.name).resolve()), level=LoggerObserver.INFO)
+
+        LOGGER.text(
+            "Saved to {}".format((Path(save_dir) / path.name).resolve()),
+            level=LoggerObserver.INFO,
+        )
         return path.name
     except Exception as e:
         LOGGER.text(f"Failed to download from wandb. {e}", level=LoggerObserver.ERROR)

@@ -1,5 +1,8 @@
 name: autobuild_tablr
 on:
+  pull_request:
+    branches:
+      - master
   push:
     branches:
       - master

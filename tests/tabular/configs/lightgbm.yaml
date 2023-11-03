@@ -1,0 +1,20 @@
+defaults:
+  - base/hydra@_here_
+  - base/globals@_here_
+  - base/data@_here_
+  - base/transform@_here_
+  - _self_
+model:
+  name: GBClassifiers
+  args:
+      model_name: lightgbm
+      model_config:
+        objective: multiclass
+        lambda_l1: 0.001
+        lambda_l2: 0.001
+        num_leaves: 128
+        feature_fraction: 0.1
+        bagging_fraction: 0.1
+        bagging_freq: 7
+        min_child_samples: 50
+        learning_rate: 0.01
