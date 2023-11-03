@@ -1,6 +1,6 @@
 import pytest
-
 from hydra import compose, initialize
+
 
 @pytest.fixture(scope="session")
 def override_config():
@@ -19,8 +19,9 @@ def override_config():
                 "data.dataloader.val.args.batch_size=1",
             ],
         )
-    
+
     return config
+
 
 @pytest.fixture(scope="session")
 def override_test_config():

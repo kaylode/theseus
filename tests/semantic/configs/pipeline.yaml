@@ -5,7 +5,7 @@ defaults:
   - transform@_here_
   - _self_
 
-callbacks: 
+callbacks:
   - name: TorchCheckpointCallback
     args:
       filename: best
@@ -19,7 +19,7 @@ callbacks:
     args:
       logging_interval: step
   - name: TensorboardCallback
-  
+
 model:
   name: BaseSegModel
   args:

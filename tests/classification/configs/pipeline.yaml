@@ -5,7 +5,7 @@ defaults:
   - transform@_here_
   - _self_
 
-callbacks: 
+callbacks:
   - name: TorchCheckpointCallback
     args:
       filename: best

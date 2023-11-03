@@ -1,10 +1,10 @@
 import os
 
 import pytest
+from hydra import compose, initialize
 from optuna.storages import JournalFileStorage, JournalStorage
 
 from theseus.base.utilities.optuna_tuner import OptunaWrapper
-from hydra import compose, initialize
 
 MODELS = ["xgboost"]  # , "catboost", 'lightgbm']
 TUNER_MODELS = ["xgboost_tune"]  # , "catboost_tune"] #, 'lightgbm_tune']
@@ -21,8 +21,9 @@ def override_config(request):
                 "global.save_dir=runs",
             ],
         )
-    
+
     return config
+
 
 @pytest.fixture(scope="function", params=TUNER_MODELS)
 def override_tuner_config(request):
@@ -35,8 +36,9 @@ def override_tuner_config(request):
                 "global.save_dir=runs",
             ],
         )
-    
+
     return config
+
 
 @pytest.fixture(scope="session")
 def override_tuner_tuner():

@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from theseus.cv.classification.pipeline import ClassificationPipeline
 from theseus.base.callbacks.optuna_callback import OptunaCallback
+from theseus.cv.classification.pipeline import ClassificationPipeline
 
 
 @pytest.mark.order(1)

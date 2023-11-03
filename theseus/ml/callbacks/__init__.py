@@ -10,7 +10,6 @@ from .explainer import (
 )
 from .metric_callbacks import MetricLoggerCallbacks
 from .optuna_callbacks import OptunaCallbacks
-from .pdprofile_callbacks import PandasProfilerCallbacks
 
 CALLBACKS_REGISTRY = Registry("CALLBACKS")
 
@@ -21,4 +20,3 @@ CALLBACKS_REGISTRY.register(PartialDependencePlots)
 CALLBACKS_REGISTRY.register(LIMEExplainer)
 CALLBACKS_REGISTRY.register(OptunaCallbacks)
 CALLBACKS_REGISTRY.register(MetricLoggerCallbacks)
-CALLBACKS_REGISTRY.register(PandasProfilerCallbacks)

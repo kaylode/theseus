@@ -4,6 +4,7 @@ mpl.use("Agg")
 import os
 
 import pandas as pd
+from omegaconf import DictConfig
 from tqdm import tqdm
 
 from theseus.base.pipeline import BaseTestPipeline
@@ -11,7 +12,7 @@ from theseus.base.utilities.loggers import LoggerObserver
 from theseus.cv.classification.augmentations import TRANSFORM_REGISTRY
 from theseus.cv.classification.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY
 from theseus.cv.classification.models import MODEL_REGISTRY
-from omegaconf import DictConfig
+
 
 class TestPipeline(BaseTestPipeline):
     def __init__(self, opt: DictConfig):

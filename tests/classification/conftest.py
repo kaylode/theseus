@@ -2,11 +2,12 @@ import os
 
 import optuna
 import pytest
+from hydra import compose, initialize, initialize_config_module
+from omegaconf import OmegaConf
 from optuna.storages import JournalFileStorage, JournalStorage
 
 from theseus.base.utilities.optuna_tuner import OptunaWrapper
-from omegaconf import OmegaConf
-from hydra import compose, initialize, initialize_config_module
+
 
 @pytest.fixture(scope="session")
 def override_config():
@@ -25,7 +26,7 @@ def override_config():
                 "data.dataloader.val.args.batch_size=1",
             ],
         )
-    
+
     return config
 
 

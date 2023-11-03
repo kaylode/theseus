@@ -5,6 +5,7 @@ import os
 
 import cv2
 import torch
+from omegaconf import DictConfig
 
 from theseus.base.pipeline import BaseTestPipeline
 from theseus.base.utilities.loggers import LoggerObserver
@@ -12,7 +13,7 @@ from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
 from theseus.cv.semantic.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY
 from theseus.cv.semantic.models import MODEL_REGISTRY
-from omegaconf import DictConfig
+
 
 class TestPipeline(BaseTestPipeline):
     def __init__(self, opt: DictConfig):
