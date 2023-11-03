@@ -1,5 +1,6 @@
-from theseus.registry import Registry
 from lightning.pytorch.trainer import Trainer
+
+from theseus.registry import Registry
 
 TRAINER_REGISTRY = Registry("trainer")
 

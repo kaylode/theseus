@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import *
 
 import torch
 from torch import nn
@@ -11,9 +11,15 @@ from .smoothing import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 class ClassificationCELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, weight: List = None, **kwargs):
         super(ClassificationCELoss, self).__init__()
-        self.criterion = nn.CrossEntropyLoss()
+        if weight is not None:
+            weight = torch.tensor(weight)
+        self.criterion = nn.CrossEntropyLoss(
+            weight=weight,
+            ignore_index=kwargs.get("ignore_index", -100),
+            label_smoothing=kwargs.get("label_smoothing", 0.0),
+        )
 
     def forward(
         self,

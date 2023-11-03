@@ -1,12 +1,15 @@
 import time
-from typing import Dict, List, Any
-import numpy as np
+from typing import Any, Dict, List
+
 import lightning.pytorch as pl
+import numpy as np
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
+
 
 class LossLoggerCallback(Callback):
     """
@@ -25,28 +28,29 @@ class LossLoggerCallback(Callback):
         self.running_loss = {}
         self.print_interval = print_interval
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
+    def setup(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
+    ) -> None:
         """
         Setup the callback
         """
         self.params = {}
 
-
         trainloader = pl_module.datamodule.trainloader
         if trainloader is not None:
             batch_size = trainloader.batch_size
-            self.params['num_iterations'] = len(trainloader) * batch_size * trainer.max_epochs
-            self.params['trainloader_length'] = len(trainloader)
+            self.params["num_iterations"] = len(trainloader) * trainer.max_epochs
+            self.params["trainloader_length"] = len(trainloader)
         else:
-            self.params['num_iterations'] = None
-            self.params['trainloader_length'] = None
+            self.params["num_iterations"] = None
+            self.params["trainloader_length"] = None
 
         valloader = pl_module.datamodule.valloader
         if valloader is not None:
             batch_size = valloader.batch_size
-            self.params['valloader_length'] = len(valloader)
+            self.params["valloader_length"] = len(valloader)
         else:
-            self.params['valloader_length'] = None
+            self.params["valloader_length"] = None
 
         if self.print_interval is None:
             self.print_interval = self.auto_get_print_interval(pl_module)
@@ -54,16 +58,22 @@ class LossLoggerCallback(Callback):
                 "Print interval not specified. Auto calculating...",
                 level=LoggerObserver.DEBUG,
             )
-            
-    def auto_get_print_interval(self, pl_module: pl.LightningModule, train_fraction:float=0.1):
+
+    def auto_get_print_interval(
+        self, pl_module: pl.LightningModule, train_fraction: float = 0.1
+    ):
         """
         Automatically decide the number of print interval
         """
 
-        num_iterations_per_epoch = self.params['trainloader_length'] if self.params['trainloader_length'] is not None else self.params['valloader_length']
+        num_iterations_per_epoch = (
+            self.params["trainloader_length"]
+            if self.params["trainloader_length"] is not None
+            else self.params["valloader_length"]
+        )
         print_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
         return print_interval
-    
+
     def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         """
         Before going to the training loop
@@ -71,27 +81,33 @@ class LossLoggerCallback(Callback):
         self.running_loss = {}
         self.running_time_list = []
 
-    def on_train_batch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule, batch: Any, batch_idx: int):
+    def on_train_batch_start(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        batch: Any,
+        batch_idx: int,
+    ):
         """
         Before going to the training loop
         """
         self.running_time = time.time()
 
     def on_train_batch_end(
-            self,
-            trainer: pl.Trainer,
-            pl_module: pl.LightningModule,
-            outputs: STEP_OUTPUT,
-            batch: Any,
-            batch_idx: int
-        ):
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: STEP_OUTPUT,
+        batch: Any,
+        batch_idx: int,
+    ):
         """
         After finish a batch
         """
 
         lr = pl_module.lr
         iters = trainer.global_step
-        loss_dict = outputs['loss_dict']
+        loss_dict = outputs["loss_dict"]
 
         # Update running loss of batch
         for (key, value) in loss_dict.items():
@@ -104,7 +120,10 @@ class LossLoggerCallback(Callback):
         self.running_time_list.append(batch_time)
 
         # Logging
-        if iters % self.print_interval == 0 or (iters + 1) % self.params['trainloader_length'] == 0:
+        if (
+            iters % self.print_interval == 0
+            or (iters + 1) % self.params["trainloader_length"] == 0
+        ):
 
             # Running loss since last interval
             for key in self.running_loss.keys():
@@ -121,7 +140,7 @@ class LossLoggerCallback(Callback):
             LOGGER.text(
                 "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
                     iters,
-                    self.params['num_iterations'],
+                    self.params["num_iterations"],
                     loss_string,
                     running_time,
                 ),
@@ -164,7 +183,9 @@ class LossLoggerCallback(Callback):
             self.running_loss = {}
             self.running_time_list = []
 
-    def on_validation_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+    def on_validation_epoch_start(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ):
         """
         Before main validation loops
         """
@@ -172,14 +193,14 @@ class LossLoggerCallback(Callback):
         self.running_loss = {}
 
     def on_validation_batch_end(
-            self, 
-            trainer: pl.Trainer,
-            pl_module: pl.LightningModule,
-            outputs: STEP_OUTPUT | None,
-            batch: Any,
-            batch_idx: int,
-            dataloader_idx: int = 0
-        ):
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ):
         """
         After finish a batch
         """
@@ -209,7 +230,10 @@ class LossLoggerCallback(Callback):
         )
         LOGGER.text(
             "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
-                iters, num_iterations, loss_string, self.params['valloader_length'] / epoch_time
+                iters,
+                num_iterations,
+                loss_string,
+                self.params["valloader_length"] / epoch_time,
             ),
             level=LoggerObserver.INFO,
         )

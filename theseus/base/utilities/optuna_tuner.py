@@ -3,6 +3,7 @@ import os.path as osp
 from copy import deepcopy
 
 import optuna
+from omegaconf import DictConfig, OmegaConf
 from optuna.visualization import (
     plot_contour,
     plot_edf,
@@ -15,7 +16,6 @@ from optuna.visualization import (
 
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
-from omegaconf import DictConfig, OmegaConf
 
 
 class OptunaWrapper:
@@ -85,7 +85,7 @@ class OptunaWrapper:
         save_dir = osp.join(save_dir, "best_configs")
         os.makedirs(save_dir, exist_ok=True)
 
-        with open(os.path.join(save_dir, "best_pipeline.yaml"), 'w') as f:
+        with open(os.path.join(save_dir, "best_pipeline.yaml"), "w") as f:
             OmegaConf.save(config=config, f=f)
 
         self.logger.text(
@@ -164,8 +164,9 @@ class OptunaWrapper:
         # Hook a callback inside pipeline
         pipeline = pipeline_class(tmp_config)
         pipeline.init_trainer = self.callback_hook(
-            trial=trial, init_trainer_function=pipeline.init_trainer,
-            callback_fn=optuna_callback
+            trial=trial,
+            init_trainer_function=pipeline.init_trainer,
+            callback_fn=optuna_callback,
         )
 
         # Start training and evaluation

@@ -1,7 +1,9 @@
 import inspect
 
-from theseus.registry import Registry
 from omegaconf import DictConfig, ListConfig
+
+from theseus.registry import Registry
+
 
 def get_instance_with_kwargs(registry, name, args: list = None, kwargs: dict = {}):
     # get keyword arguments from class signature

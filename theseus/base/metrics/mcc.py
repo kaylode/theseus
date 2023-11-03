@@ -11,8 +11,9 @@ class MCC(Metric):
     Mathew Correlation Coefficient
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, label_type: str = "multiclass", **kwargs):
         super().__init__(**kwargs)
+        self.type = label_type
         self.reset()
 
     def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
@@ -21,7 +22,7 @@ class MCC(Metric):
         """
         targets = batch["targets"].cpu()
         outputs = outputs["outputs"].detach().cpu()
-        outputs = logits2labels(outputs, label_type="multiclass")
+        outputs = logits2labels(outputs, label_type=self.type)
 
         self.preds += outputs.numpy().tolist()
         self.targets += targets.numpy().tolist()

@@ -1,10 +1,13 @@
 from typing import Dict, List
-import optuna
+
 import lightning.pytorch as pl
+import optuna
 from lightning.pytorch.callbacks import Callback
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
+
 
 class OptunaCallback(Callback):
     """

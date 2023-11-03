@@ -1,6 +1,8 @@
 import time
+
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")

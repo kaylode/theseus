@@ -1,6 +1,7 @@
 import os
 
 from lightning.pytorch.callbacks import Callback
+
 from theseus.base.utilities.loading import find_old_tflog
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.tsb_logger import TensorboardLogger

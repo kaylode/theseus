@@ -2,11 +2,14 @@ import json
 import os
 import os.path as osp
 from typing import Dict
+
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
 LOGGER = LoggerObserver.getLogger("main")
+
 
 class MetricLoggerCallback(Callback):
     """
@@ -25,7 +28,9 @@ class MetricLoggerCallback(Callback):
                 os.makedirs(self.save_dir, exist_ok=True)
             self.output_dict = []
 
-    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_validation_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
         """
         After finish validation
         """
@@ -59,7 +64,9 @@ class MetricLoggerCallback(Callback):
 
         LOGGER.log(log_dict)
 
-    def teardown(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
+    def teardown(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
+    ) -> None:
         """
         After finish everything
         """

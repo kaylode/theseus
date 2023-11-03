@@ -4,12 +4,13 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Dict
 
-from deepdiff import DeepDiff
 import lightning.pytorch as pl
+from deepdiff import DeepDiff
 from lightning.pytorch.callbacks import Callback
+from omegaconf import DictConfig, OmegaConf
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
-from omegaconf import DictConfig, OmegaConf
 
 try:
     import wandb as wandblogger
@@ -166,7 +167,9 @@ class WandbCallback(Callback):
         )
         LOGGER.subscribe(self.wandb_logger)
 
-    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
+    def setup(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
+    ) -> None:
         """
         Before going to the main loop. Save run id
         """

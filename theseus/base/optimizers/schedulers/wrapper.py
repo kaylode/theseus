@@ -51,7 +51,7 @@ class SchedulerWrapper:
                 gamma=kwargs["gamma"],
                 last_epoch=kwargs["last_epoch"],
             )
-            step_per_epoch = False
+            step_per_epoch = True
 
         elif scheduler_name == "plateau":
             scheduler = ReduceLROnPlateau(
@@ -92,6 +92,7 @@ class SchedulerWrapper:
 
         elif scheduler_name == "tf_cosinewarmup":
             from transformers import get_cosine_schedule_with_warmup
+
             scheduler = get_cosine_schedule_with_warmup(
                 optimizer,
                 num_warmup_steps=kwargs["num_warmup_steps"],

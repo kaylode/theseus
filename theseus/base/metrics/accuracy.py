@@ -21,7 +21,6 @@ class Accuracy(Metric):
         """
         outputs = outputs["outputs"].detach().cpu()
         target = batch["targets"].cpu()
-
         prediction = logits2labels(
             outputs, label_type=self.type, threshold=self.threshold
         )

@@ -1,20 +1,24 @@
 import os
-import torch
 from datetime import datetime
+
+import torch
+from omegaconf import DictConfig, OmegaConf
 
 from theseus.base.augmentations import TRANSFORM_REGISTRY
 from theseus.base.callbacks import CALLBACKS_REGISTRY
-from theseus.base.datasets import DATALOADER_REGISTRY, DATASET_REGISTRY, LightningDataModuleWrapper
-from theseus.base.trainer import TRAINER_REGISTRY
-from theseus.base.models import MODEL_REGISTRY, LightningModelWrapper
+from theseus.base.datasets import (
+    DATALOADER_REGISTRY,
+    DATASET_REGISTRY,
+    LightningDataModuleWrapper,
+)
 from theseus.base.losses import LOSS_REGISTRY
 from theseus.base.metrics import METRIC_REGISTRY
+from theseus.base.models import MODEL_REGISTRY, LightningModelWrapper
+from theseus.base.trainer import TRAINER_REGISTRY
 from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
 from theseus.base.utilities.seed import seed_everything
-from omegaconf import OmegaConf, DictConfig
-
 
 
 class BasePipeline(object):
@@ -65,7 +69,7 @@ class BasePipeline(object):
         self.transform_cfg = self.opt.get("augmentations", None)
 
         # Logging out configs
-        self.logger.text('\n'+OmegaConf.to_yaml(self.opt), level=LoggerObserver.INFO)
+        self.logger.text("\n" + OmegaConf.to_yaml(self.opt), level=LoggerObserver.INFO)
         self.logger.text(
             f"Everything will be saved to {self.savedir}",
             level=LoggerObserver.INFO,
@@ -131,9 +135,9 @@ class BasePipeline(object):
 
     def init_datamodule(self):
         self.datamodule = LightningDataModuleWrapper(
-            trainloader=getattr(self, 'train_dataloader', None),
-            valloader=getattr(self, 'val_dataloader', None),
-            testloader=getattr(self, 'test_dataloader', None),
+            trainloader=getattr(self, "train_dataloader", None),
+            valloader=getattr(self, "val_dataloader", None),
+            testloader=getattr(self, "test_dataloader", None),
         )
 
     def init_model(self):
@@ -155,7 +159,7 @@ class BasePipeline(object):
             classnames=CLASSNAMES,
         )
         return self.criterion
-    
+
     def init_model_with_loss(self, is_train=True):
         self.model = self.init_model()
         criterion = self.init_criterion()
@@ -163,19 +167,36 @@ class BasePipeline(object):
         batch_size = self.opt["data"]["dataloader"]["val"]["args"]["batch_size"]
 
         self.model = LightningModelWrapper(
-            self.model, 
+            self.model,
             criterion,
             datamodule=getattr(self, "datamodule", None),
             metrics=getattr(self, "metrics", None),
-            optimizer_config=self.opt['optimizer'] if is_train else None,
-            scheduler_config=self.opt['scheduler'] if is_train else None,
+            optimizer_config=self.opt["optimizer"] if is_train else None,
+            scheduler_config=self.opt["scheduler"] if is_train else None,
             scheduler_kwargs={
-                    "num_epochs": num_epochs,
-                    "num_iterations": num_epochs * len(self.train_dataloader),
-                    "batch_size": batch_size,
-                    "last_epoch": getattr(self, "last_epoch", -1),
-            } if is_train else None,
+                "num_epochs": num_epochs,
+                "num_iterations": num_epochs * len(self.train_dataloader),
+                "batch_size": batch_size,
+                "last_epoch": getattr(self, "last_epoch", -1),
+            }
+            if is_train
+            else None,
         )
+
+        pretrained = self.opt["global"].get("pretrained", None)
+        if pretrained:
+            state_dict = torch.load(pretrained, map_location="cpu")
+            try:
+                self.model.load_state_dict(state_dict["state_dict"], strict=False)
+                self.logger.text(
+                    f"Loaded pretrained model from {pretrained}",
+                    level=LoggerObserver.SUCCESS,
+                )
+            except Exception as e:
+                self.logger.text(
+                    f"Loaded pretrained model from {pretrained}. Mismatched keys: {e}",
+                    level=LoggerObserver.WARN,
+                )
 
     def init_metrics(self):
         CLASSNAMES = getattr(self.val_dataset, "classnames", None)
@@ -200,13 +221,13 @@ class BasePipeline(object):
         self.trainer = get_instance(
             self.opt["trainer"],
             default_root_dir=getattr(self, "savedir", "runs"),
-            deterministic='warn',
+            deterministic="warn",
             callbacks=callbacks,
             registry=self.trainer_registry,
         )
 
     def save_configs(self):
-        with open(os.path.join(self.savedir, "pipeline.yaml"), 'w') as f:
+        with open(os.path.join(self.savedir, "pipeline.yaml"), "w") as f:
             OmegaConf.save(config=self.opt, f=f)
 
     def init_registry(self):
@@ -254,11 +275,13 @@ class BasePipeline(object):
             callbacks.insert(
                 0,
                 self.callbacks_registry.get("LossLoggerCallback")(
-                    print_interval=self.opt["trainer"]['args'].get("log_every_n_steps", None),
+                    print_interval=self.opt["trainer"]["args"].get(
+                        "log_every_n_steps", None
+                    ),
                 ),
             )
         callbacks.insert(0, self.callbacks_registry.get("TimerCallback")())
-        
+
         self.init_trainer(callbacks)
         self.initialized = True
 
@@ -314,7 +337,7 @@ class BaseTestPipeline(object):
         os.makedirs(self.savedir, exist_ok=True)
 
         self.transform_cfg = self.opt.get("augmentations", None)
-      
+
         # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(file_logger)
