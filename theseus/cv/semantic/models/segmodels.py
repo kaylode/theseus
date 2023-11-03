@@ -57,17 +57,17 @@ class BaseSegModel(nn.Module):
         """
         return self.model
 
-    def forward_batch(self, batch: Dict, device: torch.device=None):
+    def forward_batch(self, batch: Dict, device: torch.device = None):
         if device is not None:
             x = move_to(batch["inputs"], device)
         else:
-            x = batch['inputs']
+            x = batch["inputs"]
         outputs = self.model(x)
         return {
             "outputs": outputs,
         }
 
-    def get_prediction(self, adict: Dict[str, Any], device: torch.device=None):
+    def get_prediction(self, adict: Dict[str, Any], device: torch.device = None):
         """
         Inference using the model.
         adict: `Dict[str, Any]`

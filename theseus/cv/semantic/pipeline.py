@@ -1,3 +1,5 @@
+from omegaconf import DictConfig
+
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
 from theseus.cv.semantic.augmentations import TRANSFORM_REGISTRY
@@ -7,7 +9,6 @@ from theseus.cv.semantic.losses import LOSS_REGISTRY
 from theseus.cv.semantic.metrics import METRIC_REGISTRY
 from theseus.cv.semantic.models import MODEL_REGISTRY
 from theseus.cv.semantic.trainer import TRAINER_REGISTRY
-from omegaconf import DictConfig
 
 
 class SemanticPipeline(BasePipeline):

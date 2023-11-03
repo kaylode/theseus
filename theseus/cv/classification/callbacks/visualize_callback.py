@@ -1,12 +1,12 @@
-from typing import Dict, List, Any
-
-import matplotlib.pyplot as plt
-import torch
-from torchvision.transforms import functional as TFF
+from typing import Any, Dict, List
 
 import lightning.pytorch as pl
+import matplotlib.pyplot as plt
+import torch
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms import functional as TFF
+
 from theseus.base.utilities.cuda import move_to
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
@@ -36,7 +36,9 @@ class ClassificationVisualizerCallback(Callback):
         self.mean = mean
         self.std = std
 
-    def on_sanity_check_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_sanity_check_start(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
 
         """
         Sanitycheck before starting. Run only when debug=True
@@ -134,9 +136,17 @@ class ClassificationVisualizerCallback(Callback):
         plt.clf()  # Clear figure
         plt.close()
 
-    def on_validation_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+    def on_validation_batch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         self.params = {}
-        self.params['last_batch'] = batch
+        self.params["last_batch"] = batch
 
     @torch.no_grad()  # enable grad for CAM
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
@@ -145,7 +155,7 @@ class ClassificationVisualizerCallback(Callback):
         """
 
         iters = trainer.global_step
-        last_batch = self.params['last_batch']
+        last_batch = self.params["last_batch"]
         model = pl_module.model
         valloader = pl_module.datamodule.valloader
 

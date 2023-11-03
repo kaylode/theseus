@@ -1,11 +1,12 @@
 from typing import Any, Dict, List, Optional
-from lightning.pytorch.utilities.types import STEP_OUTPUT
 
+import lightning.pytorch as pl
 import matplotlib.pyplot as plt
 import torch
-from torchvision.transforms import functional as TFF
-import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms import functional as TFF
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
 from theseus.cv.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
@@ -33,10 +34,17 @@ class GradCAMVisualizationCallback(Callback):
         self.mean = mean
         self.std = std
 
-
-    def on_validation_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+    def on_validation_batch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         self.params = {}
-        self.params['last_batch'] = batch
+        self.params["last_batch"] = batch
 
     @torch.enable_grad()  # enable grad for CAM
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):

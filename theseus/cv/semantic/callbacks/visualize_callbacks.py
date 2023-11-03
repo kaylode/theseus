@@ -1,14 +1,14 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
+import lightning.pytorch as pl
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torchvision.transforms import functional as TFF
-
-import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms import functional as TFF
+
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.colors import color_list
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
@@ -156,9 +156,17 @@ class SemanticVisualizerCallback(Callback):
         plt.clf()  # Clear figure
         plt.close()
 
-    def on_validation_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule, outputs: STEP_OUTPUT | None, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> None:
+    def on_validation_batch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        outputs: STEP_OUTPUT | None,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ) -> None:
         self.params = {}
-        self.params['last_batch'] = batch
+        self.params["last_batch"] = batch
 
     @torch.no_grad()
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
@@ -167,7 +175,7 @@ class SemanticVisualizerCallback(Callback):
         """
 
         iters = trainer.global_step
-        last_batch = self.params['last_batch']
+        last_batch = self.params["last_batch"]
         model = pl_module.model
         valloader = pl_module.datamodule.valloader
 
