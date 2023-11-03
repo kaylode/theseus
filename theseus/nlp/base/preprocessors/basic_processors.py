@@ -2,7 +2,8 @@ import re
 import string
 
 import nltk
-nltk.download('punkt')
+
+nltk.download("punkt")
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from nltk.stem.wordnet import WordNetLemmatizer

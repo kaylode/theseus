@@ -1,5 +1,6 @@
 import os.path as osp
 import pickle
+from typing import *
 
 from theseus.base.utilities.loggers import LoggerObserver
 
@@ -19,6 +20,7 @@ class Vocabulary(object):
         pad_word="<pad>",
         sos_word="<sos>",
         eos_word="<eos>",
+        use_special_tokens=True,
     ):
 
         self.pkl_path = pkl_path
@@ -31,7 +33,8 @@ class Vocabulary(object):
         self.pad_word = pad_word
         self.sos_word = sos_word
         self.eos_word = eos_word
-        self.truncation_side='right'
+        self.use_special_tokens = use_special_tokens
+        self.truncation_side = "right"
 
         self.init_vocab()
         if self.pkl_path is not None:
@@ -73,7 +76,7 @@ class Vocabulary(object):
                 f.write(term + "\n")
         LOGGER.text(f"Save pickle to {save_path}", level=LoggerObserver.INFO)
 
-    def build_vocab(self, list_tokens):
+    def build_vocab(self, list_tokens, add_special_tokens=True):
         """Populate the dictionaries for converting tokens to integers (and vice-versa)."""
         for tok in list_tokens:
             if not tok in self.frequency:
@@ -97,7 +100,8 @@ class Vocabulary(object):
         if self.max_size is not None:
             list_tokens = list_tokens[: self.max_size]
 
-        self.add_special_tokens()
+        if self.use_special_tokens:
+            self.add_special_tokens()
         for tok in list_tokens:
             self.add_word(tok)
 
@@ -194,7 +198,7 @@ class Vocabulary(object):
         Batch of list of tokens
         """
 
-        add_special_tokens = (kwargs.get("add_special_tokens", False),)
+        add_special_tokens = kwargs.get("add_special_tokens", False)
         max_length = kwargs.get("max_length", None)
         return_token_type_ids = kwargs.get("return_token_type_ids", False)
         truncation = kwargs.get("truncation", False)
@@ -202,39 +206,47 @@ class Vocabulary(object):
         if return_token_type_ids:
             token_type_idss = []
 
-        if max_length is None:
+        if max_length == "max":
             max_length = max([len(x) for x in lists_of_tokens])
 
         encoded_list = []
         for token_list in lists_of_tokens:
-            if add_special_tokens:
+            if add_special_tokens and self.use_special_tokens:
                 batch = [self.__call__(self.sos_word)]
             else:
                 batch = []
             for token in token_list:
                 batch.append(self.__call__(token))
 
-            if add_special_tokens:
+            if add_special_tokens and self.use_special_tokens:
                 batch.append(self.__call__(self.eos_word))
 
             if max_length is not None:
                 if len(batch) > max_length:
                     if truncation:
-                        if add_special_tokens:
-                            if self.truncation_side == 'right':
-                                batch = batch[: max_length - 2]
+                        if add_special_tokens and self.use_special_tokens:
+                            if self.truncation_side == "right":
+                                batch = batch[: max_length - 1]
+                                batch.append(self.__call__(self.eos_word))
                             else:
-                                batch = batch[2 - max_length:]
-                            batch.append(self.__call__(self.eos_word))
+                                batch = batch[1 - max_length :]
+                                batch.insert(0, self.__call__(self.sos_word))
                         else:
-                            batch = batch[:max_length]
+                            if self.truncation_side == "right":
+                                batch = batch[:max_length]
+                            else:
+                                batch = batch[-max_length:]
                     else:
                         LOGGER.text(
                             f"Sequence is longer than max_length. Please use truncation=True",
                             level=LoggerObserver.ERROR,
                         )
                         raise ValueError()
-                if len(batch) < max_length and add_special_tokens:
+                if (
+                    len(batch) < max_length
+                    and add_special_tokens
+                    and self.use_special_tokens
+                ):
                     batch += [self.__call__(self.pad_word)] * (max_length - len(batch))
 
             if return_token_type_ids:
@@ -253,17 +265,25 @@ class Vocabulary(object):
                 "input_ids": encoded_list,
             }
 
-    def decode_tokens(self, list_of_ids):
+    def decode_tokens(self, list_of_ids: List, remove_special_tokens: bool = True):
         """
         Batch of list of ids
         """
         decoded_list = []
         for ids in list_of_ids:
-            batch = [
-                self.itos(idx)
-                for idx in ids
-                if idx not in [self.pad_word, self.sos_word, self.eos_word]
-            ]
+            if remove_special_tokens:
+                batch = [
+                    self.itos(idx)
+                    for idx in ids
+                    if idx
+                    not in [
+                        self.get_pad_token_id(),
+                        self.get_sos_token_id(),
+                        self.get_eos_token_id(),
+                    ]
+                ]
+            else:
+                batch = [self.itos(idx) for idx in ids]
             decoded_list.append(batch)
         return decoded_list
 
@@ -285,4 +305,4 @@ class Vocabulary(object):
         return self.word2idx[word]
 
     def __len__(self):
-        return max(list(self.word2idx.values()))
+        return max(list(self.word2idx.values())) + 1  # add zero value
