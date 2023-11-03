@@ -17,7 +17,7 @@
 ### To adapt for personal project
 1. Create your own dataset, dataloader, model, loss function, metric function, ... and register it to the registry so that it can be generated from config at runtime.
 2. Customize inherited trainer and pipeline to your need, such as what to do before/after training/validating step,...
-3. Write custom callbacks (recommended!), follow [Lightning](https://lightning.ai/docs/pytorch/latest/) 
+3. Write custom callbacks (recommended!), follow [Lightning](https://lightning.ai/docs/pytorch/latest/)
 4. Modify configuration file
 
 *See ```theseus/cv/classification``` for example*
