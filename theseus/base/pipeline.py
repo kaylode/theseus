@@ -398,6 +398,7 @@ class BaseTestPipeline(object):
             num_classes=len(CLASSNAMES) if CLASSNAMES is not None else None,
             classnames=CLASSNAMES,
         )
+        self.model = LightningModelWrapper(self.model)
         self.model.eval()
 
     def init_loading(self):

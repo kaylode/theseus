@@ -68,4 +68,4 @@ data:
       args:
         batch_size: 16
         drop_last: false
-        shuffle: true
+        shuffle: false

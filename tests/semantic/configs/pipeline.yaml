@@ -76,4 +76,4 @@ data:
       args:
         batch_size: 32
         drop_last: false
-        shuffle: true
+        shuffle: false
