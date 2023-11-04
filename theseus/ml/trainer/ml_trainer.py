@@ -1,5 +1,5 @@
-from theseus.base.callbacks import CallbacksList
 from theseus.base.utilities.loggers.observer import LoggerObserver
+from theseus.ml.callbacks import CallbacksList
 
 LOGGER = LoggerObserver.getLogger("main")
 
