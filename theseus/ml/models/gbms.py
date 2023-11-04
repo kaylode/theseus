@@ -38,8 +38,8 @@ class GBClassifiers:
     def fit(self, trainset, valset, **kwargs):
         X, y = trainset
         self.model.fit(
-            X,
-            y,
+            X.copy(),
+            y.copy(),
             eval_set=[trainset, valset],
             # eval_set=[(trainset, 'train'), (valset, 'validation')],
             **self.training_params,

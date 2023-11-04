@@ -401,16 +401,17 @@ class BaseTestPipeline(object):
         self.model.eval()
 
     def init_loading(self):
-        self.weights = self.opt["global"].get("weights", None)
+        self.weights = self.opt["global"].get("pretrained", None)
         if self.weights:
             state_dict = torch.load(self.weights, map_location="cpu")
-            self.model.load_state_dict(state_dict["model"])
+            self.model.load_state_dict(state_dict["state_dict"])
 
     def init_pipeline(self):
         self.init_globals()
         self.init_registry()
         self.init_test_dataloader()
         self.init_model()
+        self.init_loading()
 
     def inference(self):
         raise NotImplementedError()

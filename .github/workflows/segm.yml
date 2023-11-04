@@ -52,5 +52,7 @@ jobs:
           cat runs/pytest_segm/Validation/metrics.json | md-table >> report.md
           echo >> report.md
           echo "#### Prediction" >> report.md
-          echo "![Prediction](runs/pytest_segm/Validation/prediction.png)" >> report.md
+          echo "![Prediction](runs/pytest_segm/overlays/fc9399fafb30_01.jpg)" >> report.md
+          echo "![Prediction](runs/pytest_segm/overlays/fcac2903b622_06.jpg)" >> report.md
+          echo "![Prediction](runs/pytest_segm/overlays/fcac2903b622_11.jpg)" >> report.md
           cml comment create report.md
