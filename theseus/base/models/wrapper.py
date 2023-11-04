@@ -94,7 +94,7 @@ class LightningModelWrapper(pl.LightningModule):
         self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
         return outputs
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx=None):
         pred = self.model.get_prediction(batch)
         return pred
 

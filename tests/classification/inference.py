@@ -38,7 +38,7 @@ class TestPipeline(BaseTestPipeline):
 
         for idx, batch in enumerate(tqdm(self.dataloader)):
             img_names = batch["img_names"]
-            outputs = self.model.get_prediction(batch)
+            outputs = self.model.predict_step(batch)
             preds = outputs["names"]
             probs = outputs["confidences"]
 

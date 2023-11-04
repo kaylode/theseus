@@ -49,7 +49,7 @@ class TestPipeline(BaseTestPipeline):
             img_names = batch["img_names"]
             ori_sizes = batch["ori_sizes"]
 
-            outputs = self.model.get_prediction(batch)
+            outputs = self.model.predict_step(batch)
             preds = outputs["masks"]
 
             for (inpt, pred, filename, ori_size) in zip(
