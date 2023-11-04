@@ -9,6 +9,8 @@ optimizer:
 scheduler:
   name: SchedulerWrapper
   args:
-    scheduler_name: tf_cosinewarmup
-    num_warmup_steps: 100
-    num_cycles: 0.5
+    scheduler_name: cosine2
+    t_initial: 7
+    t_mul: 0.9
+    eta_mul: 0.9
+    eta_min: 1.0e-06

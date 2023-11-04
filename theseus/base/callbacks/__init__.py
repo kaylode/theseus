@@ -5,7 +5,6 @@ from lightning.pytorch.callbacks import (
     RichModelSummary,
 )
 
-# from theseus.ml.callbacks.base_callbacks import Callbacks, CallbacksList
 from theseus.registry import Registry
 
 from .checkpoint_callback import TorchCheckpointCallback
