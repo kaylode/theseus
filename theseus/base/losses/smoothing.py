@@ -24,11 +24,14 @@ class LabelSmoothingCrossEntropy(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
 
         pred = outputs["outputs"]
-        target = move_to(batch["targets"], device)
+        if device is not None:
+            target = move_to(batch["targets"], device)
+        else:
+            target = batch["targets"]
 
         logprobs = F.log_softmax(pred, dim=-1)
         nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
@@ -49,11 +52,14 @@ class SoftTargetCrossEntropy(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
 
         pred = outputs["outputs"]
-        target = move_to(batch["targets"], device)
+        if device is not None:
+            target = move_to(batch["targets"], device)
+        else:
+            target = batch["targets"]
 
         loss = torch.sum(-target * F.log_softmax(pred, dim=-1), dim=-1)
         loss_dict = {"SoftCE": loss.item()}

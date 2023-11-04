@@ -1,0 +1,19 @@
+defaults:
+  - base/hydra@_here_
+  - base/globals@_here_
+  - base/data@_here_
+  - base/transform@_here_
+  - _self_
+model:
+  name: GBClassifiers
+  args:
+      model_name: catboost
+      model_config:
+        iterations: 500
+        learning_rate: 0.1 #0.01
+        depth: 10
+        loss_function: MultiClass
+        bagging_temperature: 0.2
+        od_type: "Iter"
+        metric_period: 50
+        od_wait: 20

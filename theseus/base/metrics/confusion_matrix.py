@@ -6,7 +6,10 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
 
 from theseus.base.metrics.metric_template import Metric
+from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.logits import logits2labels
+
+LOGGER = LoggerObserver.getLogger("main")
 
 
 def plot_cfm(cm, ax, labels: List):
@@ -78,8 +81,8 @@ class ConfusionMatrix(Metric):
         Perform calculation based on prediction and targets
         """
         # in torchvision models, pred is a dict[key=out, value=Tensor]
-        outputs = outputs["outputs"]
-        targets = batch["targets"]
+        targets = batch["targets"].cpu()
+        outputs = outputs["outputs"].detach().cpu()
 
         outputs = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 
@@ -91,18 +94,26 @@ class ConfusionMatrix(Metric):
         self.targets = []
 
     def value(self):
-        if self.type == "multiclass":
-            values = confusion_matrix(
-                self.outputs,
-                self.targets,
-                labels=self.num_classes,
-                normalize="pred",
-            )
-            values = values[np.newaxis, :, :]
-        else:
-            values = multilabel_confusion_matrix(
-                self.outputs, self.targets, labels=self.num_classes
-            )
+        try:
+            if self.type == "multiclass":
+                values = confusion_matrix(
+                    self.outputs,
+                    self.targets,
+                    labels=self.num_classes,
+                    normalize="pred",
+                )
+                values = values[np.newaxis, :, :]
 
-        fig = make_cm_fig(values, self.classnames)
+            else:
+                values = multilabel_confusion_matrix(
+                    self.outputs, self.targets, labels=self.num_classes
+                )
+            fig = make_cm_fig(values, self.classnames)
+        except ValueError as e:
+            LOGGER.text(
+                f"Confusion Matrix could not be calculated: {e}",
+                level=LoggerObserver.WARN,
+            )
+            fig = 0
+
         return {"cfm": fig}

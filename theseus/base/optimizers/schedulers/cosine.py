@@ -1,6 +1,5 @@
 # code from AllenNLP
 
-import logging
 from typing import Any, Dict
 
 import numpy as np
@@ -11,7 +10,7 @@ from theseus.base.utilities.loggers.observer import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 
-class CosineWithRestarts:
+class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
     """
     Cosine annealing with restarts.
     This is described in the paper https://arxiv.org/abs/1608.03983. Note that

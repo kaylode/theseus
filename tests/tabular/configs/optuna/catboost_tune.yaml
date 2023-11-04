@@ -1,0 +1,34 @@
+defaults:
+  - base/hydra@_here_
+  - base/globals@_here_
+  - base/data@_here_
+  - base/transform@_here_
+  - optuna@_here_
+  - _self_
+model:
+  name: GBClassifiers
+  args:
+      model_name: catboost
+      model_config:
+        iterations: [100, 1000]
+        learning_rate: [0.001, 0.1]
+        depth: [4, 12]
+        loss_function: MultiClass
+        bagging_temperature: [0.0, 10.0]
+        od_type: ["IncToDec", "Iter"]
+        metric_period: 50
+        od_wait: [10, 50]
+        l2_leaf_reg: [0.00001, 100.0]
+        random_strength: [0.00001, 100.0]
+optuna:
+  int:
+    - model.args.model_config.iterations
+    - model.args.model_config.depth
+    - model.args.model_config.od_wait
+  float:
+    - model.args.model_config.learning_rate
+    - model.args.model_config.l2_leaf_reg
+    - model.args.model_config.random_strength
+    - model.args.model_config.bagging_temperature
+  categorical:
+    - model.args.model_config.od_type

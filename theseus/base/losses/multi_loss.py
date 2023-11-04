@@ -16,7 +16,7 @@ class MultiLoss(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
         """
         Forward inputs and targets through multiple losses

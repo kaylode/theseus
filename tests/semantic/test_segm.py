@@ -1,6 +1,6 @@
 import pytest
 
-from configs.semantic.infer import TestPipeline
+from tests.semantic.inference import TestPipeline
 from theseus.cv.semantic.pipeline import SemanticPipeline
 
 
@@ -12,13 +12,15 @@ def test_train_clf(override_config):
 
 @pytest.mark.order(2)
 def test_eval_clf(override_config):
-    override_config["global"]["pretrained"] = "runs/pytest_segm/checkpoints/best.pth"
+    override_config["global"]["resume"] = "runs/pytest_segm/checkpoints/best.ckpt"
     val_pipeline = SemanticPipeline(override_config)
     val_pipeline.evaluate()
 
 
 @pytest.mark.order(2)
 def test_infer_clf(override_test_config):
-    override_test_config["global"]["weights"] = "runs/pytest_segm/checkpoints/best.pth"
+    override_test_config["global"][
+        "pretrained"
+    ] = "runs/pytest_segm/checkpoints/best.ckpt"
     test_pipeline = TestPipeline(override_test_config)
     test_pipeline.inference()

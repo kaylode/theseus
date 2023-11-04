@@ -20,10 +20,13 @@ class FocalLoss(nn.Module):
         self,
         outputs: Dict[str, Any],
         batch: Dict[str, Any],
-        device: torch.device,
+        device: torch.device = None,
     ):
         outputs = outputs["outputs"]
-        targets = move_to(batch["targets"], device)
+        if device is not None:
+            targets = move_to(batch["targets"], device)
+        else:
+            targets = batch["targets"]
         num_classes = outputs.shape[-1]
 
         # Need to be one hot encoding

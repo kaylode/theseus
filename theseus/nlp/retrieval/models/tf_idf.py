@@ -1,6 +1,6 @@
 import os.path as osp
 import pickle
-from typing import Dict, List
+from typing import *
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -12,7 +12,13 @@ def identity_tokenizer(text):
 
 
 class TFIDFEncoder(BaseRetrieval):
-    def __init__(self, min_df: int = 0, max_df: int = 1.0, model_path: str = None):
+    def __init__(
+        self,
+        min_df: int = 0,
+        max_df: int = 1.0,
+        model_path: str = None,
+        ngram_range: Tuple[int] = (1, 1),
+    ):
 
         super().__init__()
 
@@ -29,6 +35,7 @@ class TFIDFEncoder(BaseRetrieval):
                 max_df=max_df,
                 lowercase=True,
                 norm="l2",
+                ngram_range=ngram_range,
             )
 
     def save_model(self, save_path):

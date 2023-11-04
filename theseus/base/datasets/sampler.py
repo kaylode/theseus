@@ -24,7 +24,7 @@ class BalanceSampler(WeightedRandomSampler):
         class_weighting = 1.0 / class_count
         sample_weights = np.array([class_weighting[t] for t in labels.squeeze()])
         sample_weights = torch.from_numpy(sample_weights)
-        super().__init__(sample_weights, len(sample_weights))
+        super().__init__(sample_weights, len(sample_weights), replacement=True)
 
     def _load_labels(self, dataset):
         op = getattr(dataset, "_calculate_classes_dist", None)

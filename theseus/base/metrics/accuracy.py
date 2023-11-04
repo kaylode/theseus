@@ -15,15 +15,14 @@ class Accuracy(Metric):
         self.threshold = kwargs.get("threshold", 0.5)
         self.reset()
 
-    def update(self, output: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
-        output = output["outputs"]
-        target = batch["targets"]
-
+        outputs = outputs["outputs"].detach().cpu()
+        target = batch["targets"].cpu()
         prediction = logits2labels(
-            output, label_type=self.type, threshold=self.threshold
+            outputs, label_type=self.type, threshold=self.threshold
         )
 
         correct = (prediction.view(-1) == target.view(-1)).sum()

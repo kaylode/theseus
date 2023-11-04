@@ -1,22 +1,28 @@
+from lightning.pytorch.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+    RichModelSummary,
+)
+
 from theseus.registry import Registry
 
-from .base_callbacks import Callbacks, CallbacksList
-from .checkpoint_callbacks import TorchCheckpointCallbacks
-from .debug_callbacks import DebugCallbacks
-from .loss_logging_callbacks import LossLoggerCallbacks
-from .lr_autofind import AutoFindLRCallbacks
-from .metric_logging_callbacks import MetricLoggerCallbacks
-from .timer_callbacks import TimerCallbacks
-from .tsb_callbacks import TensorboardCallbacks
-from .wandb_callbacks import WandbCallbacks
+from .checkpoint_callback import TorchCheckpointCallback
+from .loss_logging_callback import LossLoggerCallback
+from .metric_logging_callback import MetricLoggerCallback
+from .timer_callback import TimerCallback
+from .tsb_callback import TensorboardCallback
+from .wandb_callback import WandbCallback
 
 CALLBACKS_REGISTRY = Registry("CALLBACKS")
 
-CALLBACKS_REGISTRY.register(TimerCallbacks)
-CALLBACKS_REGISTRY.register(TorchCheckpointCallbacks)
-CALLBACKS_REGISTRY.register(TensorboardCallbacks)
-CALLBACKS_REGISTRY.register(WandbCallbacks)
-CALLBACKS_REGISTRY.register(DebugCallbacks)
-CALLBACKS_REGISTRY.register(LossLoggerCallbacks)
-CALLBACKS_REGISTRY.register(MetricLoggerCallbacks)
-CALLBACKS_REGISTRY.register(AutoFindLRCallbacks)
+CALLBACKS_REGISTRY.register(TimerCallback)
+CALLBACKS_REGISTRY.register(TensorboardCallback)
+CALLBACKS_REGISTRY.register(WandbCallback)
+CALLBACKS_REGISTRY.register(ModelCheckpoint)
+CALLBACKS_REGISTRY.register(RichModelSummary)
+CALLBACKS_REGISTRY.register(LearningRateMonitor)
+CALLBACKS_REGISTRY.register(EarlyStopping)
+CALLBACKS_REGISTRY.register(LossLoggerCallback)
+CALLBACKS_REGISTRY.register(MetricLoggerCallback)
+CALLBACKS_REGISTRY.register(TorchCheckpointCallback)

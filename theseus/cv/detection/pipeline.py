@@ -1,3 +1,5 @@
+from omegaconf import DictConfig
+
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.cuda import get_devices_info
 from theseus.base.utilities.loggers import LoggerObserver
@@ -8,13 +10,12 @@ from theseus.cv.detection.losses import LOSS_REGISTRY
 from theseus.cv.detection.metrics import METRIC_REGISTRY
 from theseus.cv.detection.models import MODEL_REGISTRY, ModelWithLossandPostprocess
 from theseus.cv.detection.trainer import TRAINER_REGISTRY
-from theseus.opt import Config
 
 
 class DetectionPipeline(BasePipeline):
     """docstring for Pipeline."""
 
-    def __init__(self, opt: Config):
+    def __init__(self, opt: DictConfig):
         super(DetectionPipeline, self).__init__(opt)
         self.opt = opt
 
