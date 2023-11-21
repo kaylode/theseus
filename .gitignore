@@ -5,3 +5,4 @@ runs/
 *.zip
 catboost_info/
 .cache
+/build/
