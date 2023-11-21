@@ -50,7 +50,6 @@ class ClassificationVisualizerCallback(Callback):
         trainloader = pl_module.datamodule.trainloader
         train_batch = next(iter(trainloader))
         val_batch = next(iter(valloader))
-
         try:
             self.visualize_model(model, train_batch)
         except TypeError as e:
@@ -59,16 +58,19 @@ class ClassificationVisualizerCallback(Callback):
 
     @torch.no_grad()
     def visualize_model(self, model, batch):
+
+        device = next(model.parameters()).device
+
         # Vizualize Model Graph
         LOGGER.text("Visualizing architecture...", level=LoggerObserver.DEBUG)
         LOGGER.log(
             [
                 {
                     "tag": "Sanitycheck/analysis/architecture",
-                    "value": model.model.get_model(),
+                    "value": model.get_model(),
                     "type": LoggerObserver.TORCH_MODULE,
                     "kwargs": {
-                        "inputs": move_to(batch["inputs"], model.device),
+                        "inputs": move_to(batch["inputs"], device),
                         "log_freq": 100,
                     },
                 }
@@ -82,7 +84,7 @@ class ClassificationVisualizerCallback(Callback):
         LOGGER.text("Visualizing dataset...", level=LoggerObserver.DEBUG)
 
         # Train batch
-        images = train_batch["inputs"]
+        images = train_batch["inputs"].cpu()
 
         batch = []
         for idx, inputs in enumerate(images):
@@ -107,7 +109,7 @@ class ClassificationVisualizerCallback(Callback):
         )
 
         # Validation batch
-        images = val_batch["inputs"]
+        images = val_batch["inputs"].cpu()
 
         batch = []
         for idx, inputs in enumerate(images):
@@ -162,12 +164,13 @@ class ClassificationVisualizerCallback(Callback):
         # Vizualize model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
-        images = last_batch["inputs"]
+        images = last_batch["inputs"].cpu()
         targets = last_batch["targets"]
         model.eval()
+        device = next(model.parameters()).device
 
         ## Get prediction on last batch
-        outputs = model.model.get_prediction(last_batch, device=model.device)
+        outputs = model.get_prediction(last_batch, device=device)
         label_indices = outputs["labels"]
         scores = outputs["confidences"]
 

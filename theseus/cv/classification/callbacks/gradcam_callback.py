@@ -65,17 +65,17 @@ class GradCAMVisualizationCallback(Callback):
         # Vizualize Grad Class Activation Mapping and model predictions
         LOGGER.text("Visualizing model predictions...", level=LoggerObserver.DEBUG)
 
-        images = last_batch["inputs"]
+        images = last_batch["inputs"].cpu()
         targets = last_batch["targets"]
         model.eval()
 
         ## Calculate GradCAM and Grad Class Activation Mapping and
-        model_name = model.model.name
+        model_name = model.name
 
         try:
             grad_cam = CAMWrapper.get_method(
                 name="gradcam",
-                model=model.model.get_model(),
+                model=model.get_model(),
                 model_name=model_name,
                 use_cuda=next(model.parameters()).is_cuda,
             )
