@@ -53,12 +53,12 @@ class ErrorCases(Metric):
         targets = targets.squeeze(-1).long()
 
         outputs = outputs.numpy().tolist()
-        targets = targets.numpy().tolist()
+        targets = targets.cpu().numpy().tolist()
         probs = probs.numpy().tolist()
 
         for (output, target, prob, image) in zip(outputs, targets, probs, images):
             if output != target:
-                self.images.append(image)
+                self.images.append(image.cpu())
                 self.preds.append(output)
                 self.targets.append(target)
                 self.probs.append(prob)

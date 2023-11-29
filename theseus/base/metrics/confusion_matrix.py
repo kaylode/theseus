@@ -24,7 +24,7 @@ def plot_cfm(cm, ax, labels: List):
     ax.set_xlabel("\nActual")
     ax.set_ylabel("Predicted ")
 
-    ax.xaxis.set_ticklabels(labels)
+    ax.xaxis.set_ticklabels(labels, rotation=90)
     ax.yaxis.set_ticklabels(labels, rotation=0)
 
 

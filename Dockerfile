@@ -57,7 +57,7 @@ ENV PYTORCH_VERSION ${PYTORCH_VERSION}
 COPY ./ /workspace/
 WORKDIR /workspace/
 RUN /opt/mamba/bin/python -m pip install --upgrade pip && \
-    /opt/mamba/bin/python -m pip install -e .[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,tabular,tabular_classification,dev] && \
+    /opt/mamba/bin/python -m pip install -e .[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,ml,dev] && \
     /opt/mamba/bin/python -m pip install dvc dvc-gdrive && \
     /opt/mamba/bin/python -m pip install -U timm
 
