@@ -58,21 +58,23 @@ class LoggerObserver(object):
     SUCCESS = "SUCCESS"
 
     instances = {}
+    _lock = threading.Lock()
 
-    def __new__(cls, name, *args, **kwargs):
-        if name in LoggerObserver.instances.keys():
-            return LoggerObserver.instances[name]
+    def __new__(cls, name=None, *args, **kwargs):
+        with cls._lock:
+            if name is None:
+                name = str(os.getpid())
+            if name in LoggerObserver.instances.keys():
+                return LoggerObserver.instances[name]
 
-        return object.__new__(cls, *args, **kwargs)
+            return object.__new__(cls, *args, **kwargs)
 
     def __init__(self, name) -> None:
-        from .stdout_logger import StdoutLogger  # to circumvent circular import
-
         self.subscriber = []
         self.name = name
 
         # Init with a stdout logger
-        logger = StdoutLogger(__name__, debug=True)
+        logger = StdoutLogger(debug=True)
         self.subscribe(logger)
 
         LoggerObserver.instances[name] = self
@@ -80,7 +82,8 @@ class LoggerObserver(object):
     def __del__(self):
         for subcriber in self.subscriber:
             del subcriber
-        LoggerObserver.instances.pop(self.name)
+        if self.name in LoggerObserver.instances.keys():
+            LoggerObserver.instances.pop(self.name)
 
     @classmethod
     def getLogger(cls, name):
@@ -127,7 +130,7 @@ class LoggerObserver(object):
                 if log_type == LoggerObserver.HTML:
                     subscriber.log_html(tag=tag, value=value, **kwargs)
 
-    def text(self, value, level):
+    def text(self, value, level=logging.INFO):
         """
         Text logging
         """
