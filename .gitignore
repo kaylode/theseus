@@ -6,3 +6,4 @@ runs/
 catboost_info/
 .cache
 /build/
+credentials.json

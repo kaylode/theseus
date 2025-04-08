@@ -64,6 +64,19 @@ class LightningModelWrapper(pl.LightningModule):
             batch_size=self.datamodule.valloader.batch_size,
         )
 
+    def on_test_epoch_end(self) -> None:
+        self.metric_dict = {}
+        if self.metrics is not None:
+            for metric in self.metrics:
+                self.metric_dict.update(metric.value())
+                metric.reset()
+
+        self.log_dict(
+            self.metric_dict,
+            prog_bar=True,
+            batch_size=self.datamodule.testloader.batch_size,
+        )
+
     def _forward(self, batch: Dict, metrics: List[Any] = None):
         """
         Forward the batch through models, losses and metrics
@@ -90,6 +103,12 @@ class LightningModelWrapper(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # this is the validation loop
+        outputs = self._forward(batch, metrics=self.metrics)
+        self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
+        return outputs
+
+    def test_step(self, batch, batch_idx):
+        # this is the test loop
         outputs = self._forward(batch, metrics=self.metrics)
         self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
         return outputs

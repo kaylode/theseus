@@ -1,4 +1,5 @@
 import logging
+import os
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -8,6 +9,7 @@ import torch
 
 mpl.use("Agg")
 
+import threading
 from inspect import getframeinfo, stack
 from typing import Dict, List
 
@@ -74,7 +76,9 @@ class LoggerObserver(object):
         self.name = name
 
         # Init with a stdout logger
-        logger = StdoutLogger(debug=True)
+        from .stdout_logger import StdoutLogger
+
+        logger = StdoutLogger(name=self.name, debug=True)
         self.subscribe(logger)
 
         LoggerObserver.instances[name] = self

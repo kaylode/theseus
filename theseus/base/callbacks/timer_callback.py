@@ -92,3 +92,29 @@ class TimerCallback(Callback):
             "================================================================",
             LoggerObserver.INFO,
         )
+
+    def on_test_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        """
+        Before main test loops
+        """
+        self.test_epoch_start_time = time.time()
+        LOGGER.text(
+            "=============================TEST EVALUATION===================================",
+            LoggerObserver.INFO,
+        )
+
+    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        """
+        After finish test
+        """
+
+        running_time = time.time() - self.test_epoch_start_time
+        h, m, s = seconds_to_hours(running_time)
+        LOGGER.text(
+            f"Test evaluation epoch running time: {h} hours, {m} minutes and {s} seconds",
+            level=LoggerObserver.INFO,
+        )
+        LOGGER.text(
+            "================================================================",
+            LoggerObserver.INFO,
+        )

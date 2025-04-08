@@ -52,6 +52,13 @@ class LossLoggerCallback(Callback):
         else:
             self.params["valloader_length"] = None
 
+        testloader = pl_module.datamodule.testloader
+        if testloader is not None:
+            batch_size = testloader.batch_size
+            self.params["testloader_length"] = len(testloader)
+        else:
+            self.params["testloader_length"] = None
+
         if self.print_interval is None:
             self.print_interval = self.auto_get_print_interval(pl_module)
             LOGGER.text(
@@ -70,6 +77,8 @@ class LossLoggerCallback(Callback):
             self.params["trainloader_length"]
             if self.params["trainloader_length"] is not None
             else self.params["valloader_length"]
+            if self.params["valloader_length"] is not None
+            else self.params["testloader_length"]
         )
         print_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
         return print_interval
@@ -249,4 +258,56 @@ class LossLoggerCallback(Callback):
             for k, v in self.running_loss.items()
         ]
 
+        self.running_loss = {}
         LOGGER.log(log_dict)
+
+    def on_test_epoch_start(self, *args, **kwargs):
+        """
+        Before main test loops
+        """
+        return self.on_validation_epoch_start(*args, **kwargs)
+
+    def on_test_batch_end(self, *args, **kwargs):
+        """
+        After finish a batch
+        """
+        return self.on_validation_batch_end(*args, **kwargs)
+
+    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        """
+        After finish validation
+        """
+
+        iters = trainer.global_step
+        num_iterations = self.params["num_iterations"]
+        epoch_time = time.time() - self.running_time
+
+        # Log loss
+        for key in self.running_loss.keys():
+            self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
+        loss_string = (
+            "{}".format(self.running_loss)[1:-1].replace("'", "").replace(",", " ||")
+        )
+        LOGGER.text(
+            "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
+                iters,
+                num_iterations,
+                loss_string,
+                self.params["testloader_length"] / epoch_time,
+            ),
+            level=LoggerObserver.INFO,
+        )
+
+        # Call other loggers
+        log_dict = [
+            {
+                "tag": f"Test/{k} Loss",
+                "value": v,
+                "type": LoggerObserver.SCALAR,
+                "kwargs": {"step": iters},
+            }
+            for k, v in self.running_loss.items()
+        ]
+
+        LOGGER.log(log_dict)
+        self.running_loss = {}

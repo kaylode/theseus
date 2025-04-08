@@ -53,11 +53,14 @@ class RemovePunctuation(BaseProcessor):
     Remove punctuation from text
     """
 
-    def __init__(self) -> None:
+    def __init__(self, excludes: str = None) -> None:
         self.punctuations = string.punctuation
+        if excludes is not None:
+            for exclude in excludes:
+                self.punctuations = self.punctuations.replace(exclude, "")
 
     def __call__(self, x):
-        return x.translate(str.maketrans("", "", string.punctuation))
+        return x.translate(str.maketrans("", "", self.punctuations))
 
 
 class RemoveConsecutive(BaseProcessor):

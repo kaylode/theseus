@@ -3,6 +3,7 @@ from datetime import datetime
 
 import torch
 from omegaconf import DictConfig, OmegaConf
+from torch.utils.data import Subset
 
 from theseus.base.augmentations import TRANSFORM_REGISTRY
 from theseus.base.callbacks import CALLBACKS_REGISTRY
@@ -105,6 +106,7 @@ class BasePipeline(object):
         )
 
     def init_validation_dataloader(self):
+
         # DataLoaders
         if self.transform_cfg is not None:
             self.transform = get_instance_recursively(
@@ -113,16 +115,60 @@ class BasePipeline(object):
         else:
             self.transform = {"train": None, "val": None}
 
-        self.val_dataset = get_instance_recursively(
-            self.opt["data"]["dataset"]["val"],
-            registry=self.dataset_registry,
-            transform=self.transform["val"],
-        )
+        if self.opt["data"]["dataset"].get("val", None) is None:
+            split_ratio = self.opt.data.get("auto_split_ratio", 0.8)
+            self.logger.text(
+                f"No validation dataset found. Auto splitting training dataset with ratio={split_ratio}.",
+                level=LoggerObserver.WARN,
+            )
+            train_size = int(len(self.train_dataset))
+            val_size = int(train_size * (1 - split_ratio))
+            train_dataset, val_dataset = (
+                Subset(self.train_dataset, indices=indices)
+                for indices in torch.split_with_sizes(
+                    torch.arange(train_size), [train_size - val_size, val_size]
+                )
+            )
+            attrs = dir(self.train_dataset)
+            for attr in attrs:
+                if not attr.startswith("__"):
+                    setattr(train_dataset, attr, getattr(self.train_dataset, attr))
+                    setattr(val_dataset, attr, getattr(self.train_dataset, attr))
+
+            # collate_fn = getattr(self.train_dataset, "collate_fn", None)
+            # setattr(train_dataset, "collate_fn", collate_fn)
+            # setattr(val_dataset, "collate_fn", collate_fn)
+            self.train_dataset = train_dataset
+            self.val_dataset = val_dataset
+
+            self.train_dataloader = get_instance_recursively(
+                self.opt["data"]["dataloader"]["train"],
+                registry=self.dataloader_registry,
+                dataset=self.train_dataset,
+            )
+
+            self.logger.text(
+                f"Number of training samples: {len(self.train_dataset)}",
+                level=LoggerObserver.INFO,
+            )
+            self.logger.text(
+                f"Number of training iterations each epoch: {len(self.train_dataloader)}",
+                level=LoggerObserver.INFO,
+            )
+
+        else:
+            self.val_dataset = get_instance_recursively(
+                self.opt["data"]["dataset"]["val"],
+                registry=self.dataset_registry,
+                transform=self.transform["val"],
+            )
+
         self.val_dataloader = get_instance_recursively(
             self.opt["data"]["dataloader"]["val"],
             registry=self.dataloader_registry,
             dataset=self.val_dataset,
         )
+        self.classnames = getattr(self.val_dataset, "classnames", None)
 
         self.logger.text(
             f"Number of validation samples: {len(self.val_dataset)}",
@@ -130,6 +176,34 @@ class BasePipeline(object):
         )
         self.logger.text(
             f"Number of validation iterations each epoch: {len(self.val_dataloader)}",
+            level=LoggerObserver.INFO,
+        )
+
+    def init_test_dataloader(self):
+        # Transforms & Datasets
+        self.transform = get_instance_recursively(
+            self.transform_cfg, registry=self.transform_registry
+        )
+
+        self.test_dataset = get_instance_recursively(
+            self.opt["data"]["dataset"]["test"],
+            registry=self.dataset_registry,
+            transform=self.transform.get("test", "val"),
+        )
+        self.test_dataloader = get_instance_recursively(
+            self.opt["data"]["dataloader"]["test"],
+            registry=self.dataloader_registry,
+            dataset=self.test_dataset,
+        )
+
+        self.classnames = getattr(self.test_dataloader, "classnames", None)
+
+        self.logger.text(
+            f"Number of test samples: {len(self.test_dataset)}",
+            level=LoggerObserver.INFO,
+        )
+        self.logger.text(
+            f"Number of test iterations each epoch: {len(self.test_dataloader)}",
             level=LoggerObserver.INFO,
         )
 
@@ -141,7 +215,7 @@ class BasePipeline(object):
         )
 
     def init_model(self):
-        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
+        CLASSNAMES = self.classnames
         model = get_instance(
             self.opt["model"],
             registry=self.model_registry,
@@ -151,7 +225,7 @@ class BasePipeline(object):
         return model
 
     def init_criterion(self):
-        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
+        CLASSNAMES = self.classnames
         self.criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
@@ -199,7 +273,7 @@ class BasePipeline(object):
                 )
 
     def init_metrics(self):
-        CLASSNAMES = getattr(self.val_dataset, "classnames", None)
+        CLASSNAMES = self.classnames
         self.metrics = get_instance_recursively(
             self.opt["metrics"],
             registry=self.metric_registry,
@@ -244,24 +318,28 @@ class BasePipeline(object):
             LoggerObserver.CRITICAL,
         )
 
-    def init_pipeline(self, train=False):
+    def init_pipeline(self, phase: str = "train"):
         if self.initialized:
             return
         self.init_globals()
         self.init_registry()
-        if train:
+        if phase == "train":
             self.init_train_dataloader()
             self.init_validation_dataloader()
+            self.init_test_dataloader()
             self.init_datamodule()
             self.init_metrics()
             self.init_model_with_loss()
             callbacks = self.init_callbacks()
             self.save_configs()
         else:
-            self.init_validation_dataloader()
+            if phase == "test":
+                self.init_test_dataloader()
+            else:
+                self.init_validation_dataloader()
             self.init_datamodule()
             self.init_metrics()
-            self.init_model_with_loss(is_train=train)
+            self.init_model_with_loss(is_train=(phase == "train"))
             callbacks = []
 
         if getattr(self.model, "metrics", None):
@@ -286,7 +364,7 @@ class BasePipeline(object):
         self.initialized = True
 
     def fit(self):
-        self.init_pipeline(train=True)
+        self.init_pipeline(phase="train")
         self.trainer.fit(
             model=self.model,
             datamodule=self.datamodule,
@@ -294,8 +372,18 @@ class BasePipeline(object):
         )
 
     def evaluate(self):
-        self.init_pipeline(train=False)
+        self.init_pipeline(phase="validation")
         self.trainer.validate(
+            model=self.model,
+            datamodule=self.datamodule,
+            ckpt_path=self.resume,
+        )
+
+        return self.trainer.callback_metrics
+
+    def test(self):
+        self.init_pipeline(phase="test")
+        self.trainer.test(
             model=self.model,
             datamodule=self.datamodule,
             ckpt_path=self.resume,
@@ -370,13 +458,13 @@ class BaseTestPipeline(object):
         )
 
         self.dataset = get_instance(
-            self.opt["data"]["dataset"],
+            self.opt["data"]["dataset"].get("test", "val"),
             registry=DATASET_REGISTRY,
             transform=transform_cfg,
         )
 
         self.dataloader = get_instance(
-            self.opt["data"]["dataloader"],
+            self.opt["data"]["dataloader"].get("test", "val"),
             registry=DATALOADER_REGISTRY,
             dataset=self.dataset,
         )
