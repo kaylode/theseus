@@ -14,7 +14,7 @@ def identity_tokenizer(text):
 class TFIDFEncoder(BaseRetrieval):
     def __init__(
         self,
-        min_df: int = 0,
+        min_df: int = 0.0,
         max_df: int = 1.0,
         model_path: str = None,
         ngram_range: Tuple[int] = (1, 1),
