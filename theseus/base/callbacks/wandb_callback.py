@@ -77,6 +77,7 @@ class WandbCallback(Callback):
             self.run_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.run_name = osp.basename(save_dir)
 
+        self.config_dict = OmegaConf.to_container(self.config_dict, resolve=True)
         if self.resume is None:
             self.id = wandblogger.util.generate_id()
         else:

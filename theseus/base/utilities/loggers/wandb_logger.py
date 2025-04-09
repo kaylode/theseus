@@ -39,17 +39,23 @@ class WandbLogger(LoggerSubscriber):
         self.save_dir = save_dir
         self.group_name = group_name
 
+        tags = kwargs.get("tags", [])
+        if isinstance(tags, str):
+            tags = [tags]
+
         wandb_logger.init(
-            id=self.id,
-            dir=self.save_dir,
-            config=config_dict,
-            entity=username,
-            group=self.group_name,
             project=project_name,
             name=run_name,
+            config=config_dict,
+            group=self.group_name,
+            job_type=kwargs.get("job_type", None),
+            tags=tags,
+            dir=self.save_dir,
+            id=self.id,
+            entity=username,
             resume="allow",
             reinit=kwargs.get("reinit", False),
-            tags=kwargs.get("tags", None),
+            resume_from=None,
         )
 
         wandb_logger.watch_called = False
