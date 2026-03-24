@@ -33,7 +33,7 @@ class TimerCallback(Callback):
         """
         self.start_time = time.time()
         LOGGER.text(
-            f"===========================START TRAINING=================================",
+            "===========================START TRAINING=================================",
             level=LoggerObserver.INFO,
         )
 

@@ -1,7 +1,6 @@
 import os
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 
 from .observer import LoggerObserver

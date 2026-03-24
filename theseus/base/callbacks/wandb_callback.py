@@ -1,32 +1,29 @@
+import contextlib
 import os
 import os.path as osp
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict
 
 import lightning.pytorch as pl
 from deepdiff import DeepDiff
-from deepdiff.helper import SetOrdered
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.utilities.model_summary import summarize
 from omegaconf import DictConfig, OmegaConf
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
-from lightning.pytorch.utilities.model_summary import summarize
 
-try:
+with contextlib.suppress(ModuleNotFoundError):
     import wandb as wandblogger
-except ModuleNotFoundError:
-    pass
 
 LOGGER = LoggerObserver.getLogger("main")
 
 
 def pretty_print_diff(diff):
     texts = []
-    for type_key in diff.keys():
+    for type_key in diff:
         try:
-            for config_key in diff[type_key].keys():
+            for config_key in diff[type_key]:
                 if type_key == "values_changed":
                     texts.append(
                         config_key
@@ -35,16 +32,10 @@ def pretty_print_diff(diff):
                         + "-->"
                         + str(diff[type_key][config_key]["new_value"])
                     )
-                elif "item_removed" in type_key:
-                    texts.append(config_key + ": " + str(diff[type_key][config_key]))
-                elif "item_added" in type_key:
+                elif "item_removed" in type_key or "item_added" in type_key:
                     texts.append(config_key + ": " + str(diff[type_key][config_key]))
         except:
-            texts.append(
-                str(type_key)
-                + ": "
-                + str(diff[type_key])
-            )
+            texts.append(str(type_key) + ": " + str(diff[type_key]))
     return "\n".join(texts)
 
 
@@ -179,9 +170,7 @@ class WandbCallback(Callback):
         )
         LOGGER.subscribe(self.wandb_logger)
 
-    def setup(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
-    ) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
         """
         Before going to the main loop. Save run id
         """
@@ -197,7 +186,6 @@ class WandbCallback(Callback):
                 value=osp.join(self.save_dir, "*.yaml"),
             )
 
-
         summary = summarize(pl_module, max_depth=3)
 
         LOGGER.text(
@@ -209,23 +197,25 @@ class WandbCallback(Callback):
         total_trainable_params = summary.trainable_parameters
 
         # Log learning rates
-        log_dict = [{
-            "tag": "Training/Total no. parameters",
-            "value": total_params,
-            "type": LoggerObserver.SCALAR,
-            "kwargs": {"step": 0},
-        }]
+        log_dict = [
+            {
+                "tag": "Training/Total no. parameters",
+                "value": total_params,
+                "type": LoggerObserver.SCALAR,
+                "kwargs": {"step": 0},
+            }
+        ]
 
-        log_dict.append({
-            "tag": "Training/Total no. trainable parameters",
-            "value": total_trainable_params,
-            "type": LoggerObserver.SCALAR,
-            "kwargs": {"step": 0},
-        })
-        
+        log_dict.append(
+            {
+                "tag": "Training/Total no. trainable parameters",
+                "value": total_trainable_params,
+                "type": LoggerObserver.SCALAR,
+                "kwargs": {"step": 0},
+            }
+        )
+
         LOGGER.log(log_dict)
-
-
 
     def teardown(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str):
         """

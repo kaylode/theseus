@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 import torch
 
@@ -19,7 +18,7 @@ class DetectionDataset(torch.utils.data.Dataset):
     def load_image_and_boxes(self, index):
         raise NotImplementedError
 
-    def __getitem__(self, idx: int) -> Dict:
+    def __getitem__(self, idx: int) -> dict:
         """
         Get one item
         """
@@ -61,7 +60,7 @@ class DetectionDataset(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return len(self.fns)
 
-    def collate_fn(self, batch: List):
+    def collate_fn(self, batch: list):
         """
         Collator for wrapping a batch
         """

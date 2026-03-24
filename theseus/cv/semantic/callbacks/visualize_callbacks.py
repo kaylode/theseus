@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import lightning.pytorch as pl
 import matplotlib.patches as mpatches
@@ -75,7 +75,7 @@ class SemanticVisualizerCallback(Callback):
         masks = train_batch["targets"].squeeze()
 
         batch = []
-        for idx, (inputs, mask) in enumerate(zip(images, masks)):
+        for _idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = self.visualizer.denormalize(inputs)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
@@ -119,7 +119,7 @@ class SemanticVisualizerCallback(Callback):
         masks = val_batch["targets"].squeeze()
 
         batch = []
-        for idx, (inputs, mask) in enumerate(zip(images, masks)):
+        for _idx, (inputs, mask) in enumerate(zip(images, masks)):
             img_show = self.visualizer.denormalize(inputs)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
             img_show = TFF.to_tensor(img_show)
@@ -190,7 +190,7 @@ class SemanticVisualizerCallback(Callback):
         preds = model.model.get_prediction({"inputs": images}, model.device)["masks"]
 
         batch = []
-        for idx, (inputs, mask, pred) in enumerate(zip(images, masks, preds)):
+        for _idx, (inputs, mask, pred) in enumerate(zip(images, masks, preds)):
             img_show = self.visualizer.denormalize(inputs)
             decode_mask = self.visualizer.decode_segmap(mask.numpy())
             decode_pred = self.visualizer.decode_segmap(pred)

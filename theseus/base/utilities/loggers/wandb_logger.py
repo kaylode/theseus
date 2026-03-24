@@ -1,9 +1,7 @@
-from typing import Dict
+import contextlib
 
-try:
+with contextlib.suppress(ModuleNotFoundError):
     import wandb as wandb_logger
-except ModuleNotFoundError:
-    pass
 
 import os.path as osp
 
@@ -28,7 +26,7 @@ class WandbLogger(LoggerSubscriber):
         run_name: str,
         group_name: str = None,
         save_dir: str = None,
-        config_dict: Dict = None,
+        config_dict: dict = None,
         **kwargs,
     ):
         self.project_name = project_name
@@ -48,7 +46,7 @@ class WandbLogger(LoggerSubscriber):
             name=run_name,
             config=config_dict,
             group=self.group_name,
-            job_type=kwargs.get("job_type", None),
+            job_type=kwargs.get("job_type"),
             tags=tags,
             dir=self.save_dir,
             id=self.id,
@@ -106,7 +104,7 @@ class WandbLogger(LoggerSubscriber):
                 wandb_logger.log({tag: image, "iterations": step})
             else:
                 wandb_logger.log({tag: value, "iterations": step})
-        except Exception as e:
+        except Exception:
             pass
 
     def log_torch_module(self, tag, value, log_freq, **kwargs):
@@ -200,7 +198,7 @@ class WandbLogger(LoggerSubscriber):
         if metadata is not None and metadata_header is not None:
             for meta in metadata:
                 for idx, item in enumerate(meta):
-                    if metadata_header[idx] not in df_dict.keys():
+                    if metadata_header[idx] not in df_dict:
                         df_dict[metadata_header[idx]] = []
                     df_dict[metadata_header[idx]].append(item)
         if label_img is not None:
@@ -225,6 +223,6 @@ def find_run_id(dirname):
     if not osp.isfile(wandb_id_file):
         raise ValueError(f"Wandb ID file not found in {wandb_id_file}")
     else:
-        with open(wandb_id_file, "r") as f:
+        with open(wandb_id_file) as f:
             wandb_id = f.read().rstrip()
         return wandb_id

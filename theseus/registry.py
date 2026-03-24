@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Generic, Iterator, Optional, TypeVar, overload
+from collections.abc import Iterator
+from typing import Any, Generic, TypeVar, overload
 
 from tabulate import tabulate
 
@@ -47,14 +48,13 @@ class Registry(Generic[T]):
         self._obj_map: dict[str, T] = {}
 
     def _do_register(self, name: str, obj: T, override: bool = False) -> None:
-        if name in self._obj_map and self._obj_map[name] is not obj:
-            if not override:
-                logger.warning(
-                    "An object named '%s' was already registered in '%s' registry!",
-                    name,
-                    self._name,
-                )
-                return
+        if name in self._obj_map and self._obj_map[name] is not obj and not override:
+            logger.warning(
+                "An object named '%s' was already registered in '%s' registry!",
+                name,
+                self._name,
+            )
+            return
         self._obj_map[name] = obj
 
     @overload
@@ -63,9 +63,7 @@ class Registry(Generic[T]):
     @overload
     def register(self, obj: T, prefix: str = "", override: bool = False) -> None: ...
 
-    def register(
-        self, obj: T | None = None, prefix: str = "", override: bool = False
-    ) -> Any:
+    def register(self, obj: T | None = None, prefix: str = "", override: bool = False) -> Any:
         """
         Register the given object under the name ``obj.__name__``.
         Can be used as either a decorator or not.
@@ -125,9 +123,7 @@ class Registry(Generic[T]):
 
     def __repr__(self) -> str:
         table_headers = ["Names", "Objects"]
-        table = tabulate(
-            self._obj_map.items(), headers=table_headers, tablefmt="fancy_grid"
-        )
+        table = tabulate(self._obj_map.items(), headers=table_headers, tablefmt="fancy_grid")
         return f"Registry of {self._name}:\n{table}"
 
     def __iter__(self) -> Iterator[tuple[str, T]]:

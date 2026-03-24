@@ -3,7 +3,9 @@ import os.path as osp
 from copy import deepcopy
 
 import optuna
+import wandb
 from omegaconf import DictConfig, OmegaConf
+from optuna.integration.wandb import WeightsAndBiasesCallback
 from optuna.visualization import (
     plot_contour,
     plot_edf,
@@ -13,8 +15,6 @@ from optuna.visualization import (
     plot_param_importances,
     plot_slice,
 )
-import wandb
-from optuna.integration.wandb import WeightsAndBiasesCallback
 
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
@@ -45,9 +45,7 @@ class OptunaWrapper:
         self.WANDB_CALLBACK = None
         if wandb_kwargs is not None:
             self.WANDB_CALLBACK = WeightsAndBiasesCallback(
-                metric_name="auc",
-                wandb_kwargs=wandb_kwargs,
-                as_multirun=True
+                metric_name="auc", wandb_kwargs=wandb_kwargs, as_multirun=True
             )
         if save_dir is not None:
             os.makedirs(save_dir, exist_ok=True)
@@ -66,26 +64,31 @@ class OptunaWrapper:
         config: DictConfig,
         pipeline_class: BasePipeline,
         optuna_callback: callable = None,
-        trial_user_attrs: dict = {},
+        trial_user_attrs: dict = None,
     ):
 
-        if "optuna" not in config.keys():
+        if trial_user_attrs is None:
+            trial_user_attrs = {}
+        if "optuna" not in config:
             self.logger.text(
                 "Optuna key not found in config. Exit optuna",
                 level=LoggerObserver.CRITICAL,
             )
             raise ValueError()
 
-        wrapped_objective = lambda trial: self.objective(
-            trial, config, pipeline_class, trial_user_attrs, optuna_callback
-        )
+        def wrapped_objective(trial):
+            return self.objective(
+                    trial, config, pipeline_class, trial_user_attrs, optuna_callback
+                )
 
         callbacks = None
         if self.WANDB_CALLBACK is not None:
             decorator = self.WANDB_CALLBACK.track_in_wandb()
             wrapped_objective = decorator(wrapped_objective)
             callbacks = [self.WANDB_CALLBACK]
-        self.study.optimize(wrapped_objective, n_trials=self.n_trials, timeout=12*60*60, callbacks=callbacks)
+        self.study.optimize(
+            wrapped_objective, n_trials=self.n_trials, timeout=12 * 60 * 60, callbacks=callbacks
+        )
         best_trial = self.study.best_trial
         self.save_best_config(self.save_dir, config, best_trial.params)
         self._rename_params()
@@ -104,9 +107,7 @@ class OptunaWrapper:
         with open(os.path.join(save_dir, f"{self.study_name}.yaml"), "w") as f:
             OmegaConf.save(config=config, f=f)
 
-        self.logger.text(
-            f"Best configuration saved at {save_dir}", level=LoggerObserver.INFO
-        )
+        self.logger.text(f"Best configuration saved at {save_dir}", level=LoggerObserver.INFO)
 
     def _override_dict_with_optuna(
         self, trial, config: DictConfig, param_str: str, variable_type: str
@@ -155,19 +156,19 @@ class OptunaWrapper:
         trial: optuna.Trial,
         config: DictConfig,
         pipeline_class: BasePipeline,
-        trial_user_attrs: dict = {},
+        trial_user_attrs: dict = None,
         optuna_callback: callable = None,
     ):
         """Define the objective function"""
 
         # Override config with optuna trials values
+        if trial_user_attrs is None:
+            trial_user_attrs = {}
         tmp_config = deepcopy(config)
         optuna_params = tmp_config["optuna"]
-        for variable_type in optuna_params.keys():
+        for variable_type in optuna_params:
             for param_str in optuna_params[variable_type]:
-                self._override_dict_with_optuna(
-                    trial, tmp_config, param_str, variable_type
-                )
+                self._override_dict_with_optuna(trial, tmp_config, param_str, variable_type)
 
         # Set fixed run's config
         for key, value in trial_user_attrs.items():
@@ -198,7 +199,7 @@ class OptunaWrapper:
 
         del tmp_config
 
-        best_key = trial_user_attrs.get("best_key", None)
+        best_key = trial_user_attrs.get("best_key")
         if best_key is not None:
             return float(score_dict.get(best_key, -1))
         return score_dict
@@ -222,9 +223,7 @@ class OptunaWrapper:
             if common_prefix != "":
                 for trial_param_name in trial_param_names:
                     new_param_name = trial_param_name.replace(common_prefix, "")
-                    trial.params.update(
-                        {new_param_name: trial.params[trial_param_name]}
-                    )
+                    trial.params.update({new_param_name: trial.params[trial_param_name]})
                     trial.distributions.update(
                         {new_param_name: trial.distributions[trial_param_name]}
                     )
@@ -237,9 +236,11 @@ class OptunaWrapper:
         df.columns = [col.replace("user_attrs_", "") for col in df.columns]
         return df
 
-    def visualize(self, plot: str, plot_params: dict = {}):
+    def visualize(self, plot: str, plot_params: dict = None):
         """Visualize everything"""
 
+        if plot_params is None:
+            plot_params = {}
         allow_plot_types = [
             "history",
             "contour",
@@ -271,9 +272,7 @@ class OptunaWrapper:
                 one_fig = self.visualize(plot_type, plot_params)
                 fig.append((plot_type, one_fig))
         else:
-            self.logger.text(
-                f"{plot} is not supported by Optuna", level=LoggerObserver.ERROR
-            )
+            self.logger.text(f"{plot} is not supported by Optuna", level=LoggerObserver.ERROR)
             raise ValueError()
 
         # Log to wandb if enabled

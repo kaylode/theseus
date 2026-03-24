@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import torch
 from torch import nn
@@ -10,12 +10,12 @@ class MeanAbsoluteErrorLoss(nn.Module):
     r"""MSELoss is warper of mean absolute error loss"""
 
     def __init__(self, **kwargs):
-        super(MeanAbsoluteErrorLoss, self).__init__()
+        super().__init__()
 
     def forward(
         self,
-        outputs: Dict[str, Any],
-        batch: Dict[str, Any],
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
         device: torch.device = None,
     ):
         pred = outputs["outputs"]
@@ -29,7 +29,6 @@ class MeanAbsoluteErrorLoss(nn.Module):
         else:
             # If the shapes are different, we can use MSELoss
             loss = torch.mean(torch.abs(pred.squeeze(-1) - target.view(-1).contiguous()))
-
 
         loss_dict = {"MAE": loss.item()}
         return loss, loss_dict

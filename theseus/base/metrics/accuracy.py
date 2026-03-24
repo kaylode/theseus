@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from theseus.base.metrics.metric_template import Metric
 from theseus.base.utilities.logits import logits2labels
@@ -16,15 +16,13 @@ class Accuracy(Metric):
         self.ignore_index = ignore_index
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
         outputs = outputs["outputs"].detach().cpu()
         target = batch["targets"].cpu()
-        prediction = logits2labels(
-            outputs, label_type=self.type, threshold=self.threshold
-        )
+        prediction = logits2labels(outputs, label_type=self.type, threshold=self.threshold)
 
         # Create mask for non-ignored indices
         if self.ignore_index is not None:

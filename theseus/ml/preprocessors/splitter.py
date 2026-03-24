@@ -46,9 +46,7 @@ class Splitter(Preprocessor):
         elif self.splitter_type == "stratifiedkfold":
             assert label_column is not None, "Label column should be specified"
             assert n_splits is not None, "number of splits should be specified"
-            self.splitter = StratifiedKFold(
-                n_splits=n_splits, random_state=self.seed, shuffle=True
-            )
+            self.splitter = StratifiedKFold(n_splits=n_splits, random_state=self.seed, shuffle=True)
         elif self.splitter_type == "default":
             assert ratio is not None, "should specify ratio"
             self.ratio = ratio
@@ -76,9 +74,7 @@ class Splitter(Preprocessor):
         elif self.splitter_type == "unique":
             unique_values = df[self.label_column].unique().tolist()
             num_unique_samples = len(unique_values)
-            train_idx = self.splitter(
-                unique_values, int(num_unique_samples * self.ratio)
-            )
+            train_idx = self.splitter(unique_values, int(num_unique_samples * self.ratio))
             train_df = df[df[self.label_column].isin(train_idx)]
             val_df = df[~df[self.label_column].isin(train_idx)]
             train_df.to_csv(osp.join(self.save_folder, "train.csv"), index=False)

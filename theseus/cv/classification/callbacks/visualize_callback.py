@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import lightning.pytorch as pl
 import matplotlib.pyplot as plt
@@ -10,7 +10,6 @@ from torchvision.transforms import functional as TFF
 from theseus.base.utilities.cuda import move_to
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.cv.base.utilities.visualization.visualizer import Visualizer
-from theseus.cv.classification.utilities.gradcam import CAMWrapper, show_cam_on_image
 
 LOGGER = LoggerObserver.getLogger("main")
 
@@ -26,20 +25,21 @@ class ClassificationVisualizerCallback(Callback):
 
     def __init__(
         self,
-        mean: List[float] = [0.485, 0.456, 0.406],
-        std: List[float] = [0.229, 0.224, 0.225],
+        mean: list[float] = None,
+        std: list[float] = None,
         **kwargs,
     ) -> None:
+        if std is None:
+            std = [0.229, 0.224, 0.225]
+        if mean is None:
+            mean = [0.485, 0.456, 0.406]
         super().__init__()
 
         self.visualizer = Visualizer()
         self.mean = mean
         self.std = std
 
-    def on_sanity_check_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ) -> None:
-
+    def on_sanity_check_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """
         Sanitycheck before starting. Run only when debug=True
         """
@@ -52,7 +52,7 @@ class ClassificationVisualizerCallback(Callback):
         val_batch = next(iter(valloader))
         try:
             self.visualize_model(model, train_batch)
-        except TypeError as e:
+        except TypeError:
             LOGGER.text("Cannot log model architecture", level=LoggerObserver.ERROR)
         self.visualize_gt(train_batch, val_batch, iters)
 
@@ -87,7 +87,7 @@ class ClassificationVisualizerCallback(Callback):
         images = train_batch["inputs"].cpu()
 
         batch = []
-        for idx, inputs in enumerate(images):
+        for _idx, inputs in enumerate(images):
             img_show = self.visualizer.denormalize(inputs)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)
@@ -112,7 +112,7 @@ class ClassificationVisualizerCallback(Callback):
         images = val_batch["inputs"].cpu()
 
         batch = []
-        for idx, inputs in enumerate(images):
+        for _idx, inputs in enumerate(images):
             img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             img_cam = TFF.to_tensor(img_show)
             batch.append(img_cam)

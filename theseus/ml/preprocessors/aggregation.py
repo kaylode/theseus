@@ -32,14 +32,10 @@ class Aggregate(Preprocessor):
                 if method_name == "subtract":
                     df[target_name] = df[based_columns].sub(axis=1)
                 if method_name == "concat":
-                    df[target_name] = (
-                        df[based_columns].astype(str).agg(" ".join, axis=1)
-                    )
+                    df[target_name] = df[based_columns].astype(str).agg(" ".join, axis=1)
 
             elif callable(method_name):
-                df[target_name] = self.apply(
-                    df[based_columns], function=method_name, axis=1
-                )
+                df[target_name] = self.apply(df[based_columns], function=method_name, axis=1)
             else:
                 LOGGER.text(
                     "Unsuppported aggregation method",

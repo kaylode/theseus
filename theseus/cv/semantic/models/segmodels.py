@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import segmentation_models_pytorch as smp
 import torch
@@ -29,10 +29,10 @@ class BaseSegModel(nn.Module):
         model_name: str,
         encoder_name: str = "resnet34",
         num_classes: int = 1000,
-        aux_params: Dict = None,
+        aux_params: dict = None,
         in_channels: int = 3,
         pretrained: bool = True,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
 
@@ -57,7 +57,7 @@ class BaseSegModel(nn.Module):
         """
         return self.model
 
-    def forward_batch(self, batch: Dict, device: torch.device = None):
+    def forward_batch(self, batch: dict, device: torch.device = None):
         if device is not None:
             x = move_to(batch["inputs"], device)
         else:
@@ -67,7 +67,7 @@ class BaseSegModel(nn.Module):
             "outputs": outputs,
         }
 
-    def get_prediction(self, adict: Dict[str, Any], device: torch.device = None):
+    def get_prediction(self, adict: dict[str, Any], device: torch.device = None):
         """
         Inference using the model.
         adict: `Dict[str, Any]`

@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 
 def bb_intersection_over_union(boxA, boxB):
@@ -70,8 +69,8 @@ class BoxWithLabel:
 class MatchingPairs:
     def __init__(
         self,
-        pred_boxes: List[BoxWithLabel],
-        gt_boxes: List[BoxWithLabel],
+        pred_boxes: list[BoxWithLabel],
+        gt_boxes: list[BoxWithLabel],
         min_iou=0.5,
         eps=0.000001,
     ) -> None:

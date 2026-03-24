@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -35,10 +34,10 @@ class SemanticCSVDataset(SemanticDataset):
         mask_dir: str,
         csv_path: str,
         txt_classnames: str,
-        transform: Optional[List] = None,
-        **kwargs
+        transform: list | None = None,
+        **kwargs,
     ):
-        super(SemanticCSVDataset, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.csv_path = csv_path
@@ -51,7 +50,7 @@ class SemanticCSVDataset(SemanticDataset):
         Read data from csv and load into memory
         """
 
-        with open(self.txt_classnames, "r") as f:
+        with open(self.txt_classnames) as f:
             self.classnames = f.read().splitlines()
 
         # Mapping between classnames and indices

@@ -21,14 +21,11 @@ class TorchCheckpointCallback(ModelCheckpoint):
 
         super().__init__(dirpath=save_dir, **filtered_kwargs)
 
-    def setup(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
-    ) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
         super().setup(trainer, pl_module, stage)
         self.params = {}
         trainloader = pl_module.datamodule.trainloader
         if trainloader is not None:
-            batch_size = trainloader.batch_size
             self.params["trainloader_length"] = len(trainloader)
             self.params["num_iterations"] = len(trainloader) * trainer.max_epochs
 
@@ -49,7 +46,7 @@ class TorchCheckpointCallback(ModelCheckpoint):
     def _save_checkpoint(self, trainer: pl.Trainer, filepath: str) -> None:
         super()._save_checkpoint(trainer, filepath)
 
-        if filepath in self.best_k_models.keys():
+        if filepath in self.best_k_models:
             if self.best_k_models[filepath] == self.best_model_score:
                 LOGGER.text(
                     f"Evaluation improved to {self.current_score}",

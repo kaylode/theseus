@@ -2,28 +2,42 @@ import os
 
 import pytest
 
-from theseus.ml.callbacks.optuna_callbacks import OptunaCallbacks
-from theseus.ml.pipeline import MLPipeline
+from theseus.ml.tradml import TradMLTuner
 
 
-@pytest.mark.order(1)
-def test_train_tblr_tune(override_tuner_config, override_tuner_tuner):
-    override_tuner_tuner.tune(
-        config=override_tuner_config,
-        pipeline_class=MLPipeline,
-        optuna_callback=OptunaCallbacks,
-        trial_user_attrs={
-            "best_key": "bl_acc",
-            "model_name": override_tuner_config["model"]["args"]["model_name"],
-        },
+@pytest.mark.order(3)
+def test_tuner_xgboost(titanic_data):
+    """Run TradMLTuner with XGBoost on Titanic data (2 trials, no wandb)."""
+    save_dir = "runs/optuna/tablr_test"
+    os.makedirs(save_dir, exist_ok=True)
+    storage_path = os.path.join(save_dir, "test_tuner.log")
+
+    tuner = TradMLTuner(
+        storage=storage_path,
+        study_name="pytest_xgboost_tune",
+        n_trials=2,
+        direction="maximize",
+        save_dir=save_dir,
+        method="xgboost",
+        wandb_kwargs=None,
+        feature_names=titanic_data["feature_names"],
+        classnames=titanic_data["classnames"],
     )
 
-    leaderboard_df = override_tuner_tuner.leaderboard()
-    os.makedirs("runs/optuna/tablr/overview", exist_ok=True)
-    leaderboard_df.to_json(
-        "runs/optuna/tablr/overview/leaderboard.json", orient="records"
+    best_model = tuner.tune(
+        X_train=titanic_data["X_train"],
+        X_val=titanic_data["X_val"],
+        y_train=titanic_data["y_train"],
+        y_val=titanic_data["y_val"],
+        is_classification=True,
     )
 
-    figs = override_tuner_tuner.visualize("all")
-    for fig_type, fig in figs:
-        fig.write_image(f"runs/optuna/tablr/overview/{fig_type}.png")
+    assert best_model is not None
+
+    # Check leaderboard
+    df = tuner.leaderboard()
+    assert len(df) >= 2
+    print(f"Tuner leaderboard:\n{df}")
+
+    # Check best config was saved
+    assert os.path.exists(os.path.join(save_dir, "best_config.json"))

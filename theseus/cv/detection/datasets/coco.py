@@ -1,5 +1,4 @@
 import os
-from typing import List, Optional
 
 import cv2
 import numpy as np
@@ -24,13 +23,7 @@ class COCODataset(DetectionDataset):
 
     """
 
-    def __init__(
-        self,
-        image_dir: str,
-        label_path: str,
-        transform: Optional[List] = None,
-        **kwargs
-    ):
+    def __init__(self, image_dir: str, label_path: str, transform: list | None = None, **kwargs):
         super().__init__(**kwargs)
         self.image_dir = image_dir
         self.label_path = label_path
@@ -71,9 +64,7 @@ class COCODataset(DetectionDataset):
 
     def load_annotations(self, image_index, width, height):
         # get ground truth annotations
-        annotations_ids = self.fns.getAnnIds(
-            imgIds=self.image_ids[image_index], iscrowd=None
-        )
+        annotations_ids = self.fns.getAnnIds(imgIds=self.image_ids[image_index], iscrowd=None)
         annotations = np.zeros((0, 5))
 
         # some images appear to miss annotations
@@ -82,8 +73,7 @@ class COCODataset(DetectionDataset):
 
         # parse annotations
         coco_annotations = self.fns.loadAnns(annotations_ids)
-        for idx, a in enumerate(coco_annotations):
-
+        for _idx, a in enumerate(coco_annotations):
             # some annotations have basically no width / height, skip them
             if a["bbox"][2] <= 2 or a["bbox"][3] <= 2:
                 continue

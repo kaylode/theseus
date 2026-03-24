@@ -11,10 +11,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import torch
-import torch.nn as nn
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +65,9 @@ class HuggingFaceHubMixin:
 
     def save_pretrained(
         self,
-        save_directory: Union[str, Path],
+        save_directory: str | Path,
         *,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         use_safetensors: bool = True,
     ) -> None:
         """
@@ -103,12 +102,12 @@ class HuggingFaceHubMixin:
     @classmethod
     def from_pretrained(
         cls,
-        pretrained_path: Union[str, Path],
+        pretrained_path: str | Path,
         *,
         use_safetensors: bool = True,
         map_location: str = "cpu",
         **kwargs: Any,
-    ) -> "HuggingFaceHubMixin":
+    ) -> HuggingFaceHubMixin:
         """
         Load a model from a local directory or HuggingFace Hub repo.
 
@@ -155,9 +154,9 @@ class HuggingFaceHubMixin:
         *,
         commit_message: str = "Upload model",
         private: bool = False,
-        token: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
-        model_card: Optional[str] = None,
+        token: str | None = None,
+        config: dict[str, Any] | None = None,
+        model_card: str | None = None,
         use_safetensors: bool = True,
     ) -> str:
         """
@@ -207,12 +206,14 @@ class HuggingFaceHubMixin:
     def _generate_model_card(
         self,
         repo_id: str,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> str:
         """Generate a basic model card."""
         model_name = repo_id.split("/")[-1] if "/" in repo_id else repo_id
         trainable_params = sum(
-            p.numel() for p in self.parameters() if p.requires_grad  # type: ignore[union-attr]
+            p.numel()
+            for p in self.parameters()
+            if p.requires_grad  # type: ignore[union-attr]
         )
         total_params = sum(p.numel() for p in self.parameters())  # type: ignore[union-attr]
 

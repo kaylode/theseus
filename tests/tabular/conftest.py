@@ -1,58 +1,48 @@
-import os
-
+import pandas as pd
 import pytest
-from hydra import compose, initialize
-from optuna.storages import JournalFileStorage, JournalStorage
 
-from theseus.base.utilities.optuna_tuner import OptunaWrapper
-
-MODELS = ["xgboost"]  # , "catboost", 'lightgbm']
-TUNER_MODELS = ["xgboost_tune"]  # , "catboost_tune"] #, 'lightgbm_tune']
+from theseus.ml.preprocessors import FillNaN, LabelEncode, PreprocessCompose, Standardize
 
 
-@pytest.fixture(scope="session", params=MODELS)
-def override_config(request):
-    with initialize(config_path="configs"):
-        config = compose(
-            config_name=f"{request.param}",
-            overrides=[
-                "global.exp_name=pytest_tablr",
-                "global.exist_ok=True",
-                "global.save_dir=runs",
-            ],
-        )
+# --- Data Loading Helper ---
+def load_titanic_data(split: str):
+    """Load and preprocess Titanic data for a given split."""
+    data_path = f"samples/titanic/{split}.csv"
+    classnames_path = "samples/titanic/classnames.txt"
+    target_column = "Survived"
 
-    return config
+    df = pd.read_csv(data_path)
 
+    # Apply preprocessing (same pipeline as the old YAML config)
+    transform = PreprocessCompose(
+        preproc_list=[
+            FillNaN(column_names=["Embarked", "Cabin"], fill_with="None"),
+            FillNaN(column_names=["Age"], fill_with=0),
+            LabelEncode(),
+            Standardize(method="minmax", column_names=["*"], exclude_columns=[target_column]),
+        ]
+    )
+    df = transform.run(df)
 
-@pytest.fixture(scope="function", params=TUNER_MODELS)
-def override_tuner_config(request):
-    with initialize(config_path="configs/optuna"):
-        config = compose(
-            config_name=f"{request.param}",
-            overrides=[
-                "global.exp_name=pytest_tablr_optuna",
-                "global.exist_ok=True",
-                "global.save_dir=runs",
-            ],
-        )
+    X = df.drop(target_column, axis=1).values
+    y = df[target_column].values
+    feature_names = list(df.drop(target_column, axis=1).columns)
+    classnames = open(classnames_path).read().splitlines()
 
-    return config
+    return X, y, feature_names, classnames
 
 
+# --- Fixtures ---
 @pytest.fixture(scope="session")
-def override_tuner_tuner():
-    os.makedirs("runs/optuna/tablr", exist_ok=True)
-    database = JournalStorage(
-        JournalFileStorage("runs/optuna/tablr/pytest_tablr_optuna.log")
-    )
-
-    tuner = OptunaWrapper(
-        storage=database,
-        study_name="pytest_tablr_optuna",
-        n_trials=3,
-        direction="maximize",
-        save_dir="runs/optuna/tablr",
-    )
-
-    return tuner
+def titanic_data():
+    """Load train and val splits of Titanic dataset."""
+    X_train, y_train, feature_names, classnames = load_titanic_data("train")
+    X_val, y_val, _, _ = load_titanic_data("val")
+    return {
+        "X_train": X_train,
+        "X_val": X_val,
+        "y_train": y_train,
+        "y_val": y_val,
+        "feature_names": feature_names,
+        "classnames": classnames,
+    }

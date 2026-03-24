@@ -53,6 +53,7 @@ class FileLogger(BaseTextLogger):
 
     def __init__(self, name, logdir, rotation="10 MB", debug=False):
         self.logdir = logdir
+        os.makedirs(self.logdir, exist_ok=True)
         self.filename = f"{self.logdir}/log.txt"
         super().__init__(name)
 
@@ -65,15 +66,17 @@ class FileLogger(BaseTextLogger):
             self.filename,
             rotation=rotation,
             level=level,
-            filter=lambda record: "filelog" in record["extra"],
+            filter=lambda record: (
+                record["extra"].get("filelog") and record["extra"].get("name") == self.name
+            ),
         )
 
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        filename = kwargs.get("filename", None)
-        funcname = kwargs.get("funcname", None)
-        lineno = kwargs.get("lineno", None)
+        filename = kwargs.get("filename")
+        funcname = kwargs.get("funcname")
+        lineno = kwargs.get("lineno")
         with logger.contextualize(
-            filelog=True, filename=filename, funcname=funcname, lineno=lineno
+            filelog=True, name=self.name, filename=filename, funcname=funcname, lineno=lineno
         ):
             return super().log_text(tag, value, level, **kwargs)
 
@@ -103,14 +106,16 @@ class StdoutLogger(BaseTextLogger):
             diagnose=True,
             level=level,
             format=self.message_format,
-            filter=lambda record: "stdout" in record["extra"],
+            filter=lambda record: (
+                record["extra"].get("stdout") and record["extra"].get("name") == self.name
+            ),
         )
 
     def log_text(self, tag, value, level=LoggerObserver.DEBUG, **kwargs):
-        filename = kwargs.get("filename", None)
-        funcname = kwargs.get("funcname", None)
-        lineno = kwargs.get("lineno", None)
+        filename = kwargs.get("filename")
+        funcname = kwargs.get("funcname")
+        lineno = kwargs.get("lineno")
         with logger.contextualize(
-            stdout=True, filename=filename, funcname=funcname, lineno=lineno
+            stdout=True, name=self.name, filename=filename, funcname=funcname, lineno=lineno
         ):
             return super().log_text(tag, value, level, **kwargs)

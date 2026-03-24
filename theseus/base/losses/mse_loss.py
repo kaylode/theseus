@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import torch
 from torch import nn
@@ -10,13 +10,13 @@ class MeanSquaredErrorLoss(nn.Module):
     r"""MSELoss is warper of mean square error loss"""
 
     def __init__(self, **kwargs):
-        super(MeanSquaredErrorLoss, self).__init__()
+        super().__init__()
         self.criterion = nn.MSELoss()
 
     def forward(
         self,
-        outputs: Dict[str, Any],
-        batch: Dict[str, Any],
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
         device: torch.device = None,
     ):
         pred = outputs["outputs"]

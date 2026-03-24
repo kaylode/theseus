@@ -5,12 +5,10 @@ Lightning callback for pushing model checkpoints to HuggingFace Hub.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
-
-from theseus.registry import Registry
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +42,12 @@ class HuggingFaceHubCallback(Callback):
         self,
         repo_id: str,
         *,
-        token: Optional[str] = None,
+        token: str | None = None,
         push_on_train_end: bool = True,
         push_every_n_epochs: int = 0,
         private: bool = False,
         use_safetensors: bool = True,
-        config: Optional[dict] = None,
+        config: dict | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -85,15 +83,11 @@ class HuggingFaceHubCallback(Callback):
                 f"HuggingFaceHubMixin. Skipping push."
             )
 
-    def on_train_epoch_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ) -> None:
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         if self.push_every_n_epochs > 0:
             if (trainer.current_epoch + 1) % self.push_every_n_epochs == 0:
                 self._push_model(trainer, pl_module)
 
-    def on_train_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ) -> None:
+    def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         if self.push_on_train_end:
             self._push_model(trainer, pl_module)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 from torchvision.transforms import functional as TFF
@@ -20,7 +20,7 @@ class ErrorCases(Metric):
     def __init__(
         self,
         max_samples: int = 64,
-        classnames: Optional[List[str]] = None,
+        classnames: list[str] | None = None,
         label_type: str = "multiclass",
         **kwargs,
     ):
@@ -33,7 +33,7 @@ class ErrorCases(Metric):
         self.threshold = kwargs.get("threshold", 0.5)
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -56,7 +56,7 @@ class ErrorCases(Metric):
         targets = targets.cpu().numpy().tolist()
         probs = probs.numpy().tolist()
 
-        for (output, target, prob, image) in zip(outputs, targets, probs, images):
+        for output, target, prob, image in zip(outputs, targets, probs, images):
             if output != target:
                 self.images.append(image.cpu())
                 self.preds.append(output)
@@ -68,16 +68,14 @@ class ErrorCases(Metric):
         Plot error cases to figure then return
         """
         pred_batch = []
-        for idx, (image, pred, target, prob) in enumerate(
+        for _idx, (image, pred, target, prob) in enumerate(
             zip(self.images, self.preds, self.targets, self.probs)
         ):
             img_show = self.visualizer.denormalize(image)
             self.visualizer.set_image(img_show)
 
             if self.type == "multilabel":
-                prob = ", ".join(
-                    [str(round(prob[i], 3)) for i, c in enumerate(pred) if c]
-                )
+                prob = ", ".join([str(round(prob[i], 3)) for i, c in enumerate(pred) if c])
             else:
                 prob = str(round(prob, 3))
 
@@ -86,12 +84,8 @@ class ErrorCases(Metric):
                     pred = self.classnames[pred]
                     target = self.classnames[target]
                 else:
-                    pred = ", ".join(
-                        [self.classnames[int(i)] for i, c in enumerate(pred) if c]
-                    )
-                    target = ", ".join(
-                        [self.classnames[int(i)] for i, c in enumerate(target) if c]
-                    )
+                    pred = ", ".join([self.classnames[int(i)] for i, c in enumerate(pred) if c])
+                    target = ", ".join([self.classnames[int(i)] for i, c in enumerate(target) if c])
 
             self.visualizer.draw_label(
                 f"GT: {target}\nP: {pred}\nC: {prob}",

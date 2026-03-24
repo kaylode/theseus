@@ -10,7 +10,7 @@ name = "theseus"
 version = "2.0.0"
 description = "A modular PyTorch Lightning framework for deep learning research and production training"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 license = {file = "LICENSE"}
 keywords = ["pytorch", "lightning", "template", "deep learning", "machine learning"]
 authors = [
@@ -37,22 +37,17 @@ dependencies = [
     "matplotlib>=3.8.0",
     "webcolors>=1.13",
     "wandb>=0.17.0",
-    "tensorboard>=2.16.0",
     "pyyaml>=6.0.1",
     "tqdm>=4.66.0",
     "gdown>=5.1.0",
     "tabulate>=0.9.0",
     "loguru>=0.7.0",
     "kaleido>=0.2.1",
-    "optuna>=3.6.0",
     "deepdiff>=7.0.0",
     "hydra-core>=1.3.2",
-    "lightning>=2.4.0",
-    "huggingface-hub>=0.23.0",
-    "safetensors>=0.4.0",
-    "torchvision>=0.24.1",
     "scikit-learn>=1.7.2",
     "omegaconf>=2.3.0",
+    "rich>=14.3.3",
 ]
 
 [project.optional-dependencies]
@@ -63,7 +58,9 @@ dev = [
     "ruff>=0.5.0",
 ]
 cv = [
-    "albumentations>=1.4.0",
+    "torchvision>=0.24.1",
+    "lightning>=2.4.0",
+    "albumentations>=1.4.0,<2.0.0",
     "omegaconf>=2.3.0",
 ]
 cv_classification = [
@@ -79,6 +76,7 @@ cv_detection = [
     "pycocotools>=2.0.7",
 ]
 nlp = [
+    "lightning>=2.4.0",
     "pyvi>=0.1.1",
     "py_vncorenlp>=0.1.3",
     "spacy>=3.7.0",
@@ -92,20 +90,20 @@ nlp_retrieval = [
     "elasticsearch>=8.12.0",
 ]
 ml = [
-    "pandas>=2.1.0",
-    "pandarallel>=1.6.5",
-    "numpy>=1.26.0",
-    "scikit-learn>=1.4.0",
-    "scipy>=1.12.0",
     "optuna>=3.6.0",
-    "psycopg2-binary>=2.9.9",
-    "gunicorn>=21.2.0",
-    "lightgbm>=4.3.0",
-    "xgboost>=2.0.0",
-    "catboost>=1.2.0",
-    "shap>=0.45.0",
-    "lime>=0.2.0.1",
-    "scikit-plot",
+    "optuna-integration[wandb]>=4.8.0",
+    "numpy==1.26.4",
+    "lightgbm==4.6.0",
+    "wandb==0.19.9",
+    "xgboost>=3.0",
+    "tqdm==4.67.1",
+    "tabulate==0.9.0",
+    "scikit-plot==0.3.7",
+    "scipy>=1.11.4",
+    "seaborn==0.13.2",
+    "shap==0.47.1",
+    "numpy==1.26.4",
+    "catboost==1.2.8",
 ]
 all = [
     "theseus[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,ml]",

@@ -47,9 +47,7 @@ class BoxOrder(DualTransform):
         Class construstor
         :param order: bbox format
         """
-        super(BoxOrder, self).__init__(
-            always_apply=True, p=1.0
-        )  # Initialize parent class
+        super().__init__(always_apply=True, p=1.0)  # Initialize parent class
         self.order = order
 
     def apply(self, image, **params):
@@ -62,7 +60,6 @@ class BoxOrder(DualTransform):
         return image
 
     def apply_to_bbox(self, bbox, **params):
-
         """
         Change box order between (xmin, ymin, xmax, ymax) and (xcenter, ycenter, width, height).
         :param bbox: (tensor) or {np.array) bounding bbox, sized [N, 4]

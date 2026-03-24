@@ -33,7 +33,5 @@ class TensorboardCallback(Callback):
         """
         tsb_logger = TensorboardLogger(self.save_dir)
         if self.resume is not None:
-            tsb_logger.load(
-                find_old_tflog(os.path.dirname(os.path.dirname(self.resume)))
-            )
+            tsb_logger.load(find_old_tflog(os.path.dirname(os.path.dirname(self.resume))))
         LOGGER.subscribe(tsb_logger)

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 import lightning.pytorch as pl
 import torch
 import torch.nn as nn
+from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch.amp import autocast
 
-from lightning.pytorch.utilities.types import STEP_OUTPUT
 from theseus.base.datasets import LightningDataModuleWrapper
 from theseus.base.optimizers import OPTIM_REGISTRY, SCHEDULER_REGISTRY
 from theseus.base.utilities.getter import get_instance
@@ -24,13 +25,13 @@ class LightningModelWrapper(pl.LightningModule):
     def __init__(
         self,
         model: nn.Module,
-        criterion: Optional[nn.Module] = None,
+        criterion: nn.Module | None = None,
         *,
-        metrics: Optional[List[Any]] = None,
-        optimizer_config: Optional[Dict] = None,
-        scheduler_config: Optional[Dict] = None,
-        scheduler_kwargs: Optional[Dict] = None,
-        datamodule: Optional[LightningDataModuleWrapper] = None,
+        metrics: list[Any] | None = None,
+        optimizer_config: dict | None = None,
+        scheduler_config: dict | None = None,
+        scheduler_kwargs: dict | None = None,
+        datamodule: LightningDataModuleWrapper | None = None,
         use_mixed_precision: bool = False,
     ) -> None:
         super().__init__()
@@ -43,7 +44,7 @@ class LightningModelWrapper(pl.LightningModule):
         self.datamodule = datamodule
         self.use_mixed_precision = use_mixed_precision
         self.lr: float = 0.0
-        self.metric_dict: Dict[str, Any] = {}
+        self.metric_dict: dict[str, Any] = {}
 
     def log_dict(self, dictionary: Mapping[str, Any], **kwargs: Any) -> None:
         """Filter non-loggable values before passing to Lightning's log_dict."""
@@ -63,9 +64,7 @@ class LightningModelWrapper(pl.LightningModule):
             return "mps"
         return "cpu"
 
-    def on_train_batch_end(
-        self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int
-    ) -> None:
+    def on_train_batch_end(self, outputs: STEP_OUTPUT, batch: Any, batch_idx: int) -> None:
         # Use Lightning's optimizers() API instead of storing self.optimizer
         optimizers = self.optimizers()
         if optimizers is not None:
@@ -93,22 +92,31 @@ class LightningModelWrapper(pl.LightningModule):
 
     def _forward(
         self,
-        batch: Dict[str, Any],
-        metrics: Optional[List[Any]] = None,
-    ) -> Dict[str, Any]:
+        batch: dict[str, Any],
+        metrics: list[Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Forward the batch through models, losses and metrics.
         If some parameters are needed, it's best to include in the batch.
         """
-        with autocast(device_type=self._autocast_device, enabled=self.use_mixed_precision):
+        device_type = self._autocast_device
+
+        # BF16 is not supported on all devices, and autocast sometimes fails on CPU
+        # if not explicitly supported. We'll be more conservative here.
+        enabled = self.use_mixed_precision
+        if device_type == "cpu" and enabled:
+            # Most CPUs don't support BF16/FP16 well in autocast unless using specific CPUs
+            # It's safer to disable for CPU unless it's explicitly managed by Lightning
+            enabled = False
+
+        with autocast(device_type=device_type, enabled=enabled):
             outputs = self.model.forward_batch(batch)
             if self.criterion is None:
                 loss = outputs["outputs"].get("loss", None)
                 loss_dict = outputs["outputs"].get("loss_dict", None)
                 if loss is None or loss_dict is None:
                     raise ValueError(
-                        "No loss found in model outputs. "
-                        "Please ensure the model returns a loss."
+                        "No loss found in model outputs. Please ensure the model returns a loss."
                     )
             else:
                 loss, loss_dict = self.criterion(outputs, batch)
@@ -123,22 +131,22 @@ class LightningModelWrapper(pl.LightningModule):
         """Return the number of trainable parameters."""
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-    def training_step(self, batch: Any, batch_idx: int) -> Dict[str, Any]:
+    def training_step(self, batch: Any, batch_idx: int) -> dict[str, Any]:
         outputs = self._forward(batch)
         self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
         return outputs
 
-    def validation_step(self, batch: Any, batch_idx: int) -> Dict[str, Any]:
+    def validation_step(self, batch: Any, batch_idx: int) -> dict[str, Any]:
         outputs = self._forward(batch, metrics=self.metrics)
         self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
         return outputs
 
-    def test_step(self, batch: Any, batch_idx: int) -> Dict[str, Any]:
+    def test_step(self, batch: Any, batch_idx: int) -> dict[str, Any]:
         outputs = self._forward(batch, metrics=self.metrics)
         self.log_dict(outputs["loss_dict"], prog_bar=True, on_step=True, on_epoch=False)
         return outputs
 
-    def predict_step(self, batch: Any, batch_idx: Optional[int] = None) -> Any:
+    def predict_step(self, batch: Any, batch_idx: int | None = None) -> Any:
         return self.model.get_prediction(batch)
 
     def configure_optimizers(self) -> Any:

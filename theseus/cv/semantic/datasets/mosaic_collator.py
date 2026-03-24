@@ -1,5 +1,4 @@
 import random
-from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -20,13 +19,11 @@ class MosaicCollator(BaseCollator):
 
     """
 
-    def __init__(
-        self, scale_range: Tuple[float, float] = (0.3, 0.7), p=0.5, **kwargs
-    ) -> None:
+    def __init__(self, scale_range: tuple[float, float] = (0.3, 0.7), p=0.5, **kwargs) -> None:
         self.scale_range = scale_range
         self.p = p
 
-    def __call__(self, batch: List[Dict]):
+    def __call__(self, batch: list[dict]):
         """
         batch: `List[Dict]`
             batch of tensor images and mask # (B,3,H,W), (B,NC,H,W)
@@ -65,12 +62,8 @@ class MosaicCollator(BaseCollator):
             candidate_images = set_images[candidate_indices, :]
             candidate_masks = set_masks[candidate_indices, :]
 
-            candidate_images = torch.cat(
-                [candidate_images, current_image.unsqueeze(0)], dim=0
-            )
-            candidate_masks = torch.cat(
-                [candidate_masks, current_mask.unsqueeze(0)], dim=0
-            )
+            candidate_images = torch.cat([candidate_images, current_image.unsqueeze(0)], dim=0)
+            candidate_masks = torch.cat([candidate_masks, current_mask.unsqueeze(0)], dim=0)
 
             shuffling_id = torch.randperm(candidate_images.size()[0])
             candidate_images = candidate_images[shuffling_id]

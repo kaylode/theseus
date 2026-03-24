@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import inspect
 import functools
-from typing import Any, Dict, Optional
+import inspect
+from typing import Any
 
 from omegaconf import DictConfig, ListConfig
 
 from theseus.registry import Registry
+
 
 # Cache for inspect.signature to avoid repeated introspection
 @functools.lru_cache(maxsize=256)
@@ -19,7 +20,7 @@ def get_instance_with_kwargs(
     registry: Registry,
     name: str,
     args: Any = None,
-    kwargs: Optional[Dict[str, Any]] = None,
+    kwargs: dict[str, Any] | None = None,
 ) -> Any:
     """
     Instantiate a class from registry by name, filtering kwargs to match
@@ -79,17 +80,12 @@ def get_instance_recursively(
     Supports nested lists, dicts, and DictConfig/ListConfig.
     """
     if isinstance(config, (list, tuple, ListConfig)):
-        return [
-            get_instance_recursively(item, registry=registry, **kwargs)
-            for item in config
-        ]
+        return [get_instance_recursively(item, registry=registry, **kwargs) for item in config]
 
     if isinstance(config, (dict, DictConfig)):
         if "name" in config:
             if registry:
-                args = get_instance_recursively(
-                    config.get("args", {}), registry, **kwargs
-                )
+                args = get_instance_recursively(config.get("args", {}), registry, **kwargs)
                 return get_instance_with_kwargs(registry, config["name"], args, kwargs)
         else:
             return {

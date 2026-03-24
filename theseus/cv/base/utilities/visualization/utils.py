@@ -30,7 +30,7 @@ def get_font_size(image, text, polygons, font_type):
     fontsize = 1  # starting font size
 
     polywidth = polygons[1][0] - polygons[0][0]
-    imagewidth = image.shape[1]
+    image.shape[1]
 
     # portion of image width you want text width to be
     img_fraction = 1

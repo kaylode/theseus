@@ -1,7 +1,4 @@
 import os
-from typing import List, Optional
-
-import pandas as pd
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
 
@@ -32,13 +29,9 @@ class ClassificationImageFolderDataset(ClassificationDataset):
     """
 
     def __init__(
-        self,
-        image_dir: str,
-        txt_classnames: str,
-        transform: Optional[List] = None,
-        **kwargs
+        self, image_dir: str, txt_classnames: str, transform: list | None = None, **kwargs
     ):
-        super(ClassificationImageFolderDataset, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.transform = transform
@@ -50,7 +43,7 @@ class ClassificationImageFolderDataset(ClassificationDataset):
         """
 
         # Get classnames
-        with open(self.txt_classnames, "r") as f:
+        with open(self.txt_classnames) as f:
             self.classnames = f.read().splitlines()
 
         # Mapping between classnames and indices

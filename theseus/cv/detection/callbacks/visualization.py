@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import lightning.pytorch as pl
 import matplotlib.patches as mpatches
@@ -27,10 +27,14 @@ class DetectionVisualizerCallback(Callback):
     def __init__(
         self,
         order: str = None,
-        mean: List[float] = [0.485, 0.456, 0.406],
-        std: List[float] = [0.229, 0.224, 0.225],
-        **kwargs
+        mean: list[float] = None,
+        std: list[float] = None,
+        **kwargs,
     ) -> None:
+        if std is None:
+            std = [0.229, 0.224, 0.225]
+        if mean is None:
+            mean = [0.485, 0.456, 0.406]
         super().__init__()
         self.visualizer = Visualizer()
         self.order = order
@@ -43,7 +47,6 @@ class DetectionVisualizerCallback(Callback):
         """
 
         iters = trainer.iterations
-        model = pl_module.model
         valloader = pl_module.datamodule.valloader
         trainloader = pl_module.datamodule.trainloader
         train_batch = next(iter(trainloader))
@@ -64,7 +67,7 @@ class DetectionVisualizerCallback(Callback):
         anns = train_batch["targets"]
 
         batch = []
-        for idx, (inputs, ann) in enumerate(zip(images, anns)):
+        for _idx, (inputs, ann) in enumerate(zip(images, anns)):
             boxes = ann["boxes"]
             labels = ann["labels"].numpy()
             img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
@@ -114,7 +117,7 @@ class DetectionVisualizerCallback(Callback):
         anns = val_batch["targets"]
 
         batch = []
-        for idx, (inputs, ann) in enumerate(zip(images, anns)):
+        for _idx, (inputs, ann) in enumerate(zip(images, anns)):
             boxes = ann["boxes"]
             labels = ann["labels"].numpy()
             img_show = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
@@ -193,7 +196,7 @@ class DetectionVisualizerCallback(Callback):
         preds = [i for i in zip(preds["boxes"], preds["confidences"], preds["labels"])]
 
         batch = []
-        for idx, (inputs, target, pred) in enumerate(zip(images, targets, preds)):
+        for _idx, (inputs, target, pred) in enumerate(zip(images, targets, preds)):
             # Ground truth
             boxes = target["boxes"]
             labels = target["labels"].numpy()
@@ -205,9 +208,7 @@ class DetectionVisualizerCallback(Callback):
 
             # Prediction
             boxes, scores, labels = pred
-            decode_pred = self.visualizer.denormalize(
-                inputs, mean=self.mean, std=self.std
-            )
+            decode_pred = self.visualizer.denormalize(inputs, mean=self.mean, std=self.std)
             self.visualizer.set_image(decode_pred.copy())
             self.visualizer.draw_bbox(boxes, labels=labels, scores=scores)
             decode_pred = self.visualizer.get_image()

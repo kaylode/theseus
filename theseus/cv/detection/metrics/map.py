@@ -86,8 +86,7 @@ class MeanAveragePrecision(Metric):
             gt_clss = gt["labels"].numpy().tolist()
 
             gt_instances = [
-                BoxWithLabel(self.idx, box, int(cls), 1.0)
-                for box, cls in zip(gt_boxes, gt_clss)
+                BoxWithLabel(self.idx, box, int(cls), 1.0) for box, cls in zip(gt_boxes, gt_clss)
             ]
             pred_instances = [
                 BoxWithLabel(self.idx, box, int(cls), scr)
@@ -120,7 +119,7 @@ class MeanAveragePrecision(Metric):
             instance_id = instance_info["image_id"]
             instance_name = instance_info["image_name"]
             height, width = instance_info["height"], instance_info["width"]
-            if instance_id not in self.image_id_dict.keys():
+            if instance_id not in self.image_id_dict:
                 self.image_id_dict[instance_id] = img_count
                 img_count += 1
                 image_id = self.image_id_dict[instance_id]
@@ -133,7 +132,6 @@ class MeanAveragePrecision(Metric):
                 my_dict["images"].append(img_dict)
 
             for item in instance:
-
                 class_id = int(item.get_label())
                 xmin, ymin, xmax, ymax = item.get_box()
 
@@ -204,8 +202,8 @@ class MeanAveragePrecision(Metric):
 
         if len(results) == 0:  # empty prediction
             return {
-                f"precision": 0,
-                f"recall": 0,
+                "precision": 0,
+                "recall": 0,
                 "f1_score": 0,
             }
 

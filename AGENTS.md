@@ -34,7 +34,7 @@ tests/              # Pytest suites for classification, semantic, tabular
 ## Key Commands
 ```bash
 # Install
-uv pip install -e '.[dev]'
+uv sync --all-extras
 
 # Run tests
 uv run pytest tests/ --capture=no
@@ -44,7 +44,7 @@ uv run ruff check theseus/
 uv run ruff format theseus/
 
 # Train (example)
-uv run python train.py --config-dir configs --config-name pipeline.yaml
+uv run train.py --config-dir configs --config-name pipeline.yaml
 ```
 
 ## Current Progress (v2.0 Update)

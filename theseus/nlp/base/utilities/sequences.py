@@ -9,7 +9,6 @@ def pad_sequences(
     truncating="pre",
     value=0.0,
 ):
-
     """
     Source: keras
     Pads sequences to the same length.
@@ -81,8 +80,7 @@ def pad_sequences(
                 flag = False
         except TypeError as e:
             raise ValueError(
-                "`sequences` must be a list of iterables. "
-                f"Found non-iterable: {str(x)}"
+                f"`sequences` must be a list of iterables. Found non-iterable: {str(x)}"
             ) from e
 
     if maxlen is None:

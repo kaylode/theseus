@@ -12,7 +12,7 @@ class ClassificationCELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
     def __init__(self, weight: List = None, **kwargs):
-        super(ClassificationCELoss, self).__init__()
+        super().__init__()
         if weight is not None:
             weight = torch.tensor(weight)
         self.criterion = nn.CrossEntropyLoss(
@@ -46,7 +46,7 @@ class ClassificationSmoothCELoss(nn.Module):
     r"""SmoothCELoss is warper of label smoothing cross-entropy loss"""
 
     def __init__(self, smoothing: float = 0.1, **kwargs):
-        super(ClassificationSmoothCELoss, self).__init__()
+        super().__init__()
         self.smooth_criterion = LabelSmoothingCrossEntropy(smoothing=smoothing)
         self.soft_criterion = SoftTargetCrossEntropy()
 
@@ -60,9 +60,7 @@ class ClassificationSmoothCELoss(nn.Module):
         target = batch["targets"]
 
         if pred.shape == target.shape:
-            loss, loss_dict = self.soft_criterion(
-                {"outputs": pred}, {"targets": target}, device
-            )
+            loss, loss_dict = self.soft_criterion({"outputs": pred}, {"targets": target}, device)
         else:
             # batch["targets"] = batch["targets"].view(-1).contiguous()
             loss, loss_dict = self.smooth_criterion(

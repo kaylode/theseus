@@ -1,4 +1,3 @@
-import os.path as osp
 import pickle
 
 from rank_bm25 import BM25L, BM25Okapi, BM25Plus
@@ -52,9 +51,7 @@ class BM25Retrieval(BaseRetrieval):
         for tokenized_query in tokenized_querys:
             scores = self.bm25.get_scores(tokenized_query).tolist()
             score_mapping = [(i, score) for i, score in enumerate(scores)]
-            sorted_scores = sorted(score_mapping, key=lambda x: x[1], reverse=True)[
-                :top_k
-            ]
+            sorted_scores = sorted(score_mapping, key=lambda x: x[1], reverse=True)[:top_k]
             results.append(sorted_scores)
         return results
 

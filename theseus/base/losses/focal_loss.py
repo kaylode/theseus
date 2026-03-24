@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -18,8 +18,8 @@ class FocalLoss(nn.Module):
 
     def forward(
         self,
-        outputs: Dict[str, Any],
-        batch: Dict[str, Any],
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
         device: torch.device = None,
     ):
         outputs = outputs["outputs"]
@@ -34,8 +34,6 @@ class FocalLoss(nn.Module):
             targets = nn.functional.one_hot(targets, num_classes=num_classes)
             targets = targets.float().squeeze()
 
-        loss = sigmoid_focal_loss(
-            outputs, targets, self.alpha, self.gamma, self.reduction
-        )
+        loss = sigmoid_focal_loss(outputs, targets, self.alpha, self.gamma, self.reduction)
         loss_dict = {"L": loss.item()}
         return loss, loss_dict

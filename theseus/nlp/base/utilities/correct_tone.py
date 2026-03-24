@@ -11,19 +11,17 @@ def normalize_diacritics(source, new_style=False, decomposed=False):
     diacritics = f"{combining_breve}{combining_circumflex_accent}{combining_horn}"
     result = unicodedata.normalize("NFD", source)
     # Put the tone on the second vowel
-    result = re.sub(r"(?i){}([aeiouy{}]+)".format(tone, diacritics), r"\2\1", result)
+    result = re.sub(rf"(?i){tone}([aeiouy{diacritics}]+)", r"\2\1", result)
     # Put the tone on the vowel with a diacritic
-    result = re.sub(r"(?i)(?<=[{}])(.){}".format(diacritics, tone), r"\2\1", result)
+    result = re.sub(rf"(?i)(?<=[{diacritics}])(.){tone}", r"\2\1", result)
     # For vowels that are not oa, oe, uy put the tone on the penultimate vowel
-    result = re.sub(r"(?i)(?<=[ae])([iouy]){}".format(tone), r"\2\1", result)
-    result = re.sub(r"(?i)(?<=[oy])([iuy]){}".format(tone), r"\2\1", result)
-    result = re.sub(r"(?i)(?<!q)(u)([aeiou]){}".format(tone), r"\1\3\2", result)
-    result = re.sub(r"(?i)(?<!g)(i)([aeiouy]){}".format(tone), r"\1\3\2", result)
+    result = re.sub(rf"(?i)(?<=[ae])([iouy]){tone}", r"\2\1", result)
+    result = re.sub(rf"(?i)(?<=[oy])([iuy]){tone}", r"\2\1", result)
+    result = re.sub(rf"(?i)(?<!q)(u)([aeiou]){tone}", r"\1\3\2", result)
+    result = re.sub(rf"(?i)(?<!g)(i)([aeiouy]){tone}", r"\1\3\2", result)
     if not new_style:
         # Put tone in the symmetrical position
-        result = re.sub(
-            r"(?i)(?<!q)([ou])([aeoy]){}(?!\w)".format(tone), r"\1\3\2", result
-        )
+        result = re.sub(rf"(?i)(?<!q)([ou])([aeoy]){tone}(?!\w)", r"\1\3\2", result)
     if decomposed:
         return unicodedata.normalize("NFD", result)
     return unicodedata.normalize("NFC", result)

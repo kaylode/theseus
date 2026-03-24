@@ -43,7 +43,7 @@ class RemoveStopwords(BaseProcessor):
 
     def __call__(self, x):
         tokens = word_tokenize(x)
-        tokens = [word for word in tokens if not word in self.stopwords_list]
+        tokens = [word for word in tokens if word not in self.stopwords_list]
         result = " ".join(tokens)
         return result
 
@@ -135,10 +135,10 @@ class RemoveEmoji(BaseProcessor):
     def __init__(self) -> None:
         self.regrex = re.compile(
             pattern="["
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            "\U0001f600-\U0001f64f"  # emoticons
+            "\U0001f300-\U0001f5ff"  # symbols & pictographs
+            "\U0001f680-\U0001f6ff"  # transport & map symbols
+            "\U0001f1e0-\U0001f1ff"  # flags (iOS)
             "]+",
             flags=re.UNICODE,
         )
@@ -178,7 +178,9 @@ class PreprocessCompose(BaseProcessor):
     :input: list of texts
     """
 
-    def __init__(self, preprocess_list=[]) -> None:
+    def __init__(self, preprocess_list=None) -> None:
+        if preprocess_list is None:
+            preprocess_list = []
         self.preprocess_list = preprocess_list
 
     def __call__(self, text):
@@ -188,7 +190,6 @@ class PreprocessCompose(BaseProcessor):
 
 
 if __name__ == "__main__":
-
     text = [
         "Nick likes to play football, however he is not too fond of tennis. \U0001f602",
         "Hello there, i'm Kay",

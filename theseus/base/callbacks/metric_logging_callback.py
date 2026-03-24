@@ -1,7 +1,6 @@
 import json
 import os
 import os.path as osp
-from typing import Dict
 
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import Callback
@@ -21,12 +20,10 @@ class MetricLoggerCallback(Callback):
     def __init__(self, save_json: bool = True, **kwargs) -> None:
         super().__init__()
         self.save_json = save_json
-        self.save_dir = kwargs.get("save_dir", None)
+        self.save_dir = kwargs.get("save_dir")
         self.output_dict = []
 
-    def on_validation_end(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ) -> None:
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """
         After finish validation
         """
@@ -94,23 +91,20 @@ class MetricLoggerCallback(Callback):
 
         LOGGER.log(log_dict)
 
-    def teardown(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
-    ) -> None:
+    def teardown(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
         """
         After finish everything
         """
 
-        if self.save_json:
-            if self.save_dir is not None:
-                save_dir = osp.join(self.save_dir, stage.capitalize())
-                os.makedirs(save_dir, exist_ok=True)
-                save_json = osp.join(save_dir, "metrics.json")
-                if len(self.output_dict) > 0:
-                    with open(save_json, "w") as f:
-                        json.dump(
-                            self.output_dict,
-                            f,
-                            indent=4,
-                            default=lambda x: "<not serializable>",
-                        )
+        if self.save_json and self.save_dir is not None:
+            save_dir = osp.join(self.save_dir, stage.capitalize())
+            os.makedirs(save_dir, exist_ok=True)
+            save_json = osp.join(save_dir, "metrics.json")
+            if len(self.output_dict) > 0:
+                with open(save_json, "w") as f:
+                    json.dump(
+                        self.output_dict,
+                        f,
+                        indent=4,
+                        default=lambda x: "<not serializable>",
+                    )

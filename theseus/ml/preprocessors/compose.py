@@ -1,10 +1,9 @@
-from typing import List
 
 from .base import Preprocessor
 
 
 class PreprocessCompose(Preprocessor):
-    def __init__(self, preproc_list: List[Preprocessor], **kwargs):
+    def __init__(self, preproc_list: list[Preprocessor], **kwargs):
         self.preproc_list = preproc_list
 
     def run(self, df):

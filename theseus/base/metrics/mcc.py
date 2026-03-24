@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from sklearn.metrics import matthews_corrcoef
 
@@ -17,14 +17,14 @@ class MCC(Metric):
         self.ignore_index = ignore_index
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
         targets = batch["targets"].cpu()
         outputs = outputs["outputs"].detach().cpu()
         outputs = logits2labels(outputs, label_type=self.type)
-        
+
         # Filter out ignored indices
         if self.ignore_index is not None:
             mask = targets != self.ignore_index

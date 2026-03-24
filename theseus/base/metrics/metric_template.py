@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any
 
 
 class Metric(ABC):
@@ -33,12 +33,12 @@ class Metric(ABC):
         pass
 
     @abstractmethod
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]) -> None:
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]) -> None:
         """Update metric state with new predictions and targets."""
         ...
 
     @abstractmethod
-    def value(self) -> Dict[str, Any]:
+    def value(self) -> dict[str, Any]:
         """Compute and return the metric value(s) as a dict."""
         ...
 

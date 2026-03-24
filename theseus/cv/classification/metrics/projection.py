@@ -1,6 +1,6 @@
 import hashlib
 import os
-from typing import Any, Dict
+from typing import Any
 
 import cv2
 import numpy as np
@@ -35,14 +35,12 @@ class EmbeddingProjection(Metric):
 
         os.makedirs(self.save_dir, exist_ok=True)
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
         features = outputs["features"].detach().cpu().numpy()
-        predictions = (
-            torch.argmax(outputs["outputs"].detach().cpu(), dim=1).numpy().tolist()
-        )
+        predictions = torch.argmax(outputs["outputs"].detach().cpu(), dim=1).numpy().tolist()
         inputs = batch["inputs"]
         if self.has_labels:
             targets = batch["targets"].numpy().tolist()
@@ -51,9 +49,7 @@ class EmbeddingProjection(Metric):
         for i, _ in enumerate(features):
             filename = hashlib.sha256(img_names[i].encode("utf-8")).hexdigest()
             pred_img = self.visualizer.denormalize(inputs[i])
-            pred_img = cv2.resize(
-                pred_img, dsize=(64, 64), interpolation=cv2.INTER_CUBIC
-            )
+            pred_img = cv2.resize(pred_img, dsize=(64, 64), interpolation=cv2.INTER_CUBIC)
 
             embedding_path = self.save_dir + r"/" + filename + "_feat.npy"
             image_path = self.save_dir + r"/" + filename + "_img.npy"
@@ -98,7 +94,7 @@ class EmbeddingProjection(Metric):
         self.logger.log(
             [
                 {
-                    "tag": f"Validation/projection",
+                    "tag": "Validation/projection",
                     "value": all_embeddings,
                     "type": LoggerObserver.EMBED,
                     "kwargs": {

@@ -28,4 +28,3 @@ CALLBACKS_REGISTRY.register(LossLoggerCallback)
 CALLBACKS_REGISTRY.register(MetricLoggerCallback)
 CALLBACKS_REGISTRY.register(TorchCheckpointCallback)
 CALLBACKS_REGISTRY.register(HuggingFaceHubCallback)
-

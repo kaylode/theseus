@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
@@ -30,7 +30,7 @@ class BalancedAccuracyMetric(Metric):
         self.ignore_index = ignore_index
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -40,7 +40,7 @@ class BalancedAccuracyMetric(Metric):
 
         outputs = outputs.detach().cpu()
         targets = targets.detach().cpu().view(-1)
-        
+
         # Filter out ignored indices
         if self.ignore_index is not None:
             mask = targets != self.ignore_index
@@ -61,7 +61,7 @@ class BalancedAccuracyMetric(Metric):
     def value(self):
         if len(self.targets) == 0:
             return {"bl_acc": 0.0}
-            
+
         self.get_all_unique_id()
 
         self.corrects = {str(k): 0 for k in self.unique_ids}

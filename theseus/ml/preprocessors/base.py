@@ -22,17 +22,13 @@ except:
 
 
 class Preprocessor:
-    def __init__(
-        self, column_names=None, exclude_columns=None, verbose=False, **kwargs
-    ):
+    def __init__(self, column_names=None, exclude_columns=None, verbose=False, **kwargs):
         self.verbose = verbose
         self.column_names = column_names
 
         self.filter = None
         if column_names is not None:
-            self.filter = FilterColumnNames(
-                patterns=column_names, excludes=exclude_columns
-            )
+            self.filter = FilterColumnNames(patterns=column_names, excludes=exclude_columns)
 
     def apply(self, df, function, parallel=True, axis=0, show_progress=True):
 

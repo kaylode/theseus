@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -124,12 +124,10 @@ class BasePipeline(_PipelineBase):
     def __init__(self, opt: DictConfig) -> None:
         super().__init__(opt)
 
-    def _init_transforms(self) -> Dict[str, Any]:
+    def _init_transforms(self) -> dict[str, Any]:
         """Initialize transforms, returning a dict with 'train'/'val' keys."""
         if self.transform_cfg is not None:
-            return get_instance_recursively(
-                self.transform_cfg, registry=self.transform_registry
-            )
+            return get_instance_recursively(self.transform_cfg, registry=self.transform_registry)
         return {"train": None, "val": None}
 
     def init_train_dataloader(self) -> None:
@@ -147,9 +145,7 @@ class BasePipeline(_PipelineBase):
         )
 
         self._log(f"Number of training samples: {len(self.train_dataset)}")
-        self._log(
-            f"Number of training iterations each epoch: {len(self.train_dataloader)}"
-        )
+        self._log(f"Number of training iterations each epoch: {len(self.train_dataloader)}")
 
     def init_validation_dataloader(self) -> None:
         self.transform = self._init_transforms()
@@ -171,9 +167,7 @@ class BasePipeline(_PipelineBase):
         self.classnames = getattr(self.val_dataset, "classnames", None)
 
         self._log(f"Number of validation samples: {len(self.val_dataset)}")
-        self._log(
-            f"Number of validation iterations each epoch: {len(self.val_dataloader)}"
-        )
+        self._log(f"Number of validation iterations each epoch: {len(self.val_dataloader)}")
 
     def _auto_split_dataset(self) -> None:
         """Auto-split training dataset when no validation set is provided."""
@@ -210,32 +204,50 @@ class BasePipeline(_PipelineBase):
         )
 
         self._log(f"Number of training samples: {len(self.train_dataset)}")
-        self._log(
-            f"Number of training iterations each epoch: {len(self.train_dataloader)}"
-        )
+        self._log(f"Number of training iterations each epoch: {len(self.train_dataloader)}")
 
     def init_test_dataloader(self) -> None:
+        """Initialize test dataset and dataloader, falling back to val if test is missing."""
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=self.transform_registry
         )
 
-        self.test_dataset = get_instance_recursively(
-            self.opt["data"]["dataset"]["test"],
-            registry=self.dataset_registry,
-            transform=self.transform.get("test", "val"),
+        transform_cfg = (
+            self.transform["test"] if "test" in self.transform else self.transform.get("val", None)
         )
+
+        test_data_cfg = self.opt["data"]["dataset"].get("test", None)
+        if test_data_cfg is None:
+            self._log(
+                "No test dataset found in config. Falling back to val dataset.",
+                level=LoggerObserver.WARN,
+            )
+            test_data_cfg = self.opt["data"]["dataset"].get("val")
+
+        self.test_dataset = get_instance_recursively(
+            test_data_cfg,
+            registry=self.dataset_registry,
+            transform=transform_cfg,
+        )
+
+        test_loader_cfg = self.opt["data"]["dataloader"].get("test", None)
+        if test_loader_cfg is None:
+            self._log(
+                "No test dataloader found in config. Falling back to val dataloader.",
+                level=LoggerObserver.WARN,
+            )
+            test_loader_cfg = self.opt["data"]["dataloader"].get("val")
+
         self.test_dataloader = get_instance_recursively(
-            self.opt["data"]["dataloader"]["test"],
+            test_loader_cfg,
             registry=self.dataloader_registry,
             dataset=self.test_dataset,
         )
 
-        self.classnames = getattr(self.test_dataloader, "classnames", None)
+        self.classnames = getattr(self.test_dataset, "classnames", None)
 
         self._log(f"Number of test samples: {len(self.test_dataset)}")
-        self._log(
-            f"Number of test iterations each epoch: {len(self.test_dataloader)}"
-        )
+        self._log(f"Number of test iterations each epoch: {len(self.test_dataloader)}")
 
     def init_datamodule(self) -> None:
         self.datamodule = LightningDataModuleWrapper(
@@ -254,7 +266,7 @@ class BasePipeline(_PipelineBase):
         )
         return model
 
-    def init_criterion(self) -> Optional[Any]:
+    def init_criterion(self) -> Any | None:
         CLASSNAMES = self.classnames
         if self.opt["loss"] is None:
             return None
@@ -273,7 +285,7 @@ class BasePipeline(_PipelineBase):
         num_epochs = self.opt["trainer"]["args"]["max_epochs"]
         batch_size = self.opt["data"]["dataloader"]["val"]["args"]["batch_size"]
         use_mixed_precision = self.opt["trainer"]["args"].get("precision", None)
-        use_mixed_precision = True if use_mixed_precision else False
+        use_mixed_precision = bool(use_mixed_precision)
 
         self.model = LightningModelWrapper(
             self.model,
@@ -321,7 +333,7 @@ class BasePipeline(_PipelineBase):
             classnames=CLASSNAMES,
         )
 
-    def init_callbacks(self) -> List[Any]:
+    def init_callbacks(self) -> list[Any]:
         callbacks = get_instance_recursively(
             self.opt["callbacks"],
             save_dir=getattr(self, "savedir", "runs"),
@@ -331,7 +343,7 @@ class BasePipeline(_PipelineBase):
         )
         return callbacks
 
-    def init_trainer(self, callbacks: List[Any]) -> None:
+    def init_trainer(self, callbacks: list[Any]) -> None:
         self.trainer = get_instance(
             self.opt["trainer"],
             default_root_dir=getattr(self, "savedir", "runs"),
@@ -353,7 +365,8 @@ class BasePipeline(_PipelineBase):
         if phase == "train":
             self.init_train_dataloader()
             self.init_validation_dataloader()
-            self.init_test_dataloader()
+            if "test" in self.opt["data"]["dataset"]:
+                self.init_test_dataloader()
             self.init_datamodule()
             self.init_metrics()
             self.init_model_with_loss()
@@ -373,16 +386,12 @@ class BasePipeline(_PipelineBase):
         if getattr(self.model, "metrics", None):
             callbacks.insert(
                 0,
-                self.callbacks_registry.get("MetricLoggerCallback")(
-                    save_dir=self.savedir
-                ),
+                self.callbacks_registry.get("MetricLoggerCallback")(save_dir=self.savedir),
             )
         callbacks.insert(
             0,
             self.callbacks_registry.get("LossLoggerCallback")(
-                print_interval=self.opt["trainer"]["args"].get(
-                    "log_every_n_steps", None
-                ),
+                print_interval=self.opt["trainer"]["args"].get("log_every_n_steps", None),
             ),
         )
         callbacks.insert(0, self.callbacks_registry.get("TimerCallback")())
@@ -399,7 +408,7 @@ class BasePipeline(_PipelineBase):
             ckpt_path=self.resume,
         )
 
-    def evaluate(self) -> Dict[str, Any]:
+    def evaluate(self) -> dict[str, Any]:
         """Run validation and return metrics."""
         self.init_pipeline(phase="validation")
         self.trainer.validate(
@@ -409,7 +418,7 @@ class BasePipeline(_PipelineBase):
         )
         return self.trainer.callback_metrics
 
-    def test(self) -> Dict[str, Any]:
+    def test(self) -> dict[str, Any]:
         """Run testing and return metrics."""
         self.init_pipeline(phase="test")
         self.trainer.test(
@@ -459,27 +468,37 @@ class BaseTestPipeline(_PipelineBase):
         )
 
         transform_cfg = (
-            self.transform["test"]
-            if "test" in self.transform
-            else self.transform["val"]
+            self.transform.get("test") if isinstance(self.transform, dict) else self.transform
         )
+        if transform_cfg is None:
+            transform_cfg = (
+                self.transform.get("val") if isinstance(self.transform, dict) else self.transform
+            )
+
+        # Handle both nested (data.dataset.test) and flat (data.dataset) configs
+        test_data_cfg = self.opt["data"]["dataset"]
+        if "name" not in test_data_cfg:
+            test_data_cfg = test_data_cfg.get("test") or test_data_cfg.get("val")
 
         self.dataset = get_instance(
-            self.opt["data"]["dataset"].get("test", "val"),
+            test_data_cfg,
             registry=DATASET_REGISTRY,
             transform=transform_cfg,
         )
 
+        # Handle both nested (data.dataloader.test) and flat (data.dataloader) configs
+        test_loader_cfg = self.opt["data"]["dataloader"]
+        if "name" not in test_loader_cfg:
+            test_loader_cfg = test_loader_cfg.get("test") or test_loader_cfg.get("val")
+
         self.dataloader = get_instance(
-            self.opt["data"]["dataloader"].get("test", "val"),
+            test_loader_cfg,
             registry=DATALOADER_REGISTRY,
             dataset=self.dataset,
         )
 
         self._log(f"Number of test samples: {len(self.dataset)}")
-        self._log(
-            f"Number of test iterations each epoch: {len(self.dataloader)}"
-        )
+        self._log(f"Number of test iterations each epoch: {len(self.dataloader)}")
 
     def init_model(self) -> None:
         CLASSNAMES = getattr(self.dataset, "classnames", None)
