@@ -13,6 +13,8 @@ from optuna.visualization import (
     plot_param_importances,
     plot_slice,
 )
+import wandb
+from optuna.integration.wandb import WeightsAndBiasesCallback
 
 from theseus.base.pipeline import BasePipeline
 from theseus.base.utilities.loggers import LoggerObserver
@@ -28,6 +30,7 @@ class OptunaWrapper:
         pruner=None,
         sampler=None,
         save_dir: str = None,
+        wandb_kwargs: dict = None,  # <-- Add this argument
     ) -> None:
 
         self.logger = LoggerObserver.getLogger("main")
@@ -38,6 +41,14 @@ class OptunaWrapper:
         self.pruner = pruner
         self.sampler = sampler
         self.save_dir = save_dir
+        self.wandb_kwargs = wandb_kwargs
+        self.WANDB_CALLBACK = None
+        if wandb_kwargs is not None:
+            self.WANDB_CALLBACK = WeightsAndBiasesCallback(
+                metric_name="auc",
+                wandb_kwargs=wandb_kwargs,
+                as_multirun=True
+            )
         if save_dir is not None:
             os.makedirs(save_dir, exist_ok=True)
 
@@ -69,7 +80,12 @@ class OptunaWrapper:
             trial, config, pipeline_class, trial_user_attrs, optuna_callback
         )
 
-        self.study.optimize(wrapped_objective, n_trials=self.n_trials)
+        callbacks = None
+        if self.WANDB_CALLBACK is not None:
+            decorator = self.WANDB_CALLBACK.track_in_wandb()
+            wrapped_objective = decorator(wrapped_objective)
+            callbacks = [self.WANDB_CALLBACK]
+        self.study.optimize(wrapped_objective, n_trials=self.n_trials, timeout=12*60*60, callbacks=callbacks)
         best_trial = self.study.best_trial
         self.save_best_config(self.save_dir, config, best_trial.params)
         self._rename_params()
@@ -85,7 +101,7 @@ class OptunaWrapper:
         save_dir = osp.join(save_dir, "best_configs")
         os.makedirs(save_dir, exist_ok=True)
 
-        with open(os.path.join(save_dir, "best_pipeline.yaml"), "w") as f:
+        with open(os.path.join(save_dir, f"{self.study_name}.yaml"), "w") as f:
             OmegaConf.save(config=config, f=f)
 
         self.logger.text(
@@ -170,13 +186,21 @@ class OptunaWrapper:
         )
 
         # Start training and evaluation
-        pipeline.fit()
-        score_dict = pipeline.evaluate()
+        try:
+            pipeline.fit()
+            score_dict = pipeline.evaluate()
+        except Exception as e:
+            self.logger.text(
+                f"Trial {trial.number} failed with exception: {e}",
+                level=LoggerObserver.ERROR,
+            )
+            score_dict = {}
+
         del tmp_config
 
         best_key = trial_user_attrs.get("best_key", None)
         if best_key is not None:
-            return float(score_dict[best_key])
+            return float(score_dict.get(best_key, -1))
         return score_dict
 
     def callback_hook(self, trial, init_trainer_function, callback_fn):
@@ -251,5 +275,9 @@ class OptunaWrapper:
                 f"{plot} is not supported by Optuna", level=LoggerObserver.ERROR
             )
             raise ValueError()
+
+        # Log to wandb if enabled
+        if plot != "all" and self.wandb_kwargs is not None and fig is not None:
+            wandb.log({f"Plot/{plot}": fig})
 
         return fig

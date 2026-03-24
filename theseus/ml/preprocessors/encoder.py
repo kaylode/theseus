@@ -93,8 +93,7 @@ class LabelEncode(Preprocessor):
                 df[column_name] = encoder.fit_transform(df[column_name].values).copy()
             elif self.engine == "polars":
                 import polars as pl
-
-                encoder.fit_transform(df[column_name].to_numpy())
+                encoder.fit_transform(df.select(column_name).unique().to_numpy().ravel())
                 le_name_mapping = dict(
                     zip(
                         encoder.classes_,

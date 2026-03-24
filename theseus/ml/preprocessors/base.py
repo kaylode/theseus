@@ -15,10 +15,10 @@ try:
     use_parallel = True
 except:
     use_parallel = False
-    LOGGER.text(
-        "pandarallel should be installed for parallerization. Using normal apply-function instead",
-        level=LoggerObserver.WARN,
-    )
+    # LOGGER.text(
+    #     "pandarallel should be installed for parallerization. Using normal apply-function instead",
+    #     level=LoggerObserver.WARN,
+    # )
 
 
 class Preprocessor:

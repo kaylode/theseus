@@ -8,6 +8,7 @@ from lightning.pytorch.callbacks import (
 from theseus.registry import Registry
 
 from .checkpoint_callback import TorchCheckpointCallback
+from .hub_callback import HuggingFaceHubCallback
 from .loss_logging_callback import LossLoggerCallback
 from .metric_logging_callback import MetricLoggerCallback
 from .timer_callback import TimerCallback
@@ -26,3 +27,5 @@ CALLBACKS_REGISTRY.register(EarlyStopping)
 CALLBACKS_REGISTRY.register(LossLoggerCallback)
 CALLBACKS_REGISTRY.register(MetricLoggerCallback)
 CALLBACKS_REGISTRY.register(TorchCheckpointCallback)
+CALLBACKS_REGISTRY.register(HuggingFaceHubCallback)
+

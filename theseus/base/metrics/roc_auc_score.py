@@ -8,13 +8,13 @@ try:
     has_scikitplot = True
 except:
     has_scikitplot = False
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, auc, precision_recall_curve
 
 from theseus.base.metrics.metric_template import Metric
 from theseus.base.utilities.cuda import detach, move_to
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.logits import logits2labels
-
+import numpy as np
 LOGGER = LoggerObserver.getLogger("main")
 
 
@@ -68,13 +68,47 @@ class ROCAUCScore(Metric):
                 multi_class=self.label_type,
             )
         except Exception as e:
-            LOGGER.text(
-                f"AUC score could not be calculated: {e}", level=LoggerObserver.WARN
+            try:
+                preds = np.array(self.preds)
+                if preds.ndim == 2:
+                    preds = preds[:, 1]
+                roc_auc_scr = roc_auc_score(
+                    self.targets,
+                    preds,
+                    average=self.average,
+                    multi_class=self.label_type,
+                )
+            except Exception as e:
+                LOGGER.text(
+                    f"AUC score could not be calculated: {e}", level=LoggerObserver.WARN
+                )
+                roc_auc_scr = 0
+
+        try:
+            precision, recall, _ = precision_recall_curve(
+                self.targets, self.preds, pos_label=1
             )
-            roc_auc_scr = 0
+            pr_auc = auc(recall, precision)
+        except Exception as e:
+            try:
+                preds = np.array(self.preds)
+                if preds.ndim == 2:
+                    preds = preds[:, 1]
+                precision, recall, _ = precision_recall_curve(
+                    self.targets, preds, pos_label=1
+                )
+                pr_auc = auc(recall, precision)
+            except Exception as e:
+
+                LOGGER.text(
+                    f"Precision-Recall AUC score could not be calculated: {e}",
+                    level=LoggerObserver.WARN,
+                )
+                pr_auc = 0
 
         results = {
             f"{self.average}-roc_auc_score": roc_auc_scr,
+            f"pr_auc_score": pr_auc,
         }
         if has_scikitplot and self.plot_curve:
             roc_curve_fig = plot_roc(self.targets, self.preds).get_figure()

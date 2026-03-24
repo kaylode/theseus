@@ -60,6 +60,8 @@ class TimerCallback(Callback):
         """
         After going to the training loop
         """
+        if getattr(trainer, "train_epoch_start_time", None) is None:
+            self.train_epoch_start_time = time.time()
         running_time = time.time() - self.train_epoch_start_time
         h, m, s = seconds_to_hours(running_time)
         LOGGER.text(
@@ -82,6 +84,8 @@ class TimerCallback(Callback):
         After finish validation
         """
 
+        if getattr(trainer, "val_epoch_start_time", None) is not None:
+            self.val_epoch_start_time = time.time()
         running_time = time.time() - self.val_epoch_start_time
         h, m, s = seconds_to_hours(running_time)
         LOGGER.text(

@@ -62,7 +62,7 @@ class LossLoggerCallback(Callback):
         if self.print_interval is None:
             self.print_interval = self.auto_get_print_interval(pl_module)
             LOGGER.text(
-                "Print interval not specified. Auto calculating...",
+                f"Print interval not specified. Auto calculated and set to {self.print_interval} iterations.",
                 level=LoggerObserver.DEBUG,
             )
 
@@ -81,6 +81,7 @@ class LossLoggerCallback(Callback):
             else self.params["testloader_length"]
         )
         print_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
+
         return print_interval
 
     def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
@@ -126,11 +127,13 @@ class LossLoggerCallback(Callback):
 
         # Running time since last interval
         batch_time = time.time() - self.running_time
+        if getattr(self, "running_time_list", None) is None:
+            self.running_time_list = []
         self.running_time_list.append(batch_time)
 
         # Logging
         if (
-            iters % self.print_interval == 0
+            (iters % self.print_interval == 0 and iters > 0 )
             or (iters + 1) % self.params["trainloader_length"] == 0
         ):
 

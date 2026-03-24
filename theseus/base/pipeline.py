@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -22,19 +25,50 @@ from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserv
 from theseus.base.utilities.seed import seed_everything
 
 
-class BasePipeline(object):
-    """docstring for BasePipeline."""
+class _PipelineBase:
+    """
+    Shared base for train/test pipelines, eliminating duplication of
+    globals initialization, registry setup, and logging.
+    """
 
-    def __init__(self, opt: DictConfig):
-        super(BasePipeline, self).__init__()
+    def __init__(self, opt: DictConfig) -> None:
         self.opt = opt
         self.seed = self.opt["global"].get("seed", 1702)
         seed_everything(self.seed)
+        self._initialized = False
 
-        self.initialized = False
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
 
-    def init_globals(self):
-        # Main Loggers
+    @initialized.setter
+    def initialized(self, value: bool) -> None:
+        self._initialized = value
+
+    def _log(self, msg: str, level: int = LoggerObserver.INFO) -> None:
+        """Convenience logging helper."""
+        self.logger.text(msg, level=level)
+
+    def _setup_savedir(self) -> str:
+        """Create and return the experiment save directory."""
+        exp_name = self.opt["global"].get("exp_name", None)
+        exist_ok = self.opt["global"].get("exist_ok", False)
+        save_dir = self.opt["global"].get("save_dir", "runs")
+
+        if exp_name:
+            savedir = os.path.join(save_dir, exp_name)
+            if not exist_ok:
+                savedir = get_new_folder_name(savedir)
+        else:
+            savedir = os.path.join(
+                save_dir,
+                datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+            )
+        os.makedirs(savedir, exist_ok=True)
+        return savedir
+
+    def init_globals(self) -> None:
+        """Initialize logger, experiment directory, and global variables."""
         self.logger = LoggerObserver.getLogger("main")
 
         # Global variables
@@ -43,47 +77,63 @@ class BasePipeline(object):
         self.debug = self.opt["global"].get("debug", False)
         self.resume = self.opt["global"].get("resume", None)
         self.pretrained = self.opt["global"].get("pretrained", None)
-        self.transform_cfg = self.opt["global"].get("cfg_transform", None)
 
-        # Experiment name
-        if self.exp_name:
-            self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "runs"), self.exp_name
-            )
-            if not self.exist_ok:
-                self.savedir = get_new_folder_name(self.savedir)
-        else:
-            self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "runs"),
-                datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-            )
-        os.makedirs(self.savedir, exist_ok=True)
+        # Setup save directory
+        self.savedir = self._setup_savedir()
 
-        # Logging to files
+        # File logging
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(file_logger)
 
-        # Logging images
+        # Image logging
         image_logger = ImageWriter(self.savedir)
         self.logger.subscribe(image_logger)
 
+        # Transform config
         self.transform_cfg = self.opt.get("augmentations", None)
 
-        # Logging out configs
-        self.logger.text("\n" + OmegaConf.to_yaml(self.opt), level=LoggerObserver.INFO)
-        self.logger.text(
-            f"Everything will be saved to {self.savedir}",
-            level=LoggerObserver.INFO,
+        # Log config
+        self._log("\n" + OmegaConf.to_yaml(self.opt))
+        self._log(f"Everything will be saved to {self.savedir}")
+
+    def init_registry(self) -> None:
+        """Initialize component registries. Override in subclass to extend."""
+        self.model_registry = MODEL_REGISTRY
+        self.dataset_registry = DATASET_REGISTRY
+        self.dataloader_registry = DATALOADER_REGISTRY
+        self.metric_registry = METRIC_REGISTRY
+        self.loss_registry = LOSS_REGISTRY
+        self.callbacks_registry = CALLBACKS_REGISTRY
+        self.trainer_registry = TRAINER_REGISTRY
+        self.transform_registry = TRANSFORM_REGISTRY
+        self._log(
+            "You should override the init_registry() function",
+            LoggerObserver.CRITICAL,
         )
 
-    def init_train_dataloader(self):
-        # DataLoaders
+
+class BasePipeline(_PipelineBase):
+    """
+    Full training pipeline that orchestrates all components:
+    globals → registry → data → model → callbacks → trainer.
+
+    Subclass this and override ``init_registry()`` to plug in task-specific
+    registries.
+    """
+
+    def __init__(self, opt: DictConfig) -> None:
+        super().__init__(opt)
+
+    def _init_transforms(self) -> Dict[str, Any]:
+        """Initialize transforms, returning a dict with 'train'/'val' keys."""
         if self.transform_cfg is not None:
-            self.transform = get_instance_recursively(
+            return get_instance_recursively(
                 self.transform_cfg, registry=self.transform_registry
             )
-        else:
-            self.transform = {"train": None, "val": None}
+        return {"train": None, "val": None}
+
+    def init_train_dataloader(self) -> None:
+        self.transform = self._init_transforms()
 
         self.train_dataset = get_instance_recursively(
             self.opt["data"]["dataset"]["train"],
@@ -96,66 +146,16 @@ class BasePipeline(object):
             dataset=self.train_dataset,
         )
 
-        self.logger.text(
-            f"Number of training samples: {len(self.train_dataset)}",
-            level=LoggerObserver.INFO,
-        )
-        self.logger.text(
-            f"Number of training iterations each epoch: {len(self.train_dataloader)}",
-            level=LoggerObserver.INFO,
+        self._log(f"Number of training samples: {len(self.train_dataset)}")
+        self._log(
+            f"Number of training iterations each epoch: {len(self.train_dataloader)}"
         )
 
-    def init_validation_dataloader(self):
-
-        # DataLoaders
-        if self.transform_cfg is not None:
-            self.transform = get_instance_recursively(
-                self.transform_cfg, registry=self.transform_registry
-            )
-        else:
-            self.transform = {"train": None, "val": None}
+    def init_validation_dataloader(self) -> None:
+        self.transform = self._init_transforms()
 
         if self.opt["data"]["dataset"].get("val", None) is None:
-            split_ratio = self.opt.data.get("auto_split_ratio", 0.8)
-            self.logger.text(
-                f"No validation dataset found. Auto splitting training dataset with ratio={split_ratio}.",
-                level=LoggerObserver.WARN,
-            )
-            train_size = int(len(self.train_dataset))
-            val_size = int(train_size * (1 - split_ratio))
-            train_dataset, val_dataset = (
-                Subset(self.train_dataset, indices=indices)
-                for indices in torch.split_with_sizes(
-                    torch.arange(train_size), [train_size - val_size, val_size]
-                )
-            )
-            attrs = dir(self.train_dataset)
-            for attr in attrs:
-                if not attr.startswith("__"):
-                    setattr(train_dataset, attr, getattr(self.train_dataset, attr))
-                    setattr(val_dataset, attr, getattr(self.train_dataset, attr))
-
-            # collate_fn = getattr(self.train_dataset, "collate_fn", None)
-            # setattr(train_dataset, "collate_fn", collate_fn)
-            # setattr(val_dataset, "collate_fn", collate_fn)
-            self.train_dataset = train_dataset
-            self.val_dataset = val_dataset
-
-            self.train_dataloader = get_instance_recursively(
-                self.opt["data"]["dataloader"]["train"],
-                registry=self.dataloader_registry,
-                dataset=self.train_dataset,
-            )
-
-            self.logger.text(
-                f"Number of training samples: {len(self.train_dataset)}",
-                level=LoggerObserver.INFO,
-            )
-            self.logger.text(
-                f"Number of training iterations each epoch: {len(self.train_dataloader)}",
-                level=LoggerObserver.INFO,
-            )
-
+            self._auto_split_dataset()
         else:
             self.val_dataset = get_instance_recursively(
                 self.opt["data"]["dataset"]["val"],
@@ -170,17 +170,51 @@ class BasePipeline(object):
         )
         self.classnames = getattr(self.val_dataset, "classnames", None)
 
-        self.logger.text(
-            f"Number of validation samples: {len(self.val_dataset)}",
-            level=LoggerObserver.INFO,
-        )
-        self.logger.text(
-            f"Number of validation iterations each epoch: {len(self.val_dataloader)}",
-            level=LoggerObserver.INFO,
+        self._log(f"Number of validation samples: {len(self.val_dataset)}")
+        self._log(
+            f"Number of validation iterations each epoch: {len(self.val_dataloader)}"
         )
 
-    def init_test_dataloader(self):
-        # Transforms & Datasets
+    def _auto_split_dataset(self) -> None:
+        """Auto-split training dataset when no validation set is provided."""
+        split_ratio = self.opt.data.get("auto_split_ratio", 0.8)
+        self._log(
+            f"No validation dataset found. Auto splitting training dataset "
+            f"with ratio={split_ratio}.",
+            level=LoggerObserver.WARN,
+        )
+        train_size = len(self.train_dataset)
+        val_size = int(train_size * (1 - split_ratio))
+
+        train_dataset, val_dataset = (
+            Subset(self.train_dataset, indices=indices)
+            for indices in torch.split_with_sizes(
+                torch.arange(train_size), [train_size - val_size, val_size]
+            )
+        )
+
+        # Copy attributes from original dataset to subsets
+        attrs = dir(self.train_dataset)
+        for attr in attrs:
+            if not attr.startswith("__"):
+                setattr(train_dataset, attr, getattr(self.train_dataset, attr))
+                setattr(val_dataset, attr, getattr(self.train_dataset, attr))
+
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
+
+        self.train_dataloader = get_instance_recursively(
+            self.opt["data"]["dataloader"]["train"],
+            registry=self.dataloader_registry,
+            dataset=self.train_dataset,
+        )
+
+        self._log(f"Number of training samples: {len(self.train_dataset)}")
+        self._log(
+            f"Number of training iterations each epoch: {len(self.train_dataloader)}"
+        )
+
+    def init_test_dataloader(self) -> None:
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=self.transform_registry
         )
@@ -198,23 +232,19 @@ class BasePipeline(object):
 
         self.classnames = getattr(self.test_dataloader, "classnames", None)
 
-        self.logger.text(
-            f"Number of test samples: {len(self.test_dataset)}",
-            level=LoggerObserver.INFO,
-        )
-        self.logger.text(
-            f"Number of test iterations each epoch: {len(self.test_dataloader)}",
-            level=LoggerObserver.INFO,
+        self._log(f"Number of test samples: {len(self.test_dataset)}")
+        self._log(
+            f"Number of test iterations each epoch: {len(self.test_dataloader)}"
         )
 
-    def init_datamodule(self):
+    def init_datamodule(self) -> None:
         self.datamodule = LightningDataModuleWrapper(
             trainloader=getattr(self, "train_dataloader", None),
             valloader=getattr(self, "val_dataloader", None),
             testloader=getattr(self, "test_dataloader", None),
         )
 
-    def init_model(self):
+    def init_model(self) -> Any:
         CLASSNAMES = self.classnames
         model = get_instance(
             self.opt["model"],
@@ -224,8 +254,11 @@ class BasePipeline(object):
         )
         return model
 
-    def init_criterion(self):
+    def init_criterion(self) -> Optional[Any]:
         CLASSNAMES = self.classnames
+        if self.opt["loss"] is None:
+            return None
+
         self.criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
@@ -234,19 +267,22 @@ class BasePipeline(object):
         )
         return self.criterion
 
-    def init_model_with_loss(self, is_train=True):
+    def init_model_with_loss(self, is_train: bool = True) -> None:
         self.model = self.init_model()
         criterion = self.init_criterion()
         num_epochs = self.opt["trainer"]["args"]["max_epochs"]
         batch_size = self.opt["data"]["dataloader"]["val"]["args"]["batch_size"]
+        use_mixed_precision = self.opt["trainer"]["args"].get("precision", None)
+        use_mixed_precision = True if use_mixed_precision else False
 
         self.model = LightningModelWrapper(
             self.model,
             criterion,
+            use_mixed_precision=use_mixed_precision,
             datamodule=getattr(self, "datamodule", None),
             metrics=getattr(self, "metrics", None),
-            optimizer_config=self.opt["optimizer"] if is_train else None,
-            scheduler_config=self.opt["scheduler"] if is_train else None,
+            optimizer_config=self.opt.get("optimizer", None) if is_train else None,
+            scheduler_config=self.opt.get("scheduler", None) if is_train else None,
             scheduler_kwargs={
                 "num_epochs": num_epochs,
                 "num_iterations": num_epochs * len(self.train_dataloader),
@@ -259,21 +295,25 @@ class BasePipeline(object):
 
         pretrained = self.opt["global"].get("pretrained", None)
         if pretrained:
-            state_dict = torch.load(pretrained, map_location="cpu")
+            state_dict = torch.load(pretrained, map_location="cpu", weights_only=False)
             try:
                 self.model.load_state_dict(state_dict["state_dict"], strict=False)
-                self.logger.text(
+                self._log(
                     f"Loaded pretrained model from {pretrained}",
                     level=LoggerObserver.SUCCESS,
                 )
             except Exception as e:
-                self.logger.text(
+                self._log(
                     f"Loaded pretrained model from {pretrained}. Mismatched keys: {e}",
                     level=LoggerObserver.WARN,
                 )
 
-    def init_metrics(self):
+    def init_metrics(self) -> None:
         CLASSNAMES = self.classnames
+        if self.opt["metrics"] is None:
+            self.metrics = None
+            return
+
         self.metrics = get_instance_recursively(
             self.opt["metrics"],
             registry=self.metric_registry,
@@ -281,7 +321,7 @@ class BasePipeline(object):
             classnames=CLASSNAMES,
         )
 
-    def init_callbacks(self):
+    def init_callbacks(self) -> List[Any]:
         callbacks = get_instance_recursively(
             self.opt["callbacks"],
             save_dir=getattr(self, "savedir", "runs"),
@@ -291,7 +331,7 @@ class BasePipeline(object):
         )
         return callbacks
 
-    def init_trainer(self, callbacks):
+    def init_trainer(self, callbacks: List[Any]) -> None:
         self.trainer = get_instance(
             self.opt["trainer"],
             default_root_dir=getattr(self, "savedir", "runs"),
@@ -300,29 +340,16 @@ class BasePipeline(object):
             registry=self.trainer_registry,
         )
 
-    def save_configs(self):
+    def save_configs(self) -> None:
         with open(os.path.join(self.savedir, "pipeline.yaml"), "w") as f:
             OmegaConf.save(config=self.opt, f=f)
 
-    def init_registry(self):
-        self.model_registry = MODEL_REGISTRY
-        self.dataset_registry = DATASET_REGISTRY
-        self.dataloader_registry = DATALOADER_REGISTRY
-        self.metric_registry = METRIC_REGISTRY
-        self.loss_registry = LOSS_REGISTRY
-        self.callbacks_registry = CALLBACKS_REGISTRY
-        self.trainer_registry = TRAINER_REGISTRY
-        self.transform_registry = TRANSFORM_REGISTRY
-        self.logger.text(
-            "You should override the init_registry() function",
-            LoggerObserver.CRITICAL,
-        )
-
-    def init_pipeline(self, phase: str = "train"):
+    def init_pipeline(self, phase: str = "train") -> None:
         if self.initialized:
             return
         self.init_globals()
         self.init_registry()
+
         if phase == "train":
             self.init_train_dataloader()
             self.init_validation_dataloader()
@@ -339,9 +366,10 @@ class BasePipeline(object):
                 self.init_validation_dataloader()
             self.init_datamodule()
             self.init_metrics()
-            self.init_model_with_loss(is_train=(phase == "train"))
+            self.init_model_with_loss(is_train=False)
             callbacks = []
 
+        # Always add core callbacks
         if getattr(self.model, "metrics", None):
             callbacks.insert(
                 0,
@@ -349,21 +377,21 @@ class BasePipeline(object):
                     save_dir=self.savedir
                 ),
             )
-        if getattr(self.model, "criterion", None):
-            callbacks.insert(
-                0,
-                self.callbacks_registry.get("LossLoggerCallback")(
-                    print_interval=self.opt["trainer"]["args"].get(
-                        "log_every_n_steps", None
-                    ),
+        callbacks.insert(
+            0,
+            self.callbacks_registry.get("LossLoggerCallback")(
+                print_interval=self.opt["trainer"]["args"].get(
+                    "log_every_n_steps", None
                 ),
-            )
+            ),
+        )
         callbacks.insert(0, self.callbacks_registry.get("TimerCallback")())
 
         self.init_trainer(callbacks)
         self.initialized = True
 
-    def fit(self):
+    def fit(self) -> None:
+        """Run the full training pipeline."""
         self.init_pipeline(phase="train")
         self.trainer.fit(
             model=self.model,
@@ -371,82 +399,61 @@ class BasePipeline(object):
             ckpt_path=self.resume,
         )
 
-    def evaluate(self):
+    def evaluate(self) -> Dict[str, Any]:
+        """Run validation and return metrics."""
         self.init_pipeline(phase="validation")
         self.trainer.validate(
             model=self.model,
             datamodule=self.datamodule,
             ckpt_path=self.resume,
         )
-
         return self.trainer.callback_metrics
 
-    def test(self):
+    def test(self) -> Dict[str, Any]:
+        """Run testing and return metrics."""
         self.init_pipeline(phase="test")
         self.trainer.test(
             model=self.model,
             datamodule=self.datamodule,
             ckpt_path=self.resume,
         )
-
         return self.trainer.callback_metrics
 
 
-class BaseTestPipeline(object):
-    def __init__(self, opt: DictConfig):
+class BaseTestPipeline(_PipelineBase):
+    """
+    Lightweight pipeline for inference/testing only.
+    Shares globals/registry init logic with ``BasePipeline`` via ``_PipelineBase``.
+    """
 
-        super(BaseTestPipeline, self).__init__()
-        self.opt = opt
-        self.seed = self.opt["global"].get("seed", 1702)
-        seed_everything(self.seed)
+    def __init__(self, opt: DictConfig) -> None:
+        super().__init__(opt)
 
-    def init_globals(self):
-        # Main Loggers
+    def init_globals(self) -> None:
+        """Initialize globals without image writer (not needed for inference)."""
         self.logger = LoggerObserver.getLogger("main")
 
-        # Global variables
         self.exp_name = self.opt["global"].get("exp_name", None)
         self.exist_ok = self.opt["global"].get("exist_ok", False)
         self.debug = self.opt["global"].get("debug", False)
         self.transform_cfg = self.opt["global"].get("cfg_transform", None)
 
-        # Experiment name
-        if self.exp_name:
-            self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "runs"), self.exp_name
-            )
-            if not self.exist_ok:
-                self.savedir = get_new_folder_name(self.savedir)
-        else:
-            self.savedir = os.path.join(
-                self.opt["global"].get("save_dir", "runs"),
-                datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-            )
-        os.makedirs(self.savedir, exist_ok=True)
-
+        self.savedir = self._setup_savedir()
         self.transform_cfg = self.opt.get("augmentations", None)
 
-        # Logging to files
         file_logger = FileLogger(__name__, self.savedir, debug=self.debug)
         self.logger.subscribe(file_logger)
-        self.logger.text(self.opt, level=LoggerObserver.INFO)
-        self.logger.text(
-            f"Everything will be saved to {self.savedir}",
-            level=LoggerObserver.INFO,
-        )
+        self._log(str(self.opt))
+        self._log(f"Everything will be saved to {self.savedir}")
 
-    def init_registry(self):
+    def init_registry(self) -> None:
         self.model_registry = MODEL_REGISTRY
         self.dataset_registry = DATASET_REGISTRY
         self.dataloader_registry = DATALOADER_REGISTRY
         self.transform_registry = TRANSFORM_REGISTRY
-        self.logger.text(
-            "You should override the init_registry() function",
-            LoggerObserver.INFO,
-        )
+        self._log("You should override the init_registry() function")
 
-    def init_test_dataloader(self):
-        # Transforms & Datasets
+    def init_test_dataloader(self) -> None:
         self.transform = get_instance_recursively(
             self.transform_cfg, registry=self.transform_registry
         )
@@ -469,16 +476,12 @@ class BaseTestPipeline(object):
             dataset=self.dataset,
         )
 
-        self.logger.text(
-            f"Number of test samples: {len(self.dataset)}",
-            level=LoggerObserver.INFO,
-        )
-        self.logger.text(
-            f"Number of test iterations each epoch: {len(self.dataloader)}",
-            level=LoggerObserver.INFO,
+        self._log(f"Number of test samples: {len(self.dataset)}")
+        self._log(
+            f"Number of test iterations each epoch: {len(self.dataloader)}"
         )
 
-    def init_model(self):
+    def init_model(self) -> None:
         CLASSNAMES = getattr(self.dataset, "classnames", None)
         self.model = get_instance(
             self.opt["model"],
@@ -489,18 +492,18 @@ class BaseTestPipeline(object):
         self.model = LightningModelWrapper(self.model)
         self.model.eval()
 
-    def init_loading(self):
+    def init_loading(self) -> None:
         self.weights = self.opt["global"].get("pretrained", None)
         if self.weights:
-            state_dict = torch.load(self.weights, map_location="cpu")
-            self.model.load_state_dict(state_dict["state_dict"])
+            state_dict = torch.load(self.weights, map_location="cpu", weights_only=False)
+            self.model.load_state_dict(state_dict["state_dict"], strict=False)
 
-    def init_pipeline(self):
+    def init_pipeline(self) -> None:
         self.init_globals()
         self.init_registry()
         self.init_test_dataloader()
         self.init_model()
         self.init_loading()
 
-    def inference(self):
+    def inference(self) -> Any:
         raise NotImplementedError()

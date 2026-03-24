@@ -6,12 +6,11 @@ from torch import nn
 from theseus.base.utilities.cuda import move_to
 
 
-class MeanSquaredErrorLoss(nn.Module):
-    r"""MSELoss is warper of mean square error loss"""
+class MeanAbsoluteErrorLoss(nn.Module):
+    r"""MSELoss is warper of mean absolute error loss"""
 
     def __init__(self, **kwargs):
-        super(MeanSquaredErrorLoss, self).__init__()
-        self.criterion = nn.MSELoss()
+        super(MeanAbsoluteErrorLoss, self).__init__()
 
     def forward(
         self,
@@ -26,9 +25,11 @@ class MeanSquaredErrorLoss(nn.Module):
             target = batch["targets"]
 
         if pred.shape == target.shape:
-            loss = self.criterion(pred, target)
+            loss = torch.mean(torch.abs(pred - target))
         else:
-            loss = self.criterion(pred.squeeze(-1), target.view(-1).contiguous())
+            # If the shapes are different, we can use MSELoss
+            loss = torch.mean(torch.abs(pred.squeeze(-1) - target.view(-1).contiguous()))
 
-        loss_dict = {"MSE": loss.item()}
+
+        loss_dict = {"MAE": loss.item()}
         return loss, loss_dict

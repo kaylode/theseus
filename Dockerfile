@@ -1,17 +1,17 @@
-# syntax = docker/dockerfile:experimental
+# syntax = docker/dockerfile:1
 #
-# NOTE: To build this you will need a docker version > 18.06 with
-#       experimental enabled and DOCKER_BUILDKIT=1
+# Multi-stage Dockerfile for Theseus v2.0
+# Requires Docker BuildKit (DOCKER_BUILDKIT=1)
 #
-#       If you do not use buildkit you are not going to have a good time
-#
-#       For reference:
-#           https://docs.docker.com/develop/develop-images/build_enhancements/
-ARG BASE_IMAGE=ubuntu:18.04
+ARG BASE_IMAGE=nvidia/cuda:12.4.1-devel-ubuntu22.04
 
-# Instal basic utilities
-FROM ${BASE_IMAGE} as dev-base
-RUN  apt-get clean && apt-get update && apt-get upgrade && apt-get install -y --no-install-recommends \
+# =============================================================================
+# Stage 1: System dependencies
+# =============================================================================
+FROM ${BASE_IMAGE} AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     ccache \
@@ -22,49 +22,53 @@ RUN  apt-get clean && apt-get update && apt-get upgrade && apt-get install -y --
     wget \
     libjpeg-dev \
     zip \
-    swig python3-dev \
-    unzip bzip2 ffmpeg libsm6 libxext6 \
-    libpng-dev && \
-    rm -rf /var/lib/apt/lists/*
-RUN /usr/sbin/update-ccache-symlinks
-RUN mkdir /opt/ccache && ccache --set-config=cache_dir=/opt/ccache
-ENV PATH /opt/conda/bin:$PATH
+    unzip \
+    bzip2 \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libpng-dev \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instal environment
-FROM dev-base as conda-installs
-ARG PYTHON_VERSION=3.9
-ARG CUDA_VERSION=11.3
-ARG PYTORCH_VERSION=1.12.1
-ARG CUDA_CHANNEL=nvidia
-ARG INSTALL_CHANNEL=pytorch
-ENV CONDA_OVERRIDE_CUDA=${CUDA_VERSION}
-RUN curl -fsSL -v -o ~/mambaforge.sh -O https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh && \
-    chmod +x ~/mambaforge.sh && \
-    ~/mambaforge.sh -b -p /opt/mamba && \
-    rm ~/mambaforge.sh && \
-    /opt/mamba/bin/mamba install -c "${INSTALL_CHANNEL}" -c "${CUDA_CHANNEL}" -y \
-    python=${PYTHON_VERSION} \
-    pytorch=${PYTORCH_VERSION} torchvision "cudatoolkit=${CUDA_VERSION}" && \
-    /opt/mamba/bin/mamba clean -ya
+# Install uv for fast Python package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-ENV PATH /opt/mamba/bin:$PATH
-ENV NVIDIA_VISIBLE_DEVICES all
-ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
-ENV PYTORCH_VERSION ${PYTORCH_VERSION}
+# =============================================================================
+# Stage 2: Python dependencies
+# =============================================================================
+FROM base AS deps
 
-# Install dependencies
+WORKDIR /workspace
+COPY pyproject.toml setup.py ./
+COPY theseus/__init__.py theseus/__init__.py
+
+# Install PyTorch with CUDA 12.4 support
+RUN uv pip install --system \
+    torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# Install theseus with all optional dependencies
 COPY ./ /workspace/
-WORKDIR /workspace/
-RUN /opt/mamba/bin/python -m pip install --upgrade pip && \
-    /opt/mamba/bin/python -m pip install -e .[cv,cv_classification,cv_semantic,cv_detection,nlp,nlp_retrieval,ml,dev] && \
-    /opt/mamba/bin/python -m pip install dvc dvc-gdrive && \
-    /opt/mamba/bin/python -m pip install -U timm
+RUN uv pip install --system -e ".[all,dev]"
 
-# Pull data from GDrive
+# Install DVC for data versioning
+RUN uv pip install --system dvc dvc-gdrive
+
+# =============================================================================
+# Stage 3: Data + Runtime
+# =============================================================================
+FROM deps AS runtime
+
+WORKDIR /workspace
+
+# Pull data from GDrive (requires credentials secret)
 RUN --mount=type=secret,id=credentials \
-  CREDENTIALS=$(cat /run/secrets/credentials) \
-  && echo "$CREDENTIALS" > /workspace/credentials.json
+    CREDENTIALS=$(cat /run/secrets/credentials) \
+    && echo "$CREDENTIALS" > /workspace/credentials.json
 RUN dvc remote modify gdrive --local gdrive_user_credentials_file /workspace/credentials.json
 RUN dvc pull
 

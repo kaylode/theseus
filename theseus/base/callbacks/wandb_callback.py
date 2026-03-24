@@ -6,11 +6,13 @@ from typing import Dict
 
 import lightning.pytorch as pl
 from deepdiff import DeepDiff
+from deepdiff.helper import SetOrdered
 from lightning.pytorch.callbacks import Callback
 from omegaconf import DictConfig, OmegaConf
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
 from theseus.base.utilities.loggers.wandb_logger import WandbLogger, find_run_id
+from lightning.pytorch.utilities.model_summary import summarize
 
 try:
     import wandb as wandblogger
@@ -23,20 +25,26 @@ LOGGER = LoggerObserver.getLogger("main")
 def pretty_print_diff(diff):
     texts = []
     for type_key in diff.keys():
-        for config_key in diff[type_key].keys():
-            if type_key == "values_changed":
-                texts.append(
-                    config_key
-                    + ": "
-                    + str(diff[type_key][config_key]["old_value"])
-                    + "-->"
-                    + str(diff[type_key][config_key]["new_value"])
-                )
-            elif "item_removed" in type_key:
-                texts.append(config_key + ": " + str(diff[type_key][config_key]))
-            elif "item_added" in type_key:
-                texts.append(config_key + ": " + str(diff[type_key][config_key]))
-
+        try:
+            for config_key in diff[type_key].keys():
+                if type_key == "values_changed":
+                    texts.append(
+                        config_key
+                        + ": "
+                        + str(diff[type_key][config_key]["old_value"])
+                        + "-->"
+                        + str(diff[type_key][config_key]["new_value"])
+                    )
+                elif "item_removed" in type_key:
+                    texts.append(config_key + ": " + str(diff[type_key][config_key]))
+                elif "item_added" in type_key:
+                    texts.append(config_key + ": " + str(diff[type_key][config_key]))
+        except:
+            texts.append(
+                str(type_key)
+                + ": "
+                + str(diff[type_key])
+            )
     return "\n".join(texts)
 
 
@@ -62,6 +70,7 @@ class WandbCallback(Callback):
         save_dir: str = None,
         resume: str = None,
         config_dict: DictConfig = None,
+        log_checkpoints: bool = True,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -71,6 +80,7 @@ class WandbCallback(Callback):
         self.resume = resume
         self.save_dir = save_dir
         self.config_dict = config_dict
+        self.log_checkpoints = log_checkpoints
 
         # A hack, not good
         if self.save_dir is None:
@@ -101,6 +111,7 @@ class WandbCallback(Callback):
                 # Check if the config remains the same, if not, create new run id
                 old_config_dict = OmegaConf.load(old_config_path)
                 tmp_config_dict = deepcopy(self.config_dict)
+                tmp_config_dict = DictConfig(tmp_config_dict)
                 ## strip off global key because `resume` will always different
                 old_config_dict.pop("global", None)
                 OmegaConf.set_struct(tmp_config_dict, False)
@@ -129,7 +140,7 @@ class WandbCallback(Callback):
                     )
 
                     answer = int(input())
-                    assert answer in [1, 2], "Wrong input"
+                    assert answer in [1, 2, 3], "Wrong input"
                     if answer == 2:
                         LOGGER.text(
                             "Creating new wandb run...",
@@ -179,30 +190,63 @@ class WandbCallback(Callback):
             f.write(self.id)
 
         # Save all config files
-        self.wandb_logger.log_file(
-            tag="configs",
-            base_folder=self.save_dir,
-            value=osp.join(self.save_dir, "*.yaml"),
+        if self.log_checkpoints:
+            self.wandb_logger.log_file(
+                tag="configs",
+                base_folder=self.save_dir,
+                value=osp.join(self.save_dir, "*.yaml"),
+            )
+
+
+        summary = summarize(pl_module, max_depth=3)
+
+        LOGGER.text(
+            f"Model summary:\n{summary}",
+            level=LoggerObserver.INFO,
         )
+
+        total_params = summary.total_parameters
+        total_trainable_params = summary.trainable_parameters
+
+        # Log learning rates
+        log_dict = [{
+            "tag": "Training/Total no. parameters",
+            "value": total_params,
+            "type": LoggerObserver.SCALAR,
+            "kwargs": {"step": 0},
+        }]
+
+        log_dict.append({
+            "tag": "Training/Total no. trainable parameters",
+            "value": total_trainable_params,
+            "type": LoggerObserver.SCALAR,
+            "kwargs": {"step": 0},
+        })
+        
+        LOGGER.log(log_dict)
+
+
 
     def teardown(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str):
         """
         After finish training
         """
         base_folder = osp.join(self.save_dir, "checkpoints")
-        self.wandb_logger.log_file(
-            tag="checkpoint",
-            base_folder=self.save_dir,
-            value=osp.join(base_folder, "*.ckpt"),
-        )
+        if self.log_checkpoints:
+            self.wandb_logger.log_file(
+                tag="checkpoint",
+                base_folder=self.save_dir,
+                value=osp.join(base_folder, "*.ckpt"),
+            )
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         """
         On validation batch (iteration) end
         """
         base_folder = osp.join(self.save_dir, "checkpoints")
-        self.wandb_logger.log_file(
-            tag="checkpoint",
-            base_folder=self.save_dir,
-            value=osp.join(base_folder, "*.ckpt"),
-        )
+        if self.log_checkpoints:
+            self.wandb_logger.log_file(
+                tag="checkpoint",
+                base_folder=self.save_dir,
+                value=osp.join(base_folder, "*.ckpt"),
+            )
