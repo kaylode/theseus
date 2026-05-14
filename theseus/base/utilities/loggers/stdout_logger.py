@@ -1,5 +1,5 @@
 import sys
-
+import os
 from loguru import logger
 
 from .observer import LoggerObserver, LoggerSubscriber

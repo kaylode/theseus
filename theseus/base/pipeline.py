@@ -23,6 +23,7 @@ from theseus.base.utilities.folder import get_new_folder_name
 from theseus.base.utilities.getter import get_instance, get_instance_recursively
 from theseus.base.utilities.loggers import FileLogger, ImageWriter, LoggerObserver
 from theseus.base.utilities.seed import seed_everything
+import torch
 
 
 class _PipelineBase:
@@ -69,6 +70,9 @@ class _PipelineBase:
 
     def init_globals(self) -> None:
         """Initialize logger, experiment directory, and global variables."""
+        # Set float32 matmul precision for Tensor Cores (e.g., A100)
+        torch.set_float32_matmul_precision("medium")
+
         self.logger = LoggerObserver.getLogger("main")
 
         # Global variables
@@ -257,7 +261,7 @@ class BasePipeline(_PipelineBase):
         )
 
     def init_model(self) -> Any:
-        CLASSNAMES = self.classnames
+        CLASSNAMES = getattr(self, "classnames", None)
         model = get_instance(
             self.opt["model"],
             registry=self.model_registry,
@@ -267,10 +271,10 @@ class BasePipeline(_PipelineBase):
         return model
 
     def init_criterion(self) -> Any | None:
-        CLASSNAMES = self.classnames
         if self.opt["loss"] is None:
             return None
 
+        CLASSNAMES = getattr(self, "classnames", None)
         self.criterion = get_instance_recursively(
             self.opt["loss"],
             registry=self.loss_registry,
@@ -285,7 +289,7 @@ class BasePipeline(_PipelineBase):
         num_epochs = self.opt["trainer"]["args"]["max_epochs"]
         batch_size = self.opt["data"]["dataloader"]["val"]["args"]["batch_size"]
         use_mixed_precision = self.opt["trainer"]["args"].get("precision", None)
-        use_mixed_precision = bool(use_mixed_precision)
+        use_mixed_precision = '-mixed' in use_mixed_precision
 
         self.model = LightningModelWrapper(
             self.model,
@@ -344,11 +348,15 @@ class BasePipeline(_PipelineBase):
         return callbacks
 
     def init_trainer(self, callbacks: list[Any]) -> None:
+        # Check if we already have a ModelSummary callback to avoid redundancy warning
+        has_summary = any("ModelSummary" in str(type(c)) for c in callbacks)
+
         self.trainer = get_instance(
             self.opt["trainer"],
             default_root_dir=getattr(self, "savedir", "runs"),
             deterministic="warn",
             callbacks=callbacks,
+            enable_model_summary=not has_summary,
             registry=self.trainer_registry,
         )
 
@@ -440,6 +448,9 @@ class BaseTestPipeline(_PipelineBase):
 
     def init_globals(self) -> None:
         """Initialize globals without image writer (not needed for inference)."""
+        # Set float32 matmul precision for Tensor Cores (e.g., A100)
+        torch.set_float32_matmul_precision("medium")
+
         self.logger = LoggerObserver.getLogger("main")
 
         self.exp_name = self.opt["global"].get("exp_name", None)

@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 try:
+    from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+    from torch.utils.tensorboard import SummaryWriter
+    from torchvision.transforms import ToTensor
     import tensorboard as tb
     import tensorflow as tf
 
@@ -17,8 +19,6 @@ try:
 except:
     pass
 
-from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import ToTensor
 
 from .observer import LoggerObserver, LoggerSubscriber
 

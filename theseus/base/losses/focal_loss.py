@@ -2,8 +2,10 @@ from typing import Any
 
 import torch
 import torch.nn as nn
-from torchvision.ops.focal_loss import sigmoid_focal_loss
-
+try:
+    from torchvision.ops.focal_loss import sigmoid_focal_loss
+except:
+    pass
 from theseus.base.utilities.cuda import move_to
 
 
