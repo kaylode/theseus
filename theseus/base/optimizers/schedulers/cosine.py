@@ -1,6 +1,6 @@
 # code from AllenNLP
 
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import torch
@@ -91,9 +91,7 @@ class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
         if last_epoch == -1:
             for i, group in enumerate(self.optimizer.param_groups):
                 if self.param_group_field not in group:
-                    raise KeyError(
-                        f"{self.param_group_field} missing from param_groups[{i}]"
-                    )
+                    raise KeyError(f"{self.param_group_field} missing from param_groups[{i}]")
                 group.setdefault(
                     self._initial_param_group_field,
                     group[self.param_group_field],
@@ -105,20 +103,17 @@ class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
                         f"{self._initial_param_group_field} missing from param_groups[{i}]"
                     )
         self.base_values = [
-            group[self._initial_param_group_field]
-            for group in self.optimizer.param_groups
+            group[self._initial_param_group_field] for group in self.optimizer.param_groups
         ]
         self.last_epoch = last_epoch
 
-    def state_dict(self) -> Dict[str, Any]:
+    def state_dict(self) -> dict[str, Any]:
         """
         Returns the state of the scheduler as a `dict`.
         """
-        return {
-            key: value for key, value in self.__dict__.items() if key != "optimizer"
-        }
+        return {key: value for key, value in self.__dict__.items() if key != "optimizer"}
 
-    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
+    def load_state_dict(self, state_dict: dict[str, Any]) -> None:
         """
         Load the schedulers state.
         # Parameters
@@ -146,12 +141,7 @@ class CosineWithRestarts(torch.optim.lr_scheduler._LRScheduler):
         lrs = [
             self.eta_min
             + ((lr - self.eta_min) / 2)
-            * (
-                np.cos(
-                    np.pi * (self._cycle_counter % self._cycle_len) / self._cycle_len
-                )
-                + 1
-            )
+            * (np.cos(np.pi * (self._cycle_counter % self._cycle_len) / self._cycle_len) + 1)
             for lr in base_lrs
         ]
 

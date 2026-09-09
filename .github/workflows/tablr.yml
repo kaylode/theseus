@@ -1,4 +1,4 @@
-name: autobuild_tablr
+name: ci_tabular
 on:
   pull_request:
     branches:
@@ -9,42 +9,57 @@ on:
       - master
       - 'V**'
       - dev
+
 env:
   GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
   REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  build:
+  test-tabular:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          architecture: 'x64'
-      - uses: actions/setup-node@v3
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - uses: actions/setup-node@v4
         with:
-          node-version: '16'
-      - uses: iterative/setup-cml@v1
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
+          node-version: '20'
+
+      - uses: iterative/setup-cml@v3
+
+      - name: Cache uv packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-tablr-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-tablr-
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          pip install -e '.[dev,ml]'
-          pip install dvc dvc-gdrive
+          uv pip install --system torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --system -e '.[dev,ml]'
+          uv pip install --system dvc dvc-gdrive
           npm install -g markdown-table-cli
+
       - name: Download data
         run: |
           echo "$GDRIVE_CREDENTIALS_DATA" > credentials.json
           dvc remote modify gdrive --local gdrive_user_credentials_file ./credentials.json
           dvc pull
           ls -la samples
+
       - name: Test with pytest
         run: |
-          pytest tests/tabular --capture=no
+          uv run pytest tests/tabular --capture=no
+
       - name: Display report
         run: |
           echo "# Tabular Classification Report" > report.md

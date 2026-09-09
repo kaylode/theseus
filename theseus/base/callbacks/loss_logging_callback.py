@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import lightning.pytorch as pl
 import numpy as np
@@ -28,9 +28,7 @@ class LossLoggerCallback(Callback):
         self.running_loss = {}
         self.print_interval = print_interval
 
-    def setup(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str
-    ) -> None:
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str) -> None:
         """
         Setup the callback
         """
@@ -38,7 +36,6 @@ class LossLoggerCallback(Callback):
 
         trainloader = pl_module.datamodule.trainloader
         if trainloader is not None:
-            batch_size = trainloader.batch_size
             self.params["num_iterations"] = len(trainloader) * trainer.max_epochs
             self.params["trainloader_length"] = len(trainloader)
         else:
@@ -47,14 +44,12 @@ class LossLoggerCallback(Callback):
 
         valloader = pl_module.datamodule.valloader
         if valloader is not None:
-            batch_size = valloader.batch_size
             self.params["valloader_length"] = len(valloader)
         else:
             self.params["valloader_length"] = None
 
         testloader = pl_module.datamodule.testloader
         if testloader is not None:
-            batch_size = testloader.batch_size
             self.params["testloader_length"] = len(testloader)
         else:
             self.params["testloader_length"] = None
@@ -62,13 +57,11 @@ class LossLoggerCallback(Callback):
         if self.print_interval is None:
             self.print_interval = self.auto_get_print_interval(pl_module)
             LOGGER.text(
-                "Print interval not specified. Auto calculating...",
+                f"Print interval not specified. Auto calculated and set to {self.print_interval} iterations.",
                 level=LoggerObserver.DEBUG,
             )
 
-    def auto_get_print_interval(
-        self, pl_module: pl.LightningModule, train_fraction: float = 0.1
-    ):
+    def auto_get_print_interval(self, pl_module: pl.LightningModule, train_fraction: float = 0.1):
         """
         Automatically decide the number of print interval
         """
@@ -81,6 +74,7 @@ class LossLoggerCallback(Callback):
             else self.params["testloader_length"]
         )
         print_interval = max(int(train_fraction * num_iterations_per_epoch), 1)
+
         return print_interval
 
     def on_train_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
@@ -119,29 +113,25 @@ class LossLoggerCallback(Callback):
         loss_dict = outputs["loss_dict"]
 
         # Update running loss of batch
-        for (key, value) in loss_dict.items():
-            if key not in self.running_loss.keys():
+        for key, value in loss_dict.items():
+            if key not in self.running_loss:
                 self.running_loss[key] = []
             self.running_loss[key].append(value)
 
         # Running time since last interval
         batch_time = time.time() - self.running_time
+        if getattr(self, "running_time_list", None) is None:
+            self.running_time_list = []
         self.running_time_list.append(batch_time)
 
         # Logging
-        if (
-            iters % self.print_interval == 0
-            or (iters + 1) % self.params["trainloader_length"] == 0
-        ):
-
+        if (iters % self.print_interval == 0 and iters > 0) or (iters + 1) % self.params[
+            "trainloader_length"
+        ] == 0:
             # Running loss since last interval
-            for key in self.running_loss.keys():
+            for key in self.running_loss:
                 self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
-            loss_string = (
-                "{}".format(self.running_loss)[1:-1]
-                .replace("'", "")
-                .replace(",", " ||")
-            )
+            loss_string = f"{self.running_loss}"[1:-1].replace("'", "").replace(",", " ||")
 
             # Running time average
             running_time = 1.0 / np.round(np.mean(self.running_time_list), 5)
@@ -169,7 +159,7 @@ class LossLoggerCallback(Callback):
             # Log batch time execution
             log_dict.append(
                 {
-                    "tag": f"Training/Iterations per second",
+                    "tag": "Training/Iterations per second",
                     "value": running_time,
                     "type": LoggerObserver.SCALAR,
                     "kwargs": {"step": iters},
@@ -192,9 +182,7 @@ class LossLoggerCallback(Callback):
             self.running_loss = {}
             self.running_time_list = []
 
-    def on_validation_epoch_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ):
+    def on_validation_epoch_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         """
         Before main validation loops
         """
@@ -217,8 +205,8 @@ class LossLoggerCallback(Callback):
         loss_dict = outputs["loss_dict"]
 
         # Update batch loss
-        for (key, value) in loss_dict.items():
-            if key not in self.running_loss.keys():
+        for key, value in loss_dict.items():
+            if key not in self.running_loss:
                 self.running_loss[key] = []
             self.running_loss[key].append(value)
 
@@ -232,11 +220,9 @@ class LossLoggerCallback(Callback):
         epoch_time = time.time() - self.running_time
 
         # Log loss
-        for key in self.running_loss.keys():
+        for key in self.running_loss:
             self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
-        loss_string = (
-            "{}".format(self.running_loss)[1:-1].replace("'", "").replace(",", " ||")
-        )
+        loss_string = f"{self.running_loss}"[1:-1].replace("'", "").replace(",", " ||")
         LOGGER.text(
             "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
                 iters,
@@ -283,11 +269,9 @@ class LossLoggerCallback(Callback):
         epoch_time = time.time() - self.running_time
 
         # Log loss
-        for key in self.running_loss.keys():
+        for key in self.running_loss:
             self.running_loss[key] = np.round(np.mean(self.running_loss[key]), 5)
-        loss_string = (
-            "{}".format(self.running_loss)[1:-1].replace("'", "").replace(",", " ||")
-        )
+        loss_string = f"{self.running_loss}"[1:-1].replace("'", "").replace(",", " ||")
         LOGGER.text(
             "[{}|{}] || {} || Time: {:10.4f} (it/s)".format(
                 iters,

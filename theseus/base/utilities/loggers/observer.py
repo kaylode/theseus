@@ -1,47 +1,66 @@
 import logging
 import os
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
-import plotly.graph_objs as go
-import torch
-
-mpl.use("Agg")
-
+import sys
 import threading
 from inspect import getframeinfo, stack
-from typing import Dict, List
+from typing import Any
 
+import numpy as np
 from tabulate import tabulate
 
 from .subscriber import LoggerSubscriber
 
 
-def get_type(value):
-    if isinstance(value, torch.nn.Module):
-        return LoggerObserver.TORCH_MODULE
-    if isinstance(value, mpl.figure.Figure) or isinstance(value, go.Figure):
-        return LoggerObserver.FIGURE
-    if isinstance(value, torch.Tensor) or isinstance(value, np.ndarray):
-        if len(value.shape) == 2:
+def get_type(value: Any) -> str:
+    """Infer the log type from a value."""
+    if "torch" in sys.modules:
+        import torch
+
+        if isinstance(value, torch.nn.Module):
+            return LoggerObserver.TORCH_MODULE
+        if isinstance(value, torch.Tensor) and len(value.shape) == 2:
             return LoggerObserver.EMBED
-    if isinstance(value, (int, float)):
+
+    if "matplotlib" in sys.modules:
+        import matplotlib as mpl
+
+        if isinstance(value, mpl.figure.Figure):
+            return LoggerObserver.FIGURE
+
+    if "plotly" in sys.modules:
+        import plotly.graph_objs as go
+
+        if isinstance(value, go.Figure):
+            return LoggerObserver.FIGURE
+
+    if isinstance(value, np.ndarray) and len(value.shape) == 2:
+        return LoggerObserver.EMBED
+
+    if isinstance(value, (int, float, np.number)):
         return LoggerObserver.SCALAR
     if isinstance(value, str):
         if value.endswith(".html"):
             return LoggerObserver.HTML
         else:
             return LoggerObserver.TEXT
-    else:
-        raise ValueError(f"Fail to log undefined type: {type(value)}")
+    raise ValueError(f"Fail to log undefined type: {type(value)}")
 
 
-class LoggerObserver(object):
-    """Logger Oberserver Degisn Pattern
-    notifies every subscribers when .log() is called
+class LoggerObserver:
+    """
+    Logger Observer Design Pattern.
+
+    Notifies every subscriber when ``.log()`` is called.
+    Uses a dispatch table instead of if-chains for O(1) routing.
+
+    Example::
+
+        logger = LoggerObserver.getLogger("main")
+        logger.text("Hello world", level=LoggerObserver.INFO)
+        logger.log([{"tag": "loss", "value": 0.5, "type": "scalar"}])
     """
 
+    # Log type constants
     SCALAR = "scalar"
     FIGURE = "figure"
     TORCH_MODULE = "torch_module"
@@ -52,6 +71,7 @@ class LoggerObserver(object):
     VIDEO = "video"
     HTML = "html"
 
+    # Log level constants
     WARN = logging.WARN
     ERROR = logging.ERROR
     DEBUG = logging.DEBUG
@@ -59,20 +79,40 @@ class LoggerObserver(object):
     CRITICAL = logging.CRITICAL
     SUCCESS = "SUCCESS"
 
-    instances = {}
+    # Singleton instances
+    instances: dict[str, "LoggerObserver"] = {}
     _lock = threading.Lock()
 
-    def __new__(cls, name=None, *args, **kwargs):
+    # Dispatch table: maps log type -> subscriber method name
+    _DISPATCH: dict[str, str] = {
+        SCALAR: "log_scalar",
+        FIGURE: "log_figure",
+        TORCH_MODULE: "log_torch_module",
+        TEXT: "log_text",
+        SPECIAL_TEXT: "log_spec_text",
+        EMBED: "log_embedding",
+        TABLE: "log_table",
+        VIDEO: "log_video",
+        HTML: "log_html",
+    }
+
+    def __new__(cls, name: str | None = None, *args: Any, **kwargs: Any) -> "LoggerObserver":
+        if name is None:
+            name = str(os.getpid())
         with cls._lock:
-            if name is None:
-                name = str(os.getpid())
-            if name in LoggerObserver.instances.keys():
-                return LoggerObserver.instances[name]
+            if name not in cls.instances:
+                instance = object.__new__(cls)
+                instance._initialized = False
+                cls.instances[name] = instance
+            return cls.instances[name]
 
-            return object.__new__(cls, *args, **kwargs)
-
-    def __init__(self, name) -> None:
-        self.subscriber = []
+    def __init__(self, name: str | None = None) -> None:
+        if self._initialized:
+            return
+        self._initialized = True
+        self.subscriber: list[LoggerSubscriber] = []
+        if name is None:
+            name = str(os.getpid())
         self.name = name
 
         # Init with a stdout logger
@@ -81,63 +121,52 @@ class LoggerObserver(object):
         logger = StdoutLogger(name=self.name, debug=True)
         self.subscribe(logger)
 
-        LoggerObserver.instances[name] = self
-
-    def __del__(self):
-        for subcriber in self.subscriber:
-            del subcriber
-        if self.name in LoggerObserver.instances.keys():
-            LoggerObserver.instances.pop(self.name)
+    def __del__(self) -> None:
+        for subscriber in self.subscriber:
+            del subscriber
+        if self.name in LoggerObserver.instances:
+            LoggerObserver.instances.pop(self.name, None)
 
     @classmethod
-    def getLogger(cls, name):
-        if name in LoggerObserver.instances.keys():
-            return LoggerObserver.instances[name]
-
+    def getLogger(cls, name: str) -> "LoggerObserver":
+        """Get or create a logger by name."""
         return cls(name)
 
-    def subscribe(self, subscriber: LoggerSubscriber):
+    def subscribe(self, subscriber: LoggerSubscriber) -> None:
+        """Add a subscriber that will receive log events."""
         self.subscriber.append(subscriber)
 
-    def log(self, logs: List[Dict]):
+    def log(self, logs: list[dict[str, Any]]) -> None:
+        """
+        Dispatch log entries to all subscribers using the dispatch table.
+        Each log entry must have 'tag' and 'value' keys, with optional 'type' and 'kwargs'.
+        """
+        # Support distributed logging
+        is_master = True
+        if "torch" in sys.modules:
+            import torch
+
+            if torch.distributed.is_initialized() and torch.distributed.get_rank() != 0:
+                is_master = False
+        if not is_master:
+            return
+
         for subscriber in self.subscriber:
-            for log in logs:
-                tag = log["tag"]
-                value = log["value"]
-                log_type = log["type"] if "type" in log.keys() else get_type(value)
-                kwargs = log["kwargs"] if "kwargs" in log.keys() else {}
+            for entry in logs:
+                tag = entry["tag"]
+                value = entry["value"]
+                log_type = entry.get("type", get_type(value))
+                kwargs = entry.get("kwargs", {})
 
-                if log_type == LoggerObserver.SCALAR:
-                    subscriber.log_scalar(tag=tag, value=value, **kwargs)
+                # Use dispatch table for O(1) routing
+                method_name = self._DISPATCH.get(log_type)
+                if method_name is not None:
+                    method = getattr(subscriber, method_name, None)
+                    if method is not None:
+                        method(tag=tag, value=value, **kwargs)
 
-                if log_type == LoggerObserver.FIGURE:
-                    subscriber.log_figure(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.TORCH_MODULE:
-                    subscriber.log_torch_module(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.TEXT:
-                    subscriber.log_text(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.EMBED:
-                    subscriber.log_embedding(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.SPECIAL_TEXT:
-                    subscriber.log_spec_text(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.TABLE:
-                    subscriber.log_table(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.VIDEO:
-                    subscriber.log_video(tag=tag, value=value, **kwargs)
-
-                if log_type == LoggerObserver.HTML:
-                    subscriber.log_html(tag=tag, value=value, **kwargs)
-
-    def text(self, value, level=logging.INFO):
-        """
-        Text logging
-        """
+    def text(self, *value: Any, level: int = logging.INFO) -> None:
+        """Convenience method for text logging with source location."""
         caller = getframeinfo(stack()[1][0])
         function_name = stack()[1][3]
         filename = "//".join(caller.filename.split("theseus")[1:])[
@@ -145,11 +174,21 @@ class LoggerObserver(object):
         ]  # split filename based on project name
         lineno = caller.lineno
 
+        texts = []
+        for v in value:
+            if isinstance(v, dict):
+                import json
+
+                texts.append(json.dumps(v, indent=4, default=str))
+            else:
+                texts.append(str(v))
+        value_str = " ".join(texts)
+
         self.log(
             [
                 {
                     "tag": "stdout",
-                    "value": value,
+                    "value": value_str,
                     "type": LoggerObserver.TEXT,
                     "kwargs": {
                         "level": level,

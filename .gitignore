@@ -7,3 +7,5 @@ catboost_info/
 .cache
 /build/
 credentials.json
+.ruff_cache/
+.venv/

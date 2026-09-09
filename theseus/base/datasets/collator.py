@@ -1,7 +1,6 @@
-from typing import List
 
 
-class BaseCollator(object):
+class BaseCollator:
     """Base collator function"""
 
     def __init__(self, **kwargs) -> None:
@@ -14,7 +13,7 @@ class BaseCollator(object):
 class ChainCollatorWrapper(BaseCollator):
     """Wrapper for list of collate functions"""
 
-    def __init__(self, pre_collate_fns: List, **kwargs):
+    def __init__(self, pre_collate_fns: list, **kwargs):
         self.pre_collate_fns = pre_collate_fns
 
     def __call__(self, batch):

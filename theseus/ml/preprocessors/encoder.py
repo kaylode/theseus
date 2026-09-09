@@ -12,9 +12,7 @@ LOGGER = LoggerObserver.getLogger("main")
 
 
 class LabelEncode(Preprocessor):
-    def __init__(
-        self, encoder_type="le", pickle_path=None, engine: str = "pandas", **kwargs
-    ):
+    def __init__(self, encoder_type="le", pickle_path=None, engine: str = "pandas", **kwargs):
         super().__init__(**kwargs)
 
         assert encoder_type in [
@@ -27,7 +25,7 @@ class LabelEncode(Preprocessor):
         self.pickle_path = pickle_path
         self.engine = engine
         if self.engine == "polars":
-            import polars as pl
+            pass
 
         if self.pickle_path is not None:
             with open(self.pickle_path, "rb") as fb:
@@ -36,18 +34,16 @@ class LabelEncode(Preprocessor):
             self.encoder_type = config["encoder_type"]
             self.engine = config["engine"]
             self.encoders = config["encoders"]
-            self.log(f"Loaded mapping dict from {self.pickle_path}")
         else:
             self.encoders = {}
-            if self.encoder_type == "le":
-                encoder = LabelEncoder()
-            elif self.encoder_type == "onehot":
-                encoder = OneHotEncoder()
-            else:
-                encoder = OrdinalEncoder()
-
-            for column in self.column_names:
-                self.encoders[column] = encoder
+            if self.column_names is not None:
+                for column in self.column_names:
+                    if self.encoder_type == "le":
+                        self.encoders[column] = LabelEncoder()
+                    elif self.encoder_type == "onehot":
+                        self.encoders[column] = OneHotEncoder()
+                    else:
+                        self.encoders[column] = OrdinalEncoder()
 
     @classmethod
     def from_pickle(cls, pickle_path: str):
@@ -94,7 +90,7 @@ class LabelEncode(Preprocessor):
             elif self.engine == "polars":
                 import polars as pl
 
-                encoder.fit_transform(df[column_name].to_numpy())
+                encoder.fit_transform(df.select(column_name).unique().to_numpy().ravel())
                 le_name_mapping = dict(
                     zip(
                         encoder.classes_,
@@ -139,6 +135,16 @@ class LabelEncode(Preprocessor):
                 level=LoggerObserver.WARN,
             )
             self.column_names = [col for col, dt in df.dtypes.items() if dt == object]
+
+        for column in self.column_names:
+            if column not in self.encoders:
+                if self.encoder_type == "le":
+                    self.encoders[column] = LabelEncoder()
+                elif self.encoder_type == "onehot":
+                    self.encoders[column] = OneHotEncoder()
+                else:
+                    self.encoders[column] = OrdinalEncoder()
+
         df = self.encode_corpus(df)
 
         self.log(f"Label-encoded columns: {self.column_names}")

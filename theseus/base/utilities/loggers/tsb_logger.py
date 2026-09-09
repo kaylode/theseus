@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 try:
+    from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+    from torch.utils.tensorboard import SummaryWriter
+    from torchvision.transforms import ToTensor
     import tensorboard as tb
     import tensorflow as tf
 
@@ -17,8 +19,6 @@ try:
 except:
     pass
 
-from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import ToTensor
 
 from .observer import LoggerObserver, LoggerSubscriber
 
@@ -71,14 +71,7 @@ class TensorboardLogger(LoggerSubscriber):
         self.writer.add_graph(value, inputs)
 
     def log_embedding(
-        self,
-        tag,
-        value,
-        label_img=None,
-        step=0,
-        metadata=None,
-        metadata_header=None,
-        **kwargs
+        self, tag, value, label_img=None, step=0, metadata=None, metadata_header=None, **kwargs
     ):
         """
         Write a embedding projection to tensorboard
@@ -140,7 +133,6 @@ def tflog2pandas(path: str) -> pd.DataFrame:
     runlog_data = pd.DataFrame({"metric": [], "value": [], "step": []})
     runfig_data = pd.DataFrame({"name": [], "value": [], "step": []})
     try:
-
         ## Scalar values
         event_acc = EventAccumulator(path, DEFAULT_SIZE_GUIDANCE)
         event_acc.Reload()
@@ -167,7 +159,7 @@ def tflog2pandas(path: str) -> pd.DataFrame:
     # Dirty catch of DataLossError
     except Exception:
         LOGGER.text(
-            "Event file possibly corrupt: {}".format(path),
+            f"Event file possibly corrupt: {path}",
             level=LoggerObserver.WARN,
         )
         traceback.print_exc()

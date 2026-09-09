@@ -16,7 +16,7 @@ class DetectionPipeline(BasePipeline):
     """docstring for Pipeline."""
 
     def __init__(self, opt: DictConfig):
-        super(DetectionPipeline, self).__init__(opt)
+        super().__init__(opt)
         self.opt = opt
 
     def init_registry(self):

@@ -15,24 +15,20 @@ try:
     use_parallel = True
 except:
     use_parallel = False
-    LOGGER.text(
-        "pandarallel should be installed for parallerization. Using normal apply-function instead",
-        level=LoggerObserver.WARN,
-    )
+    # LOGGER.text(
+    #     "pandarallel should be installed for parallerization. Using normal apply-function instead",
+    #     level=LoggerObserver.WARN,
+    # )
 
 
 class Preprocessor:
-    def __init__(
-        self, column_names=None, exclude_columns=None, verbose=False, **kwargs
-    ):
+    def __init__(self, column_names=None, exclude_columns=None, verbose=False, **kwargs):
         self.verbose = verbose
         self.column_names = column_names
 
         self.filter = None
         if column_names is not None:
-            self.filter = FilterColumnNames(
-                patterns=column_names, excludes=exclude_columns
-            )
+            self.filter = FilterColumnNames(patterns=column_names, excludes=exclude_columns)
 
     def apply(self, df, function, parallel=True, axis=0, show_progress=True):
 

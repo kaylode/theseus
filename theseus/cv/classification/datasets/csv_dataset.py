@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 import pandas as pd
 
@@ -34,10 +33,10 @@ class ClassificationCSVDataset(ClassificationDataset):
         image_dir: str,
         csv_path: str,
         txt_classnames: str,
-        transform: Optional[List] = None,
-        **kwargs
+        transform: list | None = None,
+        **kwargs,
     ):
-        super(ClassificationCSVDataset, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.image_dir = image_dir
         self.txt_classnames = txt_classnames
         self.csv_path = csv_path
@@ -49,7 +48,7 @@ class ClassificationCSVDataset(ClassificationDataset):
         Read data from csv and load into memory
         """
 
-        with open(self.txt_classnames, "r") as f:
+        with open(self.txt_classnames) as f:
             self.classnames = f.read().splitlines()
 
         # Mapping between classnames and indices

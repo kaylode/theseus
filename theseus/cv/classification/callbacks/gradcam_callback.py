@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import lightning.pytorch as pl
 import matplotlib.pyplot as plt
@@ -25,10 +25,14 @@ class GradCAMVisualizationCallback(Callback):
 
     def __init__(
         self,
-        mean: List[float] = [0.485, 0.456, 0.406],
-        std: List[float] = [0.229, 0.224, 0.225],
-        **kwargs
+        mean: list[float] = None,
+        std: list[float] = None,
+        **kwargs,
     ) -> None:
+        if std is None:
+            std = [0.229, 0.224, 0.225]
+        if mean is None:
+            mean = [0.485, 0.456, 0.406]
         super().__init__()
         self.visualizer = Visualizer()
         self.mean = mean

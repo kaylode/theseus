@@ -2,8 +2,7 @@ import os
 
 import optuna
 import pytest
-from hydra import compose, initialize, initialize_config_module
-from omegaconf import OmegaConf
+from hydra import compose, initialize
 from optuna.storages import JournalFileStorage, JournalStorage
 
 from theseus.base.utilities.optuna_tuner import OptunaWrapper
@@ -72,9 +71,7 @@ def override_tuner_config():
 def override_tuner_tuner():
 
     os.makedirs("runs/optuna/clf", exist_ok=True)
-    database = JournalStorage(
-        JournalFileStorage("runs/optuna/clf/pytest_clf_optuna.log")
-    )
+    database = JournalStorage(JournalFileStorage("runs/optuna/clf/pytest_clf_optuna.log"))
 
     tuner = OptunaWrapper(
         storage=database,

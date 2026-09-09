@@ -4,7 +4,6 @@ from albumentations import (
     GaussianBlur,
     HorizontalFlip,
     HueSaturationValue,
-    IAASharpen,
     LongestMaxSize,
     MedianBlur,
     MotionBlur,
@@ -15,6 +14,7 @@ from albumentations import (
     RandomSizedCrop,
     Resize,
     RGBShift,
+    Sharpen,
     ShiftScaleRotate,
     SmallestMaxSize,
     VerticalFlip,
@@ -40,6 +40,6 @@ TRANSFORM_REGISTRY.register(HorizontalFlip, prefix="Alb")
 TRANSFORM_REGISTRY.register(VerticalFlip, prefix="Alb")
 TRANSFORM_REGISTRY.register(HueSaturationValue, prefix="Alb")
 TRANSFORM_REGISTRY.register(RandomSizedCrop, prefix="Alb")
-TRANSFORM_REGISTRY.register(IAASharpen, prefix="Alb")
+TRANSFORM_REGISTRY.register(Sharpen, prefix="Alb")
 TRANSFORM_REGISTRY.register(ToTensorV2, prefix="Alb")
 TRANSFORM_REGISTRY.register(LongestMaxSize, prefix="Alb")

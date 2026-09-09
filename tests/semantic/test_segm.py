@@ -19,8 +19,6 @@ def test_eval_clf(override_config):
 
 @pytest.mark.order(2)
 def test_infer_clf(override_test_config):
-    override_test_config["global"][
-        "pretrained"
-    ] = "runs/pytest_segm/checkpoints/best.ckpt"
+    override_test_config["global"]["pretrained"] = "runs/pytest_segm/checkpoints/best.ckpt"
     test_pipeline = TestPipeline(override_test_config)
     test_pipeline.inference()

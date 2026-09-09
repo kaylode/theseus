@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -16,7 +16,7 @@ class DiceScore(Metric):
         self.num_classes = num_classes
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -68,9 +68,7 @@ class DiceScore(Metric):
         self.sample_size = 0
 
     def value(self):
-        scores_each_class = (
-            self.scores_list / self.sample_size
-        )  # mean over number of samples
+        scores_each_class = self.scores_list / self.sample_size  # mean over number of samples
         scores = sum(scores_each_class) / (self.num_classes - 1)  # subtract background
 
         if self.calc_each_class:

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
@@ -23,13 +23,14 @@ class BalancedAccuracyMetric(Metric):
     Balanced Accuracy metric for classification
     """
 
-    def __init__(self, label_type: str = "multiclass", **kwargs):
+    def __init__(self, label_type: str = "multiclass", ignore_index=None, **kwargs):
         super().__init__(**kwargs)
         self.type = label_type
         self.threshold = kwargs.get("threshold", 0.5)
+        self.ignore_index = ignore_index
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -40,6 +41,13 @@ class BalancedAccuracyMetric(Metric):
         outputs = outputs.detach().cpu()
         targets = targets.detach().cpu().view(-1)
 
+        # Filter out ignored indices
+        if self.ignore_index is not None:
+            mask = targets != self.ignore_index
+            outputs = outputs[mask]
+            targets = targets[mask]
+
+        # Convert to lists and append to accumulated results
         self.outputs += outputs.numpy().tolist()
         self.targets += targets.numpy().tolist()
 
@@ -51,6 +59,9 @@ class BalancedAccuracyMetric(Metric):
         self.unique_ids = np.unique(self.targets)
 
     def value(self):
+        if len(self.targets) == 0:
+            return {"bl_acc": 0.0}
+
         self.get_all_unique_id()
 
         self.corrects = {str(k): 0 for k in self.unique_ids}
@@ -70,6 +81,6 @@ class BalancedAccuracyMetric(Metric):
             ]
 
             # Get mean accuracy across classes
-            values = sum(each_acc) / len(self.unique_ids)
+            values = sum(each_acc) / len(self.unique_ids) if self.unique_ids.size > 0 else 0.0
 
         return {"bl_acc": values}

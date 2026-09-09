@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import torch
 from torch import nn
@@ -10,7 +10,7 @@ class BCELoss(nn.Module):
     r"""CELoss is warper of cross-entropy loss"""
 
     def __init__(self, **kwargs):
-        super(BCELoss, self).__init__()
+        super().__init__()
         if "weight" in kwargs:
             weight = torch.FloatTensor(kwargs.get("weight"))
         else:
@@ -21,8 +21,8 @@ class BCELoss(nn.Module):
 
     def forward(
         self,
-        outputs: Dict[str, Any],
-        batch: Dict[str, Any],
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
         device: torch.device = None,
     ):
         pred = outputs["outputs"]

@@ -1,13 +1,11 @@
 import math
 
 from torch.optim.lr_scheduler import (
-    CosineAnnealingLR,
     CosineAnnealingWarmRestarts,
     LambdaLR,
     MultiStepLR,
     OneCycleLR,
     ReduceLROnPlateau,
-    StepLR,
 )
 
 from .cosine import CosineWithRestarts
@@ -24,9 +22,7 @@ class SchedulerWrapper:
 
             def one_cycle(y1=0.0, y2=1.0, steps=100):
                 # lambda function for sinusoidal ramp from y1 to y2
-                return (
-                    lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
-                )
+                return lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
 
             lf = one_cycle(1, 0.2, kwargs["num_epochs"])  # cosine 1->hyp['lrf']
             scheduler = LambdaLR(optimizer, lr_lambda=lf)

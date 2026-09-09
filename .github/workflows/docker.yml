@@ -1,4 +1,4 @@
-name: autobuild_docker
+name: ci_docker
 on:
   pull_request:
     branches:
@@ -10,26 +10,31 @@ env:
   DOCKERHUB_TAG: kaylode/theseus:latest
 
 jobs:
-  run:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          architecture: 'x64'
-      - uses: iterative/setup-cml@v1
+          python-version: '3.11'
+
+      - uses: iterative/setup-cml@v3
       - uses: iterative/setup-dvc@v1
+
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
+
       - name: Create credentials file
         run: |
           echo "$GDRIVE_CREDENTIALS_DATA" > credentials.json
+
       - name: Build Dockerfile
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           tags: ${{ env.DOCKERHUB_TAG }}
@@ -40,10 +45,10 @@ jobs:
       - name: Free up space
         run: |
           docker system prune -f
-          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/share/boost
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Docker name
+      - name: Load Docker image
         run: |
           docker load -i ${{ github.workspace }}/image.tar
           docker image inspect ${{ env.DOCKERHUB_TAG }}
@@ -61,16 +66,16 @@ jobs:
               pytest tests --capture=no
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push image to DockerHub
         run: |
-          docker push --all-tags
+          docker push ${{ env.DOCKERHUB_TAG }}
 
-      - name: where am I
+      - name: Debug workspace
         run: |
           pwd
           ls -la

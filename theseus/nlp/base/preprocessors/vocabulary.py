@@ -7,7 +7,7 @@ from theseus.base.utilities.loggers import LoggerObserver
 LOGGER = LoggerObserver.getLogger("main")
 
 
-class Vocabulary(object):
+class Vocabulary:
     def __init__(
         self,
         max_size=None,
@@ -72,30 +72,27 @@ class Vocabulary(object):
         dirname = osp.dirname(save_path)
         filename, _ = osp.splitext(osp.basename(save_path))
         with open(osp.join(dirname, f"{filename}_vocab.txt"), "w") as f:
-            for term in self.word2idx.keys():
+            for term in self.word2idx:
                 f.write(term + "\n")
         LOGGER.text(f"Save pickle to {save_path}", level=LoggerObserver.INFO)
 
     def build_vocab(self, list_tokens, add_special_tokens=True):
         """Populate the dictionaries for converting tokens to integers (and vice-versa)."""
         for tok in list_tokens:
-            if not tok in self.frequency:
+            if tok not in self.frequency:
                 self.frequency[tok] = 0
             self.frequency[tok] += 1
 
         for tok in list(self.frequency.keys()):
-            if self.max_freq is not None:
-                if self.frequency[tok] > self.max_freq:
-                    self.frequency.pop(tok)
-                    continue
-            if self.min_freq is not None:
-                if self.frequency[tok] < self.min_freq:
-                    self.frequency.pop(tok)
-                    continue
+            if self.max_freq is not None and self.frequency[tok] > self.max_freq:
+                self.frequency.pop(tok)
+                continue
+            if self.min_freq is not None and self.frequency[tok] < self.min_freq:
+                self.frequency.pop(tok)
+                continue
 
         list_tokens = [
-            k
-            for k, _ in sorted(self.frequency.items(), key=lambda x: x[1], reverse=True)
+            k for k, _ in sorted(self.frequency.items(), key=lambda x: x[1], reverse=True)
         ]
         if self.max_size is not None:
             list_tokens = list_tokens[: self.max_size]
@@ -125,11 +122,11 @@ class Vocabulary(object):
         if index is None:
             index = self.vocab_size
 
-        if not word in self.word2idx.keys() and not index in self.idx2word.keys():
+        if word not in self.word2idx and index not in self.idx2word:
             self.word2idx[word] = self.vocab_size
             self.idx2word[self.vocab_size] = word
             self.vocab_size += 1
-        elif not word in self.word2idx.keys() and index in self.idx2word.keys():
+        elif word not in self.word2idx and index in self.idx2word:
             if self.replace:
                 old_word = self.idx2word[index]
                 self.word2idx[old_word] = self.vocab_size
@@ -145,7 +142,7 @@ class Vocabulary(object):
                 )
                 raise ValueError()
 
-        elif word in self.word2idx.keys() and not index in self.idx2word.keys():
+        elif word in self.word2idx and index not in self.idx2word:
             if self.replace:
                 old_idx = self.word2idx[word]
                 self.idx2word[old_idx] = None
@@ -165,19 +162,19 @@ class Vocabulary(object):
             raise ValueError()
 
     def add_special_tokens(self):
-        if self.sos_word not in self.special_tokens.keys():
+        if self.sos_word not in self.special_tokens:
             self.add_word(self.sos_word)
             self.special_tokens.update({self.sos_word: self.vocab_size})
 
-        if self.eos_word not in self.special_tokens.keys():
+        if self.eos_word not in self.special_tokens:
             self.add_word(self.eos_word)
             self.special_tokens.update({self.eos_word: self.vocab_size})
 
-        if self.pad_word not in self.special_tokens.keys():
+        if self.pad_word not in self.special_tokens:
             self.add_word(self.pad_word)
             self.special_tokens.update({self.pad_word: self.vocab_size})
 
-        if self.unk_word not in self.special_tokens.keys():
+        if self.unk_word not in self.special_tokens:
             self.add_word(self.unk_word)
             self.special_tokens.update({self.unk_word: self.vocab_size})
 
@@ -199,7 +196,7 @@ class Vocabulary(object):
         """
 
         add_special_tokens = kwargs.get("add_special_tokens", False)
-        max_length = kwargs.get("max_length", None)
+        max_length = kwargs.get("max_length")
         return_token_type_ids = kwargs.get("return_token_type_ids", False)
         truncation = kwargs.get("truncation", False)
 
@@ -238,15 +235,11 @@ class Vocabulary(object):
                                 batch = batch[-max_length:]
                     else:
                         LOGGER.text(
-                            f"Sequence is longer than max_length. Please use truncation=True",
+                            "Sequence is longer than max_length. Please use truncation=True",
                             level=LoggerObserver.ERROR,
                         )
                         raise ValueError()
-                if (
-                    len(batch) < max_length
-                    and add_special_tokens
-                    and self.use_special_tokens
-                ):
+                if len(batch) < max_length and add_special_tokens and self.use_special_tokens:
                     batch += [self.__call__(self.pad_word)] * (max_length - len(batch))
 
             if return_token_type_ids:
@@ -295,12 +288,12 @@ class Vocabulary(object):
         return self.encode_tokens(tokenized_texts, **kwargs)
 
     def itos(self, idx):
-        if not idx in self.idx2word:
+        if idx not in self.idx2word:
             return self.idx2word[self.__call__(self.unk_word)]
         return self.idx2word[idx]
 
     def __call__(self, word):
-        if not word in self.word2idx:
+        if word not in self.word2idx:
             return self.word2idx[self.unk_word]
         return self.word2idx[word]
 

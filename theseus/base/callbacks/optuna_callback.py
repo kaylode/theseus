@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 import lightning.pytorch as pl
 import optuna
@@ -30,7 +29,5 @@ class OptunaCallback(Callback):
         self.trial.report(value=metric_dict[best_key], step=iters)
 
         if self.trial.should_prune():
-            LOGGER.text(
-                f"Trial {self.trial.number} has been pruned", level=LoggerObserver.DEBUG
-            )
+            LOGGER.text(f"Trial {self.trial.number} has been pruned", level=LoggerObserver.DEBUG)
             raise optuna.TrialPruned()

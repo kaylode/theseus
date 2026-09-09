@@ -1,5 +1,5 @@
 import os
-from typing import Iterable, List
+from collections.abc import Iterable
 
 import numpy as np
 import torch
@@ -61,11 +61,7 @@ class ImageDataset(data.Dataset):
     """
 
     def __init__(
-        self,
-        image_dir: str,
-        txt_classnames: str = None,
-        transform: List = None,
-        **kwargs
+        self, image_dir: str, txt_classnames: str = None, transform: list = None, **kwargs
     ):
         super().__init__()
         self.image_dir = image_dir
@@ -78,7 +74,7 @@ class ImageDataset(data.Dataset):
         Load filepaths into memory
         """
         if self.txt_classnames:
-            with open(self.txt_classnames, "r") as f:
+            with open(self.txt_classnames) as f:
                 self.classnames = f.read().splitlines()
         self.fns = []
         image_names = os.listdir(self.image_dir)
@@ -109,7 +105,7 @@ class ImageDataset(data.Dataset):
     def __len__(self):
         return len(self.fns)
 
-    def collate_fn(self, batch: List):
+    def collate_fn(self, batch: list):
         imgs = torch.stack([s["input"] for s in batch])
         img_names = [s["img_name"] for s in batch]
         ori_sizes = [s["ori_size"] for s in batch]

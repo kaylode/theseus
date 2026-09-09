@@ -1,5 +1,4 @@
 import random
-from typing import List, Tuple
 
 import numpy as np
 from albumentations import Compose, RandomCrop, Resize
@@ -22,7 +21,7 @@ class Mosaic:
         self,
         width: int,
         height: int,
-        scale_range: Tuple[float, float] = (0.3, 0.7),
+        scale_range: tuple[float, float] = (0.3, 0.7),
     ) -> None:
         self.width = width
         self.height = height
@@ -40,7 +39,7 @@ class Mosaic:
         item = transforms(image=image, mask=mask)
         return item["image"], item["mask"]
 
-    def __call__(self, set_images: List[np.array], set_masks: List[np.array]):
+    def __call__(self, set_images: list[np.array], set_masks: list[np.array]):
         """
         set_images: `List[np.array]`
             batch of numpy images (H,W,3)
@@ -69,16 +68,12 @@ class Mosaic:
                 result_mask[:divid_point_y, :divid_point_x] = mask
 
             elif i == 1:  # top-right
-                img, mask = self.get_resize(
-                    img, mask, self.width - divid_point_x, divid_point_y
-                )
+                img, mask = self.get_resize(img, mask, self.width - divid_point_x, divid_point_y)
                 result_image[:divid_point_y, divid_point_x : self.width, :] = img
                 result_mask[:divid_point_y, divid_point_x : self.width] = mask
 
             elif i == 2:  # bottom-left
-                img, mask = self.get_resize(
-                    img, mask, divid_point_x, self.height - divid_point_y
-                )
+                img, mask = self.get_resize(img, mask, divid_point_x, self.height - divid_point_y)
                 result_image[divid_point_y : self.height, :divid_point_x, :] = img
                 result_mask[divid_point_y : self.height, :divid_point_x] = mask
 
@@ -89,11 +84,7 @@ class Mosaic:
                     self.width - divid_point_x,
                     self.height - divid_point_y,
                 )
-                result_image[
-                    divid_point_y : self.height, divid_point_x : self.width, :
-                ] = img
-                result_mask[
-                    divid_point_y : self.height, divid_point_x : self.width
-                ] = mask
+                result_image[divid_point_y : self.height, divid_point_x : self.width, :] = img
+                result_mask[divid_point_y : self.height, divid_point_x : self.width] = mask
 
         return result_image, result_mask

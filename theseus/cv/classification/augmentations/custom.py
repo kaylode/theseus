@@ -5,11 +5,10 @@ https://github.com/pytorch/vision/blob/dc1139958404b27e5b1e83ca9bc381462a955e29/
 
 import math
 from collections import namedtuple
-from typing import Tuple
 
 import numpy as np
 import torch
-from albumentations.core.bbox_utils import denormalize_bbox, normalize_bbox
+from albumentations.core.bbox_utils import denormalize_bboxes, normalize_bboxes
 from albumentations.core.transforms_interface import DualTransform
 from torch import Tensor
 from torchvision.transforms import functional as F
@@ -41,7 +40,7 @@ class CustomCutout(DualTransform):
         :param min_cutout_size: minimum size of cutout (192 x 192)
         :param max_cutout_size: maximum size of cutout (512 x 512)
         """
-        super(CustomCutout, self).__init__(always_apply, p)  # Initialize parent class
+        super().__init__(always_apply, p)  # Initialize parent class
         self.fill_value = fill_value
         self.bbox_removal_threshold = bbox_removal_threshold
         self.min_cutout_size = min_cutout_size
@@ -88,10 +87,8 @@ class CustomCutout(DualTransform):
         """
         image = image.copy()  # Don't change the original image
         self.img_height, self.img_width, _ = image.shape
-        for i in range(self.number):
-            cutout_arr, cutout_size, cutout_pos = self._get_cutout(
-                self.img_height, self.img_width
-            )
+        for _i in range(self.number):
+            cutout_arr, cutout_size, cutout_pos = self._get_cutout(self.img_height, self.img_width)
 
             # Set to instance variables to use this later
             self.image = image
@@ -114,10 +111,10 @@ class CustomCutout(DualTransform):
         """
 
         # Denormalize the bbox coordinates
-        bbox = denormalize_bbox(bbox, self.img_height, self.img_width)
+        bbox = denormalize_bboxes(bbox, self.img_height, self.img_width)
         x_min, y_min, x_max, y_max = tuple(map(int, bbox))
         if x_min >= x_max or y_min >= y_max:
-            return normalize_bbox((0, 0, 0, 0), self.img_height, self.img_width)
+            return normalize_bboxes((0, 0, 0, 0), self.img_height, self.img_width)
 
         bbox_size = (x_max - x_min) * (y_max - y_min)  # width * height
         overlapping_size = np.sum(
@@ -127,9 +124,9 @@ class CustomCutout(DualTransform):
         )
         # Remove the bbox if it has more than some threshold of content is inside the cutout patch
         if overlapping_size / bbox_size > self.bbox_removal_threshold:
-            return normalize_bbox((0, 0, 0, 0), self.img_height, self.img_width)
+            return normalize_bboxes((0, 0, 0, 0), self.img_height, self.img_width)
 
-        return normalize_bbox(bbox, self.img_height, self.img_width)
+        return normalize_bboxes(bbox, self.img_height, self.img_width)
 
     def get_transform_init_args_names(self):
         """
@@ -166,9 +163,7 @@ class RandomMixup(torch.nn.Module):
         inplace: bool = False,
     ) -> None:
         super().__init__()
-        assert (
-            num_classes > 0
-        ), "Please provide a valid positive value for the num_classes."
+        assert num_classes > 0, "Please provide a valid positive value for the num_classes."
         assert alpha > 0, "Alpha param can't be zero."
 
         self.num_classes = num_classes
@@ -176,7 +171,7 @@ class RandomMixup(torch.nn.Module):
         self.alpha = alpha
         self.inplace = inplace
 
-    def forward(self, batch: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, batch: Tensor, target: Tensor) -> tuple[Tensor, Tensor]:
         """
         Args:
             batch (Tensor): Float tensor of size (B, C, H, W)
@@ -185,26 +180,22 @@ class RandomMixup(torch.nn.Module):
             Tensor: Randomly transformed batch.
         """
         if batch.ndim != 4:
-            raise ValueError("Batch ndim should be 4. Got {}".format(batch.ndim))
+            raise ValueError(f"Batch ndim should be 4. Got {batch.ndim}")
         if target.ndim != 1:
-            raise ValueError("Target ndim should be 1. Got {}".format(target.ndim))
+            raise ValueError(f"Target ndim should be 1. Got {target.ndim}")
         if not batch.is_floating_point():
-            raise TypeError(
-                "Batch dtype should be a float tensor. Got {}.".format(batch.dtype)
-            )
+            raise TypeError(f"Batch dtype should be a float tensor. Got {batch.dtype}.")
         if target.dtype != torch.int64:
-            raise TypeError(
-                "Target dtype should be torch.int64. Got {}".format(target.dtype)
-            )
+            raise TypeError(f"Target dtype should be torch.int64. Got {target.dtype}")
 
         if not self.inplace:
             batch = batch.clone()
             target = target.clone()
 
         if target.ndim == 1:
-            target = torch.nn.functional.one_hot(
-                target, num_classes=self.num_classes
-            ).to(dtype=batch.dtype)
+            target = torch.nn.functional.one_hot(target, num_classes=self.num_classes).to(
+                dtype=batch.dtype
+            )
 
         if torch.rand(1).item() >= self.p:
             return batch, target
@@ -214,9 +205,7 @@ class RandomMixup(torch.nn.Module):
         target_rolled = target.roll(1, 0)
 
         # Implemented as on mixup paper, page 3.
-        lambda_param = float(
-            torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0]
-        )
+        lambda_param = float(torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0])
         batch_rolled.mul_(1.0 - lambda_param)
         batch.mul_(lambda_param).add_(batch_rolled)
 
@@ -256,9 +245,7 @@ class RandomCutmix(torch.nn.Module):
         inplace: bool = False,
     ) -> None:
         super().__init__()
-        assert (
-            num_classes > 0
-        ), "Please provide a valid positive value for the num_classes."
+        assert num_classes > 0, "Please provide a valid positive value for the num_classes."
         assert alpha > 0, "Alpha param can't be zero."
 
         self.num_classes = num_classes
@@ -266,7 +253,7 @@ class RandomCutmix(torch.nn.Module):
         self.alpha = alpha
         self.inplace = inplace
 
-    def forward(self, batch: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, batch: Tensor, target: Tensor) -> tuple[Tensor, Tensor]:
         """
         Args:
             batch (Tensor): Float tensor of size (B, C, H, W)
@@ -275,26 +262,22 @@ class RandomCutmix(torch.nn.Module):
             Tensor: Randomly transformed batch.
         """
         if batch.ndim != 4:
-            raise ValueError("Batch ndim should be 4. Got {}".format(batch.ndim))
+            raise ValueError(f"Batch ndim should be 4. Got {batch.ndim}")
         if target.ndim != 1:
-            raise ValueError("Target ndim should be 1. Got {}".format(target.ndim))
+            raise ValueError(f"Target ndim should be 1. Got {target.ndim}")
         if not batch.is_floating_point():
-            raise TypeError(
-                "Batch dtype should be a float tensor. Got {}.".format(batch.dtype)
-            )
+            raise TypeError(f"Batch dtype should be a float tensor. Got {batch.dtype}.")
         if target.dtype != torch.int64:
-            raise TypeError(
-                "Target dtype should be torch.int64. Got {}".format(target.dtype)
-            )
+            raise TypeError(f"Target dtype should be torch.int64. Got {target.dtype}")
 
         if not self.inplace:
             batch = batch.clone()
             target = target.clone()
 
         if target.ndim == 1:
-            target = torch.nn.functional.one_hot(
-                target, num_classes=self.num_classes
-            ).to(dtype=batch.dtype)
+            target = torch.nn.functional.one_hot(target, num_classes=self.num_classes).to(
+                dtype=batch.dtype
+            )
 
         if torch.rand(1).item() >= self.p:
             return batch, target
@@ -304,9 +287,7 @@ class RandomCutmix(torch.nn.Module):
         target_rolled = target.roll(1, 0)
 
         # Implemented as on cutmix paper, page 12 (with minor corrections on typos).
-        lambda_param = float(
-            torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0]
-        )
+        lambda_param = float(torch._sample_dirichlet(torch.tensor([self.alpha, self.alpha]))[0])
         W, H = F.get_image_size(batch)
 
         r_x = torch.randint(W, (1,))

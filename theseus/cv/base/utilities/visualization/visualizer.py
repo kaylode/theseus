@@ -1,5 +1,5 @@
 import random
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -22,7 +22,7 @@ class Visualizer:
     r"""Visualizer class that do all the visualization stuffs"""
 
     def __init__(self):
-        self.image: Optional[np.ndarray] = None
+        self.image: np.ndarray | None = None
         self.class_names = None
         self.set_color(color_list)
 
@@ -38,7 +38,7 @@ class Visualizer:
         if self.image.dtype == "uint8":
             self.image = self.image / 255.0
 
-    def set_classnames(self, class_names: List[str]) -> None:
+    def set_classnames(self, class_names: list[str]) -> None:
         self.class_names = class_names
 
     def get_image(self) -> np.ndarray:
@@ -64,12 +64,11 @@ class Visualizer:
         label: str,
         font: Any = cv2.FONT_HERSHEY_SIMPLEX,
         fontScale: int = 2,
-        fontColor: Tuple = (0, 0, 1),
+        fontColor: tuple = (0, 0, 1),
         thickness: int = 3,
-        outline: Tuple = (0, 0, 0),
+        outline: tuple = (0, 0, 0),
         offset: int = 50,
     ):
-
         """
         Draw text on the image then return
 
@@ -174,9 +173,12 @@ class Visualizer:
                 color = self.color_list[1]
 
             coord = [box[0], box[1], box[2], box[3]]
-            c1, c2 = (int(coord[0]), int(coord[1])), (
-                int(coord[2]),
-                int(coord[3]),
+            c1, c2 = (
+                (int(coord[0]), int(coord[1])),
+                (
+                    int(coord[2]),
+                    int(coord[3]),
+                ),
             )
             cv2.rectangle(self.image, c1, c2, color, thickness=tl * 2)
 
@@ -189,9 +191,7 @@ class Visualizer:
                     label = f"{label}: {score}"
 
                 tf = max(tl - 2, 1)  # font thickness
-                s_size = cv2.getTextSize(
-                    f"{label}", 0, fontScale=float(tl) / 3, thickness=tf
-                )[0]
+                s_size = cv2.getTextSize(f"{label}", 0, fontScale=float(tl) / 3, thickness=tf)[0]
                 c2 = c1[0] + s_size[0] + 15, c1[1] - s_size[1] - 3
                 cv2.rectangle(self.image, c1, c2, color, -1)  # filled
                 cv2.putText(
@@ -213,8 +213,8 @@ class Visualizer:
 
     def make_grid(
         self,
-        batch: List[torch.Tensor],
-        nrow: Optional[int] = None,
+        batch: list[torch.Tensor],
+        nrow: int | None = None,
         normalize: bool = False,
     ) -> torch.Tensor:
         """
@@ -239,15 +239,19 @@ class Visualizer:
 
     def denormalize(
         self,
-        image: Union[torch.Tensor, np.ndarray],
-        mean: List[float] = [0.485, 0.456, 0.406],
-        std: List[float] = [0.229, 0.224, 0.225],
+        image: torch.Tensor | np.ndarray,
+        mean: list[float] = None,
+        std: list[float] = None,
     ) -> np.ndarray:
         """
         Denormalize an image and return
         image: `torch.Tensor` or `np.ndarray`
             image to be denormalized
         """
+        if std is None:
+            std = [0.229, 0.224, 0.225]
+        if mean is None:
+            mean = [0.485, 0.456, 0.406]
         mean = np.array(mean)
         std = np.array(std)
 
@@ -288,9 +292,7 @@ class Visualizer:
 
         return boxes
 
-    def decode_segmap(
-        self, segmap: np.ndarray, num_classes: Optional[int] = None
-    ) -> np.ndarray:
+    def decode_segmap(self, segmap: np.ndarray, num_classes: int | None = None) -> np.ndarray:
         """
         Decode an segmentation mask into colored mask based on class indices
 

@@ -2,7 +2,7 @@
 Lovasz-Softmax and Jaccard hinge loss in PyTorch
 Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
 """
-from typing import Dict, List
+
 
 import torch
 import torch.nn as nn
@@ -60,7 +60,7 @@ def lovasz_softmax_flat(prb, lbl, ignore_index, only_present):
 
 
 class LovaszSoftmax(nn.Module):
-    """
+    r"""
     Multi-class Lovasz-Softmax loss
       logits: [B, C, H, W] class logits at each prediction (between -\infty and \infty)
       labels: [B, H, W] Tensor, ground truth labels (between 0 and C - 1)
@@ -73,7 +73,7 @@ class LovaszSoftmax(nn.Module):
         self.ignore_index = ignore_index
         self.only_present = only_present
 
-    def forward(self, outputs: Dict, batch: Dict, device: torch.device):
+    def forward(self, outputs: dict, batch: dict, device: torch.device):
         predict = outputs["outputs"]
 
         targets = move_to(batch["targets"], device)
@@ -83,9 +83,7 @@ class LovaszSoftmax(nn.Module):
         total_loss = 0
         batch_size = predict.shape[0]
         for prb, lbl in zip(probas, targets):
-            total_loss += lovasz_softmax_flat(
-                prb, lbl, self.ignore_index, self.only_present
-            )
+            total_loss += lovasz_softmax_flat(prb, lbl, self.ignore_index, self.only_present)
         loss = total_loss / batch_size
 
         loss_dict = {"LOVASZ": loss.item()}

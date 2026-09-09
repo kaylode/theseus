@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -14,8 +15,8 @@ class MultiLoss(nn.Module):
 
     def forward(
         self,
-        outputs: Dict[str, Any],
-        batch: Dict[str, Any],
+        outputs: dict[str, Any],
+        batch: dict[str, Any],
         device: torch.device = None,
     ):
         """

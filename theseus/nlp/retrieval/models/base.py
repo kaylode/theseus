@@ -62,18 +62,14 @@ class BaseRetrieval:
         if isinstance(querys, list):
             encoded_query = self.encode_query(querys)
         elif isinstance(querys, str):  ## load from pickle path
-            encoded_query = self.load_embeddings(
-                querys
-            )  # return encoded querys and query ids
+            encoded_query = self.load_embeddings(querys)  # return encoded querys and query ids
         else:
             raise ValueError()
 
         if isinstance(corpus, list):
             encoded_corpus = self.encode_corpus(corpus)
         elif isinstance(corpus, str):  ## load from pickle path
-            encoded_corpus = self.load_embeddings(
-                corpus
-            )  # return encoded querys and query ids
+            encoded_corpus = self.load_embeddings(corpus)  # return encoded querys and query ids
         else:
             raise ValueError()
 

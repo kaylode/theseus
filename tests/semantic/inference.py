@@ -18,7 +18,7 @@ from theseus.cv.semantic.models import MODEL_REGISTRY
 class TestPipeline(BaseTestPipeline):
     def __init__(self, opt: DictConfig):
 
-        super(TestPipeline, self).__init__(opt)
+        super().__init__(opt)
         self.opt = opt
 
     def init_globals(self):
@@ -44,7 +44,7 @@ class TestPipeline(BaseTestPipeline):
         os.makedirs(saved_mask_dir, exist_ok=True)
         os.makedirs(saved_overlay_dir, exist_ok=True)
 
-        for idx, batch in enumerate(self.dataloader):
+        for _idx, batch in enumerate(self.dataloader):
             inputs = batch["inputs"]
             img_names = batch["img_names"]
             ori_sizes = batch["ori_sizes"]
@@ -52,9 +52,7 @@ class TestPipeline(BaseTestPipeline):
             outputs = self.model.predict_step(batch)
             preds = outputs["masks"]
 
-            for (inpt, pred, filename, ori_size) in zip(
-                inputs, preds, img_names, ori_sizes
-            ):
+            for inpt, pred, filename, ori_size in zip(inputs, preds, img_names, ori_sizes):
                 decode_pred = visualizer.decode_segmap(pred)[:, :, ::-1]
                 resized_decode_mask = cv2.resize(decode_pred, tuple(ori_size))
 

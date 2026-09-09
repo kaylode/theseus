@@ -14,7 +14,7 @@ def download_from_drive(id_or_url, output, md5=None, quiet=False, cache=True):
     if id_or_url.startswith("http") or id_or_url.startswith("https"):
         url = id_or_url
     else:
-        url = "https://drive.google.com/uc?id={}".format(id_or_url)
+        url = f"https://drive.google.com/uc?id={id_or_url}"
 
     if not cache:
         return gdown.download(url, output, quiet=quiet)
@@ -46,14 +46,11 @@ def download_from_url(url, root=None, filename=None):
     try:
         LOGGER.text("Downloading " + url + " to " + fpath, level=LoggerObserver.DEBUG)
         urlreq.urlretrieve(url, fpath)
-    except (urlreq.error.URLError, IOError) as e:
+    except (OSError, urlreq.error.URLError):
         if url[:5] == "https":
             url = url.replace("https:", "http:")
             LOGGER.text(
-                "Failed download. Trying https -> http instead.Downloading "
-                + url
-                + " to "
-                + fpath,
+                "Failed download. Trying https -> http instead.Downloading " + url + " to " + fpath,
                 level=LoggerObserver.DEBUG,
             )
             urlreq.urlretrieve(url, fpath)
@@ -61,18 +58,14 @@ def download_from_url(url, root=None, filename=None):
     return fpath
 
 
-def download_from_wandb(
-    filename, run_path, save_dir, rename=None, generate_id_text_file=False
-):
+def download_from_wandb(filename, run_path, save_dir, rename=None, generate_id_text_file=False):
 
     import wandb
 
     try:
         path = wandb.restore(filename, run_path=run_path, root=save_dir)
         LOGGER.text(
-            "Successfully download {} from wandb run path {}".format(
-                filename, run_path
-            ),
+            f"Successfully download {filename} from wandb run path {run_path}",
             level=LoggerObserver.INFO,
         )
 
@@ -85,11 +78,11 @@ def download_from_wandb(
         if rename:
             new_name = str(Path(path.name).resolve().parent / rename)
             os.rename(Path(path.name).resolve(), new_name)
-            LOGGER.text("Saved to {}".format(new_name), level=LoggerObserver.INFO)
+            LOGGER.text(f"Saved to {new_name}", level=LoggerObserver.INFO)
             return new_name
 
         LOGGER.text(
-            "Saved to {}".format((Path(save_dir) / path.name).resolve()),
+            f"Saved to {(Path(save_dir) / path.name).resolve()}",
             level=LoggerObserver.INFO,
         )
         return path.name

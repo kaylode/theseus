@@ -1,4 +1,3 @@
-from typing import List
 
 import numpy as np
 import torch
@@ -15,18 +14,16 @@ class MixupCutmixCollator(BaseCollator):
         dataset: torch.utils.data.Dataset,
         mixup_alpha: float = 0.2,
         cutmix_alpha: float = 1.0,
-        weight: List[float] = [0.5, 0.5],
-        **kwargs
+        weight: list[float] = None,
+        **kwargs,
     ) -> None:
 
+        if weight is None:
+            weight = [0.5, 0.5]
         assert sum(weight) <= 1.0, "Sum of weight should be smaller than 1.0"
         self.mixup_transforms = []
-        self.mixup_transforms.append(
-            RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha)
-        )
-        self.mixup_transforms.append(
-            RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha)
-        )
+        self.mixup_transforms.append(RandomMixup(dataset.num_classes, p=1.0, alpha=mixup_alpha))
+        self.mixup_transforms.append(RandomCutmix(dataset.num_classes, p=1.0, alpha=cutmix_alpha))
         self.mixup_transforms.append(None)
         self.weight = weight
         self.weight.append(1.0 - sum(weight))

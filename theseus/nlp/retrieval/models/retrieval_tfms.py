@@ -1,7 +1,5 @@
-from typing import Any, Dict, List, Optional
 
 import numpy as np
-import sentence_transformers.util as sentfms_utils
 import torch
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm

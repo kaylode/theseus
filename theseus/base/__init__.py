@@ -1,9 +1,3 @@
-from .augmentations import *
-from .callbacks import *
-from .datasets import *
-from .losses import *
-from .metrics import *
-from .models import *
-from .optimizers import *
-from .pipeline import *
-from .trainer import *
+# Expose nothing by default to prevent heavy dependency imports (like torch/lightning).
+# Users should explicitly import what they need, e.g.,
+# `from theseus.base.models import LightningModelWrapper`

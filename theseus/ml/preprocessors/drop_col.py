@@ -46,9 +46,7 @@ class DropEmptyColumns(Preprocessor):
         super().__init__(**kwargs)
 
     def run(self, df):
-        cols_to_use = [
-            idx for idx, val in (df.isna().mean() >= 1.0).items() if val == False
-        ]
+        cols_to_use = [idx for idx, val in (df.isna().mean() >= 1.0).items() if not val]
         empty_cols = set(df.columns) - set(cols_to_use)
         df = df.loc[:, cols_to_use]
         self.log(f"Dropped empty columns: {empty_cols}")

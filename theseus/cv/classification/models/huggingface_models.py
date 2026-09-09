@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -28,10 +28,10 @@ class HuggingFaceModel(nn.Module):
         model_name: str,
         num_classes: int = 1000,
         from_pretrained: bool = True,
-        classnames: Optional[List] = None,
+        classnames: list | None = None,
         pooling: str = "first",
         freeze: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.name = model_name
@@ -74,7 +74,7 @@ class HuggingFaceModel(nn.Module):
         """
         return self.model
 
-    def forward_features(self, batch: Dict, device: torch.device = None):
+    def forward_features(self, batch: dict, device: torch.device = None):
 
         input_ids, attention_mask = batch["input_ids"], batch["attention_mask"]
         transformer_out = self.model(input_ids=input_ids, attention_mask=attention_mask)
@@ -90,7 +90,7 @@ class HuggingFaceModel(nn.Module):
 
         return features
 
-    def forward_batch(self, batch: Dict, device: torch.device = None):
+    def forward_batch(self, batch: dict, device: torch.device = None):
         if device is not None:
             batch = move_to(batch, device)
         features = self.forward_features(batch, device)
@@ -98,7 +98,7 @@ class HuggingFaceModel(nn.Module):
 
         return {"outputs": outputs, "features": features}
 
-    def get_prediction(self, adict: Dict[str, Any], device: torch.device = None):
+    def get_prediction(self, adict: dict[str, Any], device: torch.device = None):
         """
         Inference using the model.
 

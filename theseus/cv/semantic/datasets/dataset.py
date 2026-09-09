@@ -1,5 +1,4 @@
 import os
-from typing import Dict
 
 import numpy as np
 import torch
@@ -21,7 +20,7 @@ class SemanticDataset(torch.utils.data.Dataset):
     def _load_data(self):
         raise NotImplementedError
 
-    def __getitem__(self, idx: int) -> Dict:
+    def __getitem__(self, idx: int) -> dict:
         """
         Get one item
         """

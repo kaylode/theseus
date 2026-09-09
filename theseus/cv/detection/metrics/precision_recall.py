@@ -1,4 +1,3 @@
-from typing import Dict, List
 
 import numpy as np
 
@@ -31,8 +30,7 @@ class DetectionPrecisionRecall(Metric):
             gt_clss = gt["labels"].numpy().tolist()
 
             gt_instances = [
-                BoxWithLabel(self.idx, box, int(cls), 1.0)
-                for box, cls in zip(gt_boxes, gt_clss)
+                BoxWithLabel(self.idx, box, int(cls), 1.0) for box, cls in zip(gt_boxes, gt_clss)
             ]
             pred_instances = [
                 BoxWithLabel(self.idx, box, int(cls), scr)
@@ -50,16 +48,12 @@ class DetectionPrecisionRecall(Metric):
         score = self.calculate_pr(total_tp, total_fp, total_fn)
         return score
 
-    def calculate_cfm(
-        self, pred_boxes: List[BoxWithLabel], gt_boxes: List[BoxWithLabel]
-    ):
+    def calculate_cfm(self, pred_boxes: list[BoxWithLabel], gt_boxes: list[BoxWithLabel]):
         total_fp = []
         total_fn = []
         total_tp = []
         for pred_box, gt_box in zip(pred_boxes, gt_boxes):
-            matched_pairs = MatchingPairs(
-                pred_box, gt_box, min_iou=self.min_iou, eps=self.eps
-            )
+            matched_pairs = MatchingPairs(pred_box, gt_box, min_iou=self.min_iou, eps=self.eps)
             tp = matched_pairs.get_acc()
             fp = matched_pairs.get_false_positive()
             fn = matched_pairs.get_false_negative()
@@ -90,7 +84,6 @@ class DetectionPrecisionRecall(Metric):
         precisions = []
         recalls = []
         for cls_id in range(self.num_classes):
-
             if tp_per_class[cls_id] + fp_per_class[cls_id] == 0:
                 precisions.append(-1)
             else:
@@ -101,9 +94,7 @@ class DetectionPrecisionRecall(Metric):
             if tp_per_class[cls_id] + fn_per_class[cls_id] == 0:
                 recalls.append(-1)
             else:
-                recalls.append(
-                    tp_per_class[cls_id] / (tp_per_class[cls_id] + fn_per_class[cls_id])
-                )
+                recalls.append(tp_per_class[cls_id] / (tp_per_class[cls_id] + fn_per_class[cls_id]))
 
         np_precisions = np.array(precisions)
         np_recalls = np.array(recalls)
@@ -111,14 +102,12 @@ class DetectionPrecisionRecall(Metric):
         precision_all = sum(np_precisions[np_precisions != -1]) / (
             self.num_classes - sum(np_precisions == -1)
         )
-        recall_all = sum(np_recalls[np_recalls != -1]) / (
-            self.num_classes - sum(np_recalls == -1)
-        )
+        recall_all = sum(np_recalls[np_recalls != -1]) / (self.num_classes - sum(np_recalls == -1))
 
         f1_score = 2 * precision_all * recall_all / (precision_all + recall_all)
 
         return {
-            f"simple_precision": precision_all,
-            f"simple_recall": recall_all,
+            "simple_precision": precision_all,
+            "simple_recall": recall_all,
             "simple_f1_score": f1_score,
         }

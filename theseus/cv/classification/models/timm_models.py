@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import timm
 import torch
@@ -28,9 +28,9 @@ class BaseTimmModel(nn.Module):
         model_name: str,
         num_classes: int = 1000,
         from_pretrained: bool = True,
-        classnames: Optional[List] = None,
+        classnames: list | None = None,
         freeze: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.name = model_name
@@ -65,9 +65,7 @@ class BaseTimmModel(nn.Module):
             )
 
             self.features = None
-            self.pooling = torch.nn.Sequential(
-                nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten()
-            )
+            self.pooling = torch.nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten())
 
         if self.freeze:
             self.freeze_backbone()
@@ -89,7 +87,7 @@ class BaseTimmModel(nn.Module):
         """
         return self.model
 
-    def forward_batch(self, batch: Dict, device: torch.device = None):
+    def forward_batch(self, batch: dict, device: torch.device = None):
         if device is not None:
             x = move_to(batch["inputs"], device)
         else:
@@ -100,7 +98,7 @@ class BaseTimmModel(nn.Module):
             self.features = outputs
         return {"outputs": outputs, "features": self.features}
 
-    def get_prediction(self, adict: Dict[str, Any], device: torch.device = None):
+    def get_prediction(self, adict: dict[str, Any], device: torch.device = None):
         """
         Inference using the model.
 
@@ -112,9 +110,7 @@ class BaseTimmModel(nn.Module):
         outputs = self.forward_batch(adict, device)["outputs"]
 
         if not adict.get("multilabel"):
-            outputs, probs = logits2labels(
-                outputs, label_type="multiclass", return_probs=True
-            )
+            outputs, probs = logits2labels(outputs, label_type="multiclass", return_probs=True)
         else:
             outputs, probs = logits2labels(
                 outputs,
@@ -136,8 +132,7 @@ class BaseTimmModel(nn.Module):
             classnames = [self.classnames[int(clsid)] for clsid in classids]
         elif self.classnames and adict.get("multilabel"):
             classnames = [
-                [self.classnames[int(i)] for i, c in enumerate(clsid) if c]
-                for clsid in classids
+                [self.classnames[int(i)] for i, c in enumerate(clsid) if c] for clsid in classids
             ]
         else:
             classnames = []

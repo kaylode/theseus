@@ -16,6 +16,4 @@ class DataLoaderWithCollator(DataLoader):
         else:
             collate_fn = dataset.collate_fn
 
-        super().__init__(
-            dataset=dataset, collate_fn=collate_fn, sampler=sampler, **kwargs
-        )
+        super().__init__(dataset=dataset, collate_fn=collate_fn, sampler=sampler, **kwargs)

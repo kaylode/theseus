@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,7 @@ from theseus.base.utilities.logits import logits2labels
 LOGGER = LoggerObserver.getLogger("main")
 
 
-def plot_cfm(cm, ax, labels: List):
+def plot_cfm(cm, ax, labels: list):
     """
     Make confusion matrix figure
     labels: `Optional[List]`
@@ -28,7 +28,7 @@ def plot_cfm(cm, ax, labels: List):
     ax.yaxis.set_ticklabels(labels, rotation=0)
 
 
-def make_cm_fig(cms, labels: Optional[List] = None):
+def make_cm_fig(cms, labels: list | None = None):
 
     if cms.shape[0] > 1:  # multilabel
         num_classes = cms.shape[0]
@@ -76,7 +76,7 @@ class ConfusionMatrix(Metric):
         self.threshold = kwargs.get("threshold", 0.5)
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """

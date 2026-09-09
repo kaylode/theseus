@@ -1,18 +1,11 @@
-from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 import torch
 from pytorch_grad_cam import (
-    AblationCAM,
     EigenCAM,
-    FullGrad,
     GradCAM,
-    GradCAMPlusPlus,
-    ScoreCAM,
-    XGradCAM,
 )
 from pytorch_grad_cam.base_cam import BaseCAM
-from pytorch_grad_cam.utils.image import show_cam_on_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
 from theseus.base.utilities.loggers.observer import LoggerObserver
@@ -56,21 +49,19 @@ class CAMWrapper(BaseCAM):
     def __init__(
         self,
         model: torch.nn.Module,
-        model_name: Optional[str] = None,
-        target_layers: Optional[List[torch.nn.Module]] = None,
+        model_name: str | None = None,
+        target_layers: list[torch.nn.Module] | None = None,
         **kwargs,
     ) -> None:
 
-        self.activations_and_grads = type(
-            "DummyClass", (object,), {"release": {lambda: None}}
-        )()
+        self.activations_and_grads = type("DummyClass", (object,), {"release": {lambda: None}})()
 
-        assert (
-            model_name is not None or target_layers is not None
-        ), "Should specify model name or target layers name"
+        assert model_name is not None or target_layers is not None, (
+            "Should specify model name or target layers name"
+        )
 
         if target_layers is None:
-            for available_model in model_last_layers.keys():
+            for available_model in model_last_layers:
                 if model_name.startswith(available_model):
                     model_name = available_model
                     break
@@ -85,12 +76,12 @@ class CAMWrapper(BaseCAM):
 
             target_layers = get_layer_recursively(model, model_last_layers[model_name])
 
-        super(CAMWrapper, self).__init__(model, target_layers, **kwargs)
+        super().__init__(model, target_layers, **kwargs)
 
     def forward(
         self,
         input_tensor: torch.Tensor,
-        targets: List[torch.nn.Module],
+        targets: list[torch.nn.Module],
         eigen_smooth: bool = False,
         return_probs: bool = False,
     ) -> np.ndarray:
@@ -104,14 +95,10 @@ class CAMWrapper(BaseCAM):
         outputs = self.activations_and_grads(input_tensor)
         if targets is None:
             target_categories = np.argmax(outputs.cpu().data.numpy(), axis=-1)
-            targets = [
-                ClassifierOutputTarget(category) for category in target_categories
-            ]
+            targets = [ClassifierOutputTarget(category) for category in target_categories]
 
             if return_probs:
-                scores = np.max(
-                    torch.softmax(outputs, dim=-1).cpu().data.numpy(), axis=-1
-                )
+                scores = np.max(torch.softmax(outputs, dim=-1).cpu().data.numpy(), axis=-1)
 
         if self.uses_gradients:
             self.model.zero_grad()
@@ -138,7 +125,7 @@ class CAMWrapper(BaseCAM):
     def __call__(
         self,
         input_tensor: torch.Tensor,
-        targets: List[torch.nn.Module] = None,
+        targets: list[torch.nn.Module] = None,
         aug_smooth: bool = False,
         eigen_smooth: bool = False,
         return_probs: bool = False,
@@ -146,9 +133,7 @@ class CAMWrapper(BaseCAM):
 
         # Smooth the CAM result with test time augmentation
         if aug_smooth is True:
-            return self.forward_augmentation_smoothing(
-                input_tensor, targets, eigen_smooth
-            )
+            return self.forward_augmentation_smoothing(input_tensor, targets, eigen_smooth)
 
         return self.forward(input_tensor, targets, eigen_smooth, return_probs)
 

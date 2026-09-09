@@ -1,6 +1,7 @@
-""" CUDA / AMP utils
+"""CUDA / AMP utils
 Hacked together by / Copyright 2020 Ross Wightman
 """
+
 from typing import Any
 
 import torch
@@ -21,20 +22,19 @@ def get_devices_info(device_names="0"):
     for i, device_id in enumerate(device_names.split(",")):
         p = torch.cuda.get_device_properties(i)
         devices_info.append(
-            f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024 ** 2}MB)"
+            f"CUDA:{device_id} ({p.name}, {p.total_memory / 1024**2}MB)"
         )  # bytes to MB
     devices_info = "\n".join(devices_info)
     return devices_info
 
 
 def get_device(name="cpu") -> torch.device:
-    if name.startswith("cuda"):
-        if not torch.cuda.is_available():
-            LOGGER.text(
-                "CUDA is not available. Using CPU...",
-                level=LoggerObserver.WARN,
-            )
-            name = "cpu"
+    if name.startswith("cuda") and not torch.cuda.is_available():
+        LOGGER.text(
+            "CUDA is not available. Using CPU...",
+            level=LoggerObserver.WARN,
+        )
+        name = "cpu"
     return torch.device(name)
 
 

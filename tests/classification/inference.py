@@ -17,7 +17,7 @@ from theseus.cv.classification.models import MODEL_REGISTRY
 class TestPipeline(BaseTestPipeline):
     def __init__(self, opt: DictConfig):
 
-        super(TestPipeline, self).__init__(opt)
+        super().__init__(opt)
         self.opt = opt
 
     def init_globals(self):
@@ -36,13 +36,13 @@ class TestPipeline(BaseTestPipeline):
 
         df_dict = {"filename": [], "label": [], "score": []}
 
-        for idx, batch in enumerate(tqdm(self.dataloader)):
+        for _idx, batch in enumerate(tqdm(self.dataloader)):
             img_names = batch["img_names"]
             outputs = self.model.predict_step(batch)
             preds = outputs["names"]
             probs = outputs["confidences"]
 
-            for (filename, pred, prob) in zip(img_names, preds, probs):
+            for filename, pred, prob in zip(img_names, preds, probs):
                 df_dict["filename"].append(filename)
                 df_dict["label"].append(pred)
                 df_dict["score"].append(prob)

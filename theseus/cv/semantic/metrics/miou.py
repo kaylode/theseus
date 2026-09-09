@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -15,7 +15,7 @@ class mIOU(Metric):
         self.num_classes = num_classes
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -30,9 +30,7 @@ class mIOU(Metric):
             targets = targets.permute(3, 0, 1, 2).long().squeeze()
             preds = torch.from_numpy(outputs).long()
 
-        one_hot_predicts = torch.nn.functional.one_hot(
-            preds.long(), num_classes=self.num_classes
-        )
+        one_hot_predicts = torch.nn.functional.one_hot(preds.long(), num_classes=self.num_classes)
 
         one_hot_predicts = one_hot_predicts.permute(0, 3, 1, 2)
 
@@ -68,8 +66,6 @@ class mIOU(Metric):
         self.sample_size = 0
 
     def value(self):
-        scores_each_class = (
-            self.scores_list / self.sample_size
-        )  # mean over number of samples
+        scores_each_class = self.scores_list / self.sample_size  # mean over number of samples
         scores = sum(scores_each_class) / (self.num_classes - 1)  # subtract background
         return {"miou": scores}

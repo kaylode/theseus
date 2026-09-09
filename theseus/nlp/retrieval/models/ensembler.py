@@ -22,18 +22,14 @@ class EnsembleRetriever(BaseRetrieval):
         for cosine_id in range(num_cosines):
             for query_id in range(num_querys):
                 for corpus_id in range(corpus_size):
-                    results[query_id][corpus_id].append(
-                        cosines[cosine_id][query_id][corpus_id]
-                    )
+                    results[query_id][corpus_id].append(cosines[cosine_id][query_id][corpus_id])
 
         final_results = []
         for query_id in range(num_querys):
             for corpus_id in range(corpus_size):
                 results[query_id][corpus_id] = np.mean(results[query_id][corpus_id])
 
-            sorted_score_query = sorted(
-                results[query_id].items(), key=lambda x: x[1], reverse=True
-            )
+            sorted_score_query = sorted(results[query_id].items(), key=lambda x: x[1], reverse=True)
             final_results.append(sorted_score_query[:top_k])
 
         return final_results
@@ -46,20 +42,16 @@ class EnsembleRetriever(BaseRetrieval):
             for query_id, pred in enumerate(preds_per_method):
                 for top_results in pred:
                     pred_id, retrieved_score = top_results
-                    if pred_id not in results[query_id].keys():
+                    if pred_id not in results[query_id]:
                         results[query_id][pred_id] = []
                     results[query_id][pred_id].append(retrieved_score)
 
         final_results = []
-        for query_id in results.keys():
-            for pred_id in results[query_id].keys():
-                results[query_id][pred_id] = (
-                    sum(results[query_id][pred_id]) / num_methods
-                )
+        for query_id in results:
+            for pred_id in results[query_id]:
+                results[query_id][pred_id] = sum(results[query_id][pred_id]) / num_methods
 
-            sorted_score_query = sorted(
-                results[query_id].items(), key=lambda x: x[1], reverse=True
-            )
+            sorted_score_query = sorted(results[query_id].items(), key=lambda x: x[1], reverse=True)
             final_results.append(sorted_score_query[:top_k])
 
         return final_results
@@ -70,12 +62,9 @@ class EnsembleRetriever(BaseRetrieval):
         """
         cosine_score_ensemble = []
         for query_pickle, corpus_pickle in zip(querys, corpus):
-
             encoded_query = self.load_embeddings(query_pickle)
             encoded_corpus = self.load_embeddings(corpus_pickle)
-            cosine_scores = self.get_top_k_similarity(
-                encoded_query, encoded_corpus, top_k=300
-            )
+            cosine_scores = self.get_top_k_similarity(encoded_query, encoded_corpus, top_k=300)
             cosine_score_ensemble.append(cosine_scores)
 
         ## For those method that cannot generate embeddings, ranking predictions can be used

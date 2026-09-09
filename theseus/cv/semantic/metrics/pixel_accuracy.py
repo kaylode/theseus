@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import torch
@@ -19,10 +19,10 @@ class PixelAccuracy(Metric):
     def __init__(
         self,
         num_classes: int,
-        thresh: Optional[float] = None,
+        thresh: float | None = None,
         eps: float = 1e-6,
-        ignore_index: Optional[int] = None,
-        **kwargs
+        ignore_index: int | None = None,
+        **kwargs,
     ):
 
         self.thresh = thresh
@@ -32,16 +32,14 @@ class PixelAccuracy(Metric):
         self.eps = eps
 
         if self.pred_type == "binary":
-            assert (
-                thresh is not None
-            ), "Threshold should be specified for binary segmentation"
+            assert thresh is not None, "Threshold should be specified for binary segmentation"
 
         if num_classes == 1:
             self.num_classes += 1
 
         self.reset()
 
-    def update(self, outputs: Dict[str, Any], batch: Dict[str, Any]):
+    def update(self, outputs: dict[str, Any], batch: dict[str, Any]):
         """
         Perform calculation based on prediction and targets
         """
@@ -91,12 +89,8 @@ class PixelAccuracy(Metric):
         self.sample_size = 0
 
     def value(self):
-        precision_each_class = (
-            self.precisions / self.sample_size
-        )  # mean over number of samples
-        recall_each_class = (
-            self.recalls / self.sample_size
-        )  # mean over number of samples
+        precision_each_class = self.precisions / self.sample_size  # mean over number of samples
+        recall_each_class = self.recalls / self.sample_size  # mean over number of samples
 
         # Mean over classes
         if self.pred_type == "binary":

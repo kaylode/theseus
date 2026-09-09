@@ -1,6 +1,4 @@
-import os
 import os.path as osp
-from typing import Dict, List
 
 import torch
 from PIL import Image
@@ -10,7 +8,7 @@ class ClassificationDataset(torch.utils.data.Dataset):
     r"""Base dataset for classification tasks"""
 
     def __init__(self, **kwargs):
-        super(ClassificationDataset, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.classes_idx = {}
         self.classnames = None
         self.transform = None
@@ -20,7 +18,7 @@ class ClassificationDataset(torch.utils.data.Dataset):
     def _load_data(self):
         raise NotImplementedError
 
-    def __getitem__(self, idx: int) -> Dict:
+    def __getitem__(self, idx: int) -> dict:
         """
         Get one item
         """
@@ -48,7 +46,7 @@ class ClassificationDataset(torch.utils.data.Dataset):
     def __len__(self) -> int:
         return len(self.fns)
 
-    def collate_fn(self, batch: List):
+    def collate_fn(self, batch: list):
         """
         Collator for wrapping a batch
         """
