@@ -1226,6 +1226,17 @@ extra = [
     { name = "tensorboardx" },
 ]
 
+[package.optional-dependencies]
+extra = [
+    { name = "bitsandbytes", marker = "sys_platform != 'darwin'" },
+    { name = "hydra-core" },
+    { name = "jsonargparse", extra = ["jsonnet", "signatures"] },
+    { name = "matplotlib" },
+    { name = "omegaconf" },
+    { name = "rich" },
+    { name = "tensorboardx" },
+]
+
 [[package]]
 name = "lightning-utilities"
 version = "0.11.8"
@@ -2858,11 +2869,11 @@ wheels = [
 
 [[package]]
 name = "sentence-transformers"
-version = "5.1.2"
+version = "5.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
-    { name = "pillow" },
+    { name = "numpy" },
     { name = "scikit-learn" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2871,9 +2882,9 @@ dependencies = [
     { name = "transformers" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/96/f3f3409179d14dbfdbea8622e2e9eaa3c8836ddcaecd2cd5ff0a11731d20/sentence_transformers-5.1.2.tar.gz", hash = "sha256:0f6c8bd916a78dc65b366feb8d22fd885efdb37432e7630020d113233af2b856", size = 375185, upload-time = "2025-10-22T12:47:55.019Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/56/d2cb00765a6b15c994a7fccf20f9032f16e8193ca49147cb5155166ad744/sentence_transformers-5.6.0.tar.gz", hash = "sha256:0e7164d051e416c1853ade7c274ff52af3f9da0f4be7f0b83d734c27699e1057", size = 453194, upload-time = "2026-06-16T14:01:56.42Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/a6/a607a737dc1a00b7afe267b9bfde101b8cee2529e197e57471d23137d4e5/sentence_transformers-5.1.2-py3-none-any.whl", hash = "sha256:724ce0ea62200f413f1a5059712aff66495bc4e815a1493f7f9bca242414c333", size = 488009, upload-time = "2025-10-22T12:47:53.433Z" },
+    { url = "https://files.pythonhosted.org/packages/76/c1/dc1582b79e9a2eb0cddf9559cd9bcdff084f541d6fe881fdd9d98630dba7/sentence_transformers-5.6.0-py3-none-any.whl", hash = "sha256:d2075b5e687a1611005e20ab04a6846994d51adfcf39610aed066af3c0c0b81f", size = 596411, upload-time = "2026-06-16T14:01:55.103Z" },
 ]
 
 [[package]]
@@ -3515,7 +3526,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.11.4" },
     { name = "seaborn", specifier = ">=0.13.0" },
     { name = "segmentation-models-pytorch", marker = "extra == 'cv-semantic'", specifier = ">=0.3.3" },
-    { name = "sentence-transformers", marker = "extra == 'nlp-retrieval'", specifier = ">=3.0.0" },
+    { name = "sentence-transformers", marker = "extra == 'nlp-retrieval'", specifier = ">=5.6.0" },
     { name = "shap", marker = "extra == 'ml'", specifier = "==0.47.1" },
     { name = "spacy", marker = "extra == 'nlp'", specifier = ">=3.7.0" },
     { name = "tabulate", specifier = ">=0.9.0" },
